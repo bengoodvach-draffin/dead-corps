@@ -1,0 +1,44 @@
+[gd_scene load_steps=2 format=3 uid="uid://di2wxa5t7dmxv"]
+
+[ext_resource type="Script" path="res://scripts/debug_overlay.gd" id="1_debug"]
+
+[node name="DebugOverlay" type="CanvasLayer"]
+layer = 100
+script = ExtResource("1_debug")
+
+[node name="InfoPanel" type="PanelContainer" parent="."]
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 250.0
+offset_bottom = 280.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="InfoPanel"]
+layout_mode = 2
+
+[node name="InfoLabel" type="Label" parent="InfoPanel/VBoxContainer"]
+layout_mode = 2
+text = "GAME STATE:
+Zombies: 0
+Humans: 0
+Escaped: 0
+Selected: 0"
+
+[node name="HSeparator" type="HSeparator" parent="InfoPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="ControlsLabel" type="Label" parent="InfoPanel/VBoxContainer"]
+layout_mode = 2
+text = "CONTROLS:
+WASD - Pan Camera
+Mouse Wheel - Zoom
+Left Click - Select
+Right Click - Command
+Ctrl+1-9 - Assign Group
+1-9 - Select Group"
+
+[node name="HSeparator2" type="HSeparator" parent="InfoPanel/VBoxContainer"]
+layout_mode = 2
+
+[node name="ResetButton" type="Button" parent="InfoPanel/VBoxContainer"]
+layout_mode = 2
+text = "RESET GAME"

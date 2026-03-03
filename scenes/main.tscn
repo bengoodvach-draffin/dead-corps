@@ -1,0 +1,81 @@
+[gd_scene format=3 uid="uid://d2oviygox1lni"]
+
+[ext_resource type="Script" path="res://scripts/camera_controller.gd" id="1_hj7w5"]
+[ext_resource type="Script" path="res://scripts/selection_manager.gd" id="2_select"]
+[ext_resource type="Script" path="res://scripts/game_manager.gd" id="3_game"]
+[ext_resource type="PackedScene" uid="uid://c8yqh3jvpxn3w" path="res://scenes/zombie.tscn" id="4_zombie"]
+[ext_resource type="PackedScene" uid="uid://brqxu82wy6h2r" path="res://scenes/human.tscn" id="5_human"]
+[ext_resource type="Script" path="res://scripts/initializer.gd" id="6_init"]
+[ext_resource type="Script" path="res://scripts/vision_renderer.gd" id="6_vision"]
+[ext_resource type="PackedScene" uid="uid://di2wxa5t7dmxv" path="res://scenes/debug_overlay.tscn" id="7_debug"]
+[ext_resource type="PackedScene" uid="uid://bmw8qx5r2n8pk" path="res://scenes/building.tscn" id="8_building"]
+[ext_resource type="PackedScene" uid="uid://bvx8qw2m7n5pk" path="res://scenes/escape_zone.tscn" id="9_escape"]
+[ext_resource type="PackedScene" uid="uid://cpxw4y8m7n5pk" path="res://scenes/end_game_overlay.tscn" id="10_endgame"]
+
+[sub_resource type="RectangleShape2D" id="Building1_Shape"]
+size = Vector2(100, 300)
+
+[sub_resource type="RectangleShape2D" id="Building2_Shape"]
+size = Vector2(150, 100)
+
+[sub_resource type="RectangleShape2D" id="Building3_Shape"]
+size = Vector2(100, 100)
+
+[node name="Main" type="Node2D" unique_id=151308185]
+
+[node name="Initializer" type="Node" parent="." unique_id=1515215272]
+script = ExtResource("6_init")
+
+[node name="Camera" type="Camera2D" parent="." unique_id=585395039 groups=["camera"]]
+script = ExtResource("1_hj7w5")
+
+[node name="TestLevel" type="Node2D" parent="." unique_id=2129652431]
+
+[node name="Ground" type="ColorRect" parent="TestLevel" unique_id=19404831]
+offset_left = -500.0
+offset_top = -500.0
+offset_right = 500.0
+offset_bottom = 500.0
+color = Color(0.2, 0.3, 0.2, 1)
+
+[node name="Buildings" type="Node2D" parent="TestLevel" unique_id=985347166]
+
+[node name="Building1" parent="TestLevel/Buildings" unique_id=253273093 instance=ExtResource("8_building")]
+position = Vector2(-266, -48)
+
+[node name="CollisionShape2D" parent="TestLevel/Buildings/Building1" index="0"]
+shape = SubResource("Building1_Shape")
+
+[node name="Building2" parent="TestLevel/Buildings" unique_id=2070493042 instance=ExtResource("8_building")]
+position = Vector2(125, -100)
+
+[node name="CollisionShape2D" parent="TestLevel/Buildings/Building2" index="0"]
+shape = SubResource("Building2_Shape")
+
+[node name="Building3" parent="TestLevel/Buildings" unique_id=495450664 instance=ExtResource("8_building")]
+position = Vector2(150, 175)
+
+[node name="CollisionShape2D" parent="TestLevel/Buildings/Building3" index="0"]
+shape = SubResource("Building3_Shape")
+
+[node name="EscapeZone" parent="TestLevel" unique_id=1640359472 instance=ExtResource("9_escape")]
+position = Vector2(475, 0)
+zone_size = Vector2(50, 1000)
+
+[node name="VisionRenderer" type="Node2D" parent="." unique_id=1618763304]
+z_index = 1
+script = ExtResource("6_vision")
+
+[node name="Units" type="Node2D" parent="." unique_id=1968361044 groups=["units_parent"]]
+
+[node name="SelectionManager" type="Node2D" parent="." unique_id=423906801 groups=["selection_manager"]]
+script = ExtResource("2_select")
+
+[node name="GameManager" type="Node" parent="." unique_id=1045185710 groups=["game_manager"]]
+script = ExtResource("3_game")
+zombie_scene = ExtResource("4_zombie")
+human_scene = ExtResource("5_human")
+
+[node name="DebugOverlay" parent="." unique_id=468344591 instance=ExtResource("7_debug")]
+
+[node name="EndGameOverlay" parent="." unique_id=2000451810 instance=ExtResource("10_endgame")]

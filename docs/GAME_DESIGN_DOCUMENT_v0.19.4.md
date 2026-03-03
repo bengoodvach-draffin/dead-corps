@@ -1,0 +1,1587 @@
+# DEAD CORPS - DESIGN DOCUMENT
+
+**Version:** 4.0 (Advanced Prototype Build)  
+**Last Updated:** March 2, 2026  
+**Status:** Prototype v0.19.4 Complete
+
+---
+
+## TABLE OF CONTENTS
+
+1. [Game Overview](#1-game-overview)
+2. [Current Prototype State (v0.19.4)](#2-current-prototype-state-v0194)
+3. [Core Mechanics](#3-core-mechanics)
+4. [Technical Specifications](#4-technical-specifications)
+5. [Special Zombie Types (11 Total)](#5-special-zombie-types-11-total)
+6. [Human Defenders](#6-human-defenders)
+7. [Building System](#7-building-system)
+8. [Level Design Philosophy](#8-level-design-philosophy)
+9. [Future Features](#9-future-features)
+10. [Original Ideas Not Yet Implemented](#10-original-ideas-not-yet-implemented)
+11. [Design Philosophy & Decisions](#11-design-philosophy--decisions)
+12. [Open Questions & Design Gaps](#12-open-questions--design-gaps)
+
+---
+
+## 1. GAME OVERVIEW
+
+### 1.1 Core Concept
+
+**Dead Corps** is a real-time tactical puzzle game where players command a growing zombie horde. The game inverts traditional zombie survival dynamics: instead of defending against zombies, you ARE the zombie apocalypse.
+
+**Key Pillars:**
+- **Growth Through Combat:** Defeated humans become zombies (snowball mechanic)
+- **Tactical Puzzle Solving:** Use terrain, timing, and special zombie abilities to overcome defenders
+- **Environmental Problem-Solving:** Different zombie types unlock new tactical options
+- **Risk vs Reward:** Keep zombies alive for higher scores
+
+### 1.2 Genre
+
+Real-time strategy with strong tactical puzzle elements. Similar to:
+- **Commandos / Shadow Tactics** - Tactical positioning and timing
+- **Pikmin** - Unit conversion and growing army
+- **Lemmings** - Environmental puzzle solving with limited control
+
+### 1.3 Platform & Engine
+
+- **Engine:** Godot 4.6 (updated from 4.3)
+- **Platform:** PC (Windows/Linux/Mac)
+- **Perspective:** 2D Isometric (top-down, 45-degree angle)
+- **Target:** Single-player campaign (multiplayer post-launch consideration)
+
+---
+
+## 2. CURRENT PROTOTYPE STATE (v0.19.4)
+
+### 2.1 Implemented Features ✅
+
+**Core Systems:**
+- ✅ RTS-style camera (WASD panning, edge scrolling, zoom)
+- ✅ Unit selection (click, box-select, Shift/Ctrl modifiers)
+- ✅ Formation movement (shambling horde with randomization)
+- ✅ Control groups (Ctrl+1-9 to assign, 1-9 to recall)
+- ✅ Zombie-human combat with conversion
+- ✅ Game boundaries and collision
+
+**AI & Behavior:**
+- ✅ Human flee mechanics (reaction time, threat vectors, obstacle avoidance)
+- ✅ Zombie auto-pursuit (100px range, respects player commands)
+- ✅ Smart target selection (prioritizes unpinned humans)
+- ✅ Stuck detection and retargeting
+- ✅ Max 3 attackers per human (prevents dogpiling)
+- ✅ BOID separation (visual spacing without collision)
+
+**Advanced Mechanics:**
+- ✅ Hybrid leap system (speed boost + guaranteed pin at 40px)
+- ✅ Line-of-sight blocking (buildings obstruct vision)
+- ✅ Escape zone (humans run to safety, zombies die if entering)
+- ✅ Player-commanded vs auto-pursuit distinction
+- ✅ Pursuing zombies ignore new commands (locked in)
+
+**NEW: Vision System (v0.14.0+):**
+- ✅ State-based vision shapes (circle for idle, arc for moving/pursuing)
+- ✅ Zombie vision responds to movement commands
+- ✅ Vision arc renderer with alpha gradient
+
+**NEW: Sentry System (v0.14.0 - Phase A):**
+- ✅ Degree-based sentry facing (0° = North, 90° = East, 180° = South, 270° = West)
+- ✅ Visual facing arrow in editor (cyan)
+- ✅ Swing arc system for sentries
+  - Smooth sin/cos oscillation
+  - Configurable swing range (±degrees from center)
+  - Configurable swing speed (degrees per second)
+  - Pause at extremes (configurable duration)
+  - Visual swing arc indicator in editor (green)
+- ✅ Arc vision during sentry state
+
+**NEW: Panic Spreading (v0.16.0 - v0.17.0):**
+- ✅ Proximity-based panic (40px radius)
+- ✅ Triggers only on GRAPPLED state (not chase)
+- ✅ Realistic panic waves through groups
+- ✅ Formation spacing affects panic propagation
+- ✅ Global position fixes for escape zones
+- ✅ Line-of-sight requirement for escape zone selection
+
+**NEW: Zombie Navigation (v0.17.0 - v0.17.3):**
+- ✅ Optional NavigationAgent2D support
+- ✅ Pathfinding around obstacles
+- ✅ Smooth corner navigation (30px agent radius)
+- ✅ Falls back to direct movement if not configured
+- ✅ Works for both combat and normal movement
+- ✅ Backwards compatible (navigation is opt-in per level)
+
+**NEW: Patrol System Phase B1 (v0.18.0):**
+- ✅ Manual waypoint patrol (typed coordinates in Inspector)
+- ✅ LOOP mode (circular: 0→1→2→3→0)
+- ✅ PING_PONG mode (back-and-forth: 0→1→2→3→2→1→0)
+- ✅ Visual waypoint path in editor (yellow dots/lines)
+- ✅ Configurable patrol speed (independent of combat speed)
+- ✅ Patrol stops when zombie detected (switches to fleeing)
+
+**NEW: Patrol System Phase B2 (v0.19.0 - v0.19.4):**
+- ✅ Visual waypoint placement via child Node2D nodes
+- ✅ Natural string sorting (handles Waypoint1-10+ correctly)
+- ✅ Drag-and-drop waypoint positioning in editor
+- ✅ Backwards compatible with manual waypoint arrays
+- ✅ Swing disabled while patrolling (clean movement)
+- ✅ Sentries face movement direction while walking
+- ✅ No editor movement (game logic disabled during editing)
+
+**Polish & UI:**
+- ✅ End game screen with score breakdown
+- ✅ Scoring system (25pts per zombie survived + time bonuses)
+- ✅ Reset button for rapid iteration
+- ✅ Control group visual indicators
+- ✅ Health bars and selection rings
+
+### 2.2 Not Yet Implemented ❌
+
+- ❌ Special zombie types (11 planned)
+- ❌ Building interaction system
+- ❌ Multiple level designs
+- ❌ Campaign structure
+- ❌ Different human defender classes (currently basic sentry)
+- ❌ Environmental hazards (water, fire, spikes)
+- ❌ Sound and music
+- ❌ Final art style
+- ❌ Per-waypoint customization (Phase C - pauses, swing, facing)
+
+### 2.3 Version History
+
+**Foundation (v0.1-0.6):**
+- Core systems (camera, selection, combat, conversion, flee AI)
+
+**Polish Pass (v0.7-v0.8):**
+- Hybrid leap, scoring, end game, control groups, escape zones
+- Formation movement, AI improvements, smart targeting
+
+**Vision & Sentry (v0.9-v0.14.0):**
+- State-based vision system
+- Degree-based sentry facing
+- Swing arc mechanics
+- Editor visual indicators
+
+**Human AI Expansion (v0.15.0-v0.17.0):**
+- Panic spreading system
+- Escape zone improvements (global_position, LOS)
+- Navigation system implementation
+
+**Patrol System (v0.18.0-v0.19.4):**
+- Phase B1: Manual waypoint patrol (typed arrays)
+- Phase B2: Visual waypoints (child nodes)
+- Swing/patrol integration fixes
+- Editor behavior fixes
+
+---
+
+## 3. CORE MECHANICS
+
+### 3.1 Camera & Controls
+
+**Camera**
+- **Type:** 2D Isometric (fixed 45° angle)
+- **Movement:** WASD keys OR mouse edge scrolling
+- **Zoom:** Mouse wheel (currently disabled in prototype)
+- **Bounds:** Camera clamped to level boundaries (±500 units)
+- **Rotation:** Not implemented (may add 90° snapping later)
+
+**Controls**
+- **Select Units:** Left-click (single) OR drag-select (box)
+- **Add to Selection:** Shift + left-click/drag
+- **Remove from Selection:** Ctrl + left-click
+- **Move Units:** Right-click on ground (formation spread with ±15px jitter)
+- **Attack Enemy:** Right-click on human
+- **Control Groups:** Ctrl+1-9 to assign, 1-9 to recall, Ctrl+0 to clear
+- **Reset Level:** R key (debug feature)
+
+### 3.2 Unit Selection
+
+**Selection Feedback:**
+- Green ring at unit's feet when selected
+- Box-select draws green rectangle
+- Control group number displayed in top-right of unit (1-9)
+
+**Selection Rules:**
+- Can select multiple units simultaneously
+- Shift adds/removes from selection (toggle)
+- Clicking empty space clears selection
+- Control groups persist until reassigned or units die
+
+### 3.3 Movement System
+
+**Formation Movement**
+
+When commanding multiple zombies:
+1. Calculate grid formation centered on click point
+2. Add random jitter (±15px) to each position
+3. Each zombie gets individual target position
+4. Result: Shambling horde (not regimented ranks)
+
+**Example:** 9 zombies clicking at (100, 100) with 40px spacing:
+```
+[60+jitter, 60+jitter]  [100+jitter, 60+jitter]  [140+jitter, 60+jitter]
+[60+jitter, 100+jitter] [100+jitter, 100+jitter] [140+jitter, 100+jitter]
+[60+jitter, 140+jitter] [100+jitter, 140+jitter] [140+jitter, 140+jitter]
+```
+
+**Pursuit Lock**
+
+**CRITICAL RULE:** Zombies in pursuit CANNOT be commanded!
+- Idle zombie (no target) → Responds to player commands
+- Pursuing zombie (has target) → **Ignores** player commands
+- Only when target is killed/lost → Zombie becomes controllable again
+
+This forces tactical positioning and prevents micromanagement during chases.
+
+**Unit Speed**
+- **Humans:** 90 units/second (fleeing)
+- **Zombies:** 105 units/second (chasing)
+- **Zombie Leap:** 210 units/second (2x multiplier at 40px range)
+- **Patrol Speed:** 50 units/second (configurable, default for sentries)
+
+Result: Zombies slowly catch humans, leap closes final distance.
+
+### 3.4 Combat System
+
+**Zombie Combat**
+
+**Basic Attack:**
+- Zombies have melee bite attack (25px range)
+- Damage: 15 per hit
+- Cooldown: 1.5 seconds between attacks
+- Target: Nearest human in range
+
+**Attack Behavior:**
+1. Zombie detects human (auto-pursuit at 100px)
+2. Zombie enters leap range (40px) → speed boost to 210
+3. Zombie reaches 40px → **human pinned immediately**
+4. Zombie enters melee range (25px) → starts attacking
+5. Human dies → converts to zombie after kill
+
+**Max Attackers Rule:**
+- Maximum 3 zombies can attack one human (melee range)
+- Additional zombies wait or find different targets
+- Prevents overcrowding and promotes spreading
+
+**Smart Targeting:**
+
+Zombies prioritize:
+1. Unpinned humans (not grappled)
+2. Humans with <3 attackers
+3. Closest match
+
+This prevents dogpiling on one target while others escape.
+
+**Human Combat**
+
+**Flee Behavior:**
+
+When human detects zombie (150px range):
+1. **Reaction delay:** 0.2 second freeze (fear/surprise)
+2. **Calculate threat vector:** Away from ALL nearby zombies (weighted by distance)
+3. **Obstacle avoidance:** Raycast ahead, veer around buildings
+4. **Escape zone seeking:** If within 200px + line-of-sight → pull toward closest edge
+
+**Flee Mechanics:**
+- Detection radius: 150px
+- Flee distance: Runs 200px away from threats
+- Checks every 0.3 seconds (performance optimization)
+- Only flees from visible zombies (line-of-sight matters)
+
+**Grapple/Pin:**
+- When zombie within 50px → human grappled (frozen for 0.5 seconds)
+- Leap grapple (40px trigger) → immediate pin
+- Timer-based: grapple_timer counts down, human escapes if zombie moves away
+
+**Panic Spreading (NEW - v0.16.0):**
+
+When human detects ally in GRAPPLED state within 40px:
+- Immediately switches to FLEEING state
+- Creates panic wave through tight formations
+- Only triggers on GRAPPLED (not chase)
+- Formation spacing affects propagation:
+  - Tight (40px): Middle + 2 adjacent panic (3 total)
+  - Loose (60px): Only victim, others don't panic
+
+**Combat (Future):**
+
+Currently humans don't fight back. Future versions will add:
+- Weapon types (pistols, shotguns, rifles)
+- Accuracy and reload mechanics
+- Different defender classes (civilian, police, military)
+
+### 3.5 Line of Sight System
+
+**Buildings block vision:**
+- Humans only flee from zombies they can see
+- Raycasting checks for building obstruction
+- Creates tactical sneaking opportunities
+
+**Zombie Detection:**
+- Zombies detect humans through buildings (simpler AI)
+- Humans use LOS for flee decisions
+- Escape zone seeking requires LOS to zone
+
+### 3.6 Vision System (NEW - v0.14.0+)
+
+**State-Based Vision Shapes:**
+
+**Zombies:**
+- IDLE state → Circle vision (360°, 100px radius)
+- MOVING state → Forward arc vision (90°, 150px range)
+- PURSUING state → Forward arc vision (90°, 150px range)
+- Transitions automatically based on movement/targeting
+
+**Humans:**
+- IDLE state → Circle vision (360°, 100px radius)
+- SENTRY state → Forward arc vision (90°, 180px range)
+- FLEEING state → Forward arc vision (90°, 100px range)
+
+**Visual Rendering:**
+- Vision areas drawn with alpha gradient (transparent to solid)
+- Green for zombies, blue for humans (future: team colors)
+- Arcs show facing direction clearly
+
+### 3.7 Sentry System (NEW - v0.14.0)
+
+**Degree-Based Facing:**
+- 0° = North (up)
+- 90° = East (right)
+- 180° = South (down)
+- 270° = West (left)
+- Configurable in Inspector per sentry
+
+**Swing Arc Mechanics:**
+- **Purpose:** Sentry scans area by swinging head left/right
+- **Configuration:**
+  - `sentry_swing_range`: How far to look (±degrees, e.g., ±45° = 90° total sweep)
+  - `sentry_swing_speed`: How fast to swing (degrees per second)
+  - `sentry_swing_pause`: Pause duration at extremes (seconds)
+- **Behavior:**
+  - Smooth sin/cos oscillation (not linear)
+  - Speed modulation (faster in middle, slower at edges)
+  - Pauses at extremes before reversing
+- **Integration with Patrol (v0.19.0+):**
+  - Swing only when stationary (not while walking)
+  - While patrolling, face movement direction
+  - Phase C will add per-waypoint swing (pause to look around)
+
+**Editor Visualization:**
+- Cyan arrow: Shows initial facing direction
+- Green arc: Shows swing range (if enabled)
+- Yellow path: Shows patrol waypoints (if patrol enabled)
+
+### 3.8 Patrol System (NEW - v0.18.0+)
+
+**Patrol Modes:**
+
+**LOOP Mode:**
+- Circular patrol: Waypoint 0 → 1 → 2 → 3 → 0 → ...
+- Never reverses direction
+- Good for: Perimeter patrols, guard rounds
+
+**PING_PONG Mode:**
+- Back-and-forth: 0 → 1 → 2 → 3 → 2 → 1 → 0 → ...
+- Reverses at endpoints
+- Good for: Hallway patrols, corridor routes
+
+**Waypoint Configuration:**
+
+**Method 1: Manual (Phase B1 - v0.18.0):**
+```gdscript
+// In Inspector:
+@export var patrol_waypoints: Array[Vector2] = [(100,100), (200,100), (200,200)]
+```
+
+**Method 2: Visual (Phase B2 - v0.19.0 - Recommended):**
+```
+Human (Sentry)
+├─ Waypoint1 (Node2D)  ← Drag to position in editor
+├─ Waypoint2 (Node2D)
+├─ Waypoint3 (Node2D)
+└─ Waypoint4 (Node2D)
+```
+
+**Naming Rules:**
+- Must be exactly "Waypoint1", "Waypoint2", etc.
+- Capital W, numbers determine order
+- Natural sort (handles Waypoint1-10+ correctly)
+
+**Patrol Behavior:**
+- Walks at `patrol_speed` (default 50 px/sec)
+- Faces movement direction while walking
+- Stops patrolling when zombie detected (switches to fleeing)
+- Swing disabled while moving (only when stationary)
+- Resumes patrol after threat gone (future enhancement)
+
+**Editor Features:**
+- Yellow dots show waypoint positions
+- Yellow lines connect waypoints showing patrol path
+- Visible when sentry selected
+
+### 3.9 Navigation System (NEW - v0.17.0+)
+
+**Optional Pathfinding:**
+- NavigationAgent2D on zombies (optional)
+- NavigationRegion2D in level with baked mesh
+- If agent exists: use pathfinding
+- If not: use direct movement
+
+**How It Works:**
+1. Add NavigationRegion2D to level
+2. Add buildings to "buildings" group
+3. Configure: Source Geometry Mode = "Groups"
+4. Set Agent Radius: 30.0 (wide clearance)
+5. Bake NavigationPolygon
+6. NavigationAgent2D already on zombie.tscn
+
+**Benefits:**
+- Zombies path around buildings smoothly
+- Smooth corner navigation
+- No getting stuck on obstacles
+- Backwards compatible (levels without navigation work fine)
+
+**Technical Details:**
+- Agent radius: 30px (wide clearance from walls)
+- Cell size: 10px (grid precision)
+- Navigation layers must match (both on Layer 1)
+- Groups method most reliable in Godot 4.6
+
+### 3.10 Conversion Mechanic
+
+**Core Snowball Loop:**
+1. Zombie kills human (health reaches 0)
+2. GameManager spawns new zombie at human's death position
+3. New zombie immediately under player control
+4. No incubation time in current prototype
+
+**Score Impact:**
+- More zombies alive at end = higher score
+- Encourages keeping zombies alive (tactical play)
+
+### 3.11 Win/Lose Conditions
+
+**Victory:**
+- All humans killed OR escaped
+- Shows "GAME OVER" screen
+
+**Defeat:**
+- All zombies dead + humans still alive
+- Shows "YOU LOSE - All your zombies died"
+
+**Scoring:**
+- 25 points per zombie survived (including starting zombies)
+- Time bonuses:
+  - ≤1 min: +200
+  - ≤2 min: +150
+  - ≤3 min: +100
+  - ≤4 min: +50
+  - >4 min: +0
+- Humans escaped: 0 points (tracked for stats)
+- Loss: 0 points total
+
+---
+
+## 4. TECHNICAL SPECIFICATIONS
+
+### 4.1 Zombie Stats
+```
+Health: 50
+Move Speed: 105 units/sec
+Attack Damage: 15
+Attack Range: 25 pixels
+Attack Cooldown: 1.5 seconds
+Auto-Pursuit Range: 100 pixels
+Leap Range: 40 pixels
+Leap Speed Multiplier: 2.0x (105 → 210)
+Leap Pin Range: 40 pixels (guaranteed grapple)
+Vision (Idle): 100px circle
+Vision (Moving): 150px arc, 90° angle
+```
+
+### 4.2 Human Stats
+```
+Health: 75
+Move Speed: 90 units/sec
+Patrol Speed: 50 units/sec (default for sentries)
+Flee Detection Radius: 150 pixels
+Flee Distance: 200 pixels
+Reaction Time: 0.2 seconds
+Detection Check Interval: 0.3 seconds
+Grapple Duration: 0.5 seconds
+Grapple Proximity: 50 pixels (normal), 70 pixels (during leap)
+Escape Zone Seek Range: 200 pixels
+Panic Radius: 40 pixels (NEW)
+Vision (Idle): 100px circle
+Vision (Sentry): 180px arc, 90° angle
+Vision (Fleeing): 100px arc, 90° angle
+```
+
+### 4.3 Sentry Configuration (NEW)
+```
+Facing: 0-360 degrees (0=North, 90=East, 180=South, 270=West)
+Swing Range: 0-90 degrees (±from center, e.g., ±45° = 90° total sweep)
+Swing Speed: 1-180 degrees/second (default: 30°/sec)
+Swing Pause: 0-2 seconds (default: 0.5 sec)
+```
+
+### 4.4 Patrol Configuration (NEW)
+```
+Patrol Mode: LOOP or PING_PONG
+Patrol Speed: 10-100 px/sec (default: 50)
+Waypoint Proximity: 10 pixels (reached threshold)
+Waypoint Count: Unlimited (practical max ~20)
+```
+
+### 4.5 Navigation Configuration (NEW)
+```
+Agent Radius: 30 pixels (zombie clearance from walls)
+Cell Size: 10 pixels (grid precision)
+Path Desired Distance: 15 pixels
+Target Desired Distance: 20 pixels
+Navigation Layers: Layer 1 (must match region and agent)
+```
+
+### 4.6 BOID Separation
+```
+Separation Radius: 30 pixels
+Separation Strength: 100 (force magnitude)
+Falloff: Squared (more aggressive when close)
+Disabled For: Melee attackers (prevents bumping)
+```
+
+### 4.7 Formation Parameters
+```
+Base Spacing: 40 pixels
+Jitter Range: ±15 pixels (X and Y)
+Grid Layout: Square (sqrt of unit count)
+Centering: Formation centered on click point
+Bounds Clamping: Positions clamped to ±500 units
+```
+
+### 4.8 Collision Layers
+```
+Layer 1 (Buildings): Blocks movement, blocks LOS, used for navigation
+Layer 2 (Zombies): No unit-unit collision, BOID separation only
+Layer 3 (Humans): No unit-unit collision, BOID separation only
+```
+
+### 4.9 Game Boundaries
+```
+World Bounds: X: -500 to +500, Y: -500 to +500
+Camera Bounds: Matches world bounds
+Unit Clamping: Position clamped every physics frame
+```
+
+### 4.10 Performance Targets
+```
+Target Unit Count: 50-100 total units (zombies + humans)
+Physics Updates: 60 FPS (fixed timestep)
+Pathfinding: NavigationAgent2D (A* via Godot)
+Detection Checks: Every 0.2-0.3 seconds (not every frame)
+```
+
+---
+
+## 5. SPECIAL ZOMBIE TYPES (11 TOTAL)
+
+All special zombies are created by entering specific buildings. Each type provides unique tactical abilities for environmental puzzle-solving.
+
+### 5.1 Fat Zombie
+
+**Source:** Fast food restaurant
+**Appearance:** Grossly obese zombie
+
+**Abilities:**
+- Jump off cliff → creates permanent landing cushion (kills Fat Zombie)
+- Jump into water → becomes permanent pontoon bridge (kills Fat Zombie)
+- When killed → becomes permanent LOS-blocking obstacle
+
+**Use Case:**
+- Bridge hazards (gaps, spikes, water)
+- Create cover for other zombies
+- Tactical sacrifices
+
+**Limitations:**
+- Cannot attack humans
+- Once ability used, zombie is dead (one-time use)
+
+### 5.2 Fireman Zombie
+
+**Source:** Fire station
+**Appearance:** Zombie in firefighter gear, dragging fire hose
+
+**Ability:**
+- Spray water in cone (AOE damage/knockback)
+- Damages and pushes back groups of defenders
+
+**Use Case:**
+- Clear clusters of defenders
+- Create openings in defensive lines
+- Push enemies into hazards
+
+### 5.3 Traffic Controller Zombie
+
+**Source:** Construction site / police station
+**Appearance:** Zombie with traffic warden hat and glow sticks/stop sign
+
+**Ability:**
+- Set waypoint to redirect charging zombies
+- Changes direction of zombie swarm mid-pursuit
+- Becomes immobile once placed
+
+**Use Case:**
+- Navigate zombies around hazards
+- Flank defensive positions
+- Guide swarm through complex terrain
+
+**Limitations:**
+- Cannot attack humans
+- Cannot move once placed
+
+### 5.4 Marching Band Zombie
+
+**Source:** School / theater / music hall
+**Appearance:** Zombie with instrument (tuba, drum, massive drum set)
+
+**Ability:**
+- AOE buff to nearby zombies (radius effect)
+- Increases speed and/or health of nearby units
+- May enable formation control (future)
+
+**Use Case:**
+- Enhance horde for tough fights
+- Support swarm in prolonged engagements
+- Boost efficiency against strong defenders
+
+### 5.5 Scuba Zombie
+
+**Source:** Dive shop / aquarium
+**Appearance:** Zombie in wetsuit with flippers and shark fin on head
+
+**Ability:**
+- Cross water hazards without dying
+- Reduced land movement speed
+
+**Use Case:**
+- Access areas blocked by rivers/moats
+- Flank positions across water
+- Create alternate routes
+
+**Trade-off:** Slower on land, vulnerable before reaching water
+
+### 5.6 Headless Zombie
+
+**Source:** Hardware store (guillotine/buzz saw)
+**Appearance:** Zombie carrying its own severed head
+
+**Abilities:**
+- Throw head (one-time use) → reveals fog of war at landing spot
+- No pathfinding (moves in straight line only)
+- Doesn't charge civilians unless direct collision or fired upon
+- Dies if hitting hard objects at speed
+
+**Use Case:**
+- Scout ahead, locate hidden defenders
+- Reveal sniper positions
+- Plan routes before committing forces
+
+**Limitations:**
+- Straight-line movement only (no turning)
+- Fragile (collision deaths)
+- Head throw is one-time ability
+
+### 5.7 Costume Zombie
+
+**Source:** Costume shop / theater
+**Appearance:** Zombie in silly disguise (sombrero, fake mustache, clown suit)
+
+**Ability:**
+- Defenders don't detect until very close range
+- Can approach much closer before triggering flee/combat
+- Blends in as "human" from distance
+
+**Use Case:**
+- Sneak past patrols
+- Reach key targets undetected
+- Position zombies for ambushes
+
+### 5.8 Petrol Zombie
+
+**Source:** Petrol station / gas station
+**Appearance:** Zombie covered in black (doused in gasoline)
+
+**Abilities:**
+- If set on fire → explodes after short delay (damages friend and foe)
+- If shot before ignition → leaks petrol on ground (creates hazard)
+- Walking area denial bomb
+
+**Use Case:**
+- Tactical sacrifice for area clearing
+- Deny chokepoints to defenders
+- Clear clustered enemies
+
+**Risk:** Damages your own zombies if they're nearby
+
+### 5.9 Motorcycle Zombie
+
+**Source:** Motorcycle dealership / car repair shop
+**Appearance:** Zombie wheeling a motorcycle
+
+**Abilities:**
+- Moves slower than other zombies initially
+- Activate: Rides motorcycle in straight line at high speed
+- On collision (wall or enemy) → spectacular explosion
+- Can be shot down mid-charge by high-caliber weapons
+
+**Use Case:**
+- Kamikaze attack on high-value targets
+- Breach fortified positions
+- Quickly eliminate priority threats
+
+**Risk:** Vulnerable during charge, destroys zombie on use
+
+### 5.10 Ordnance Zombie
+
+**Source:** Military checkpoint / army surplus store
+**Appearance:** Zombie with howitzer and bandolier of grenades
+
+**Abilities:**
+- Use mounted weapons (heavy machine guns)
+  - Fixed direction, 45° arc
+  - Shoots sporadically, hits friendlies and hostiles
+- Fire howitzer once (50% chance to backfire!)
+- Throw up to 2 grenades (50% chance to throw pin instead → self-destruct)
+
+**Use Case:**
+- High-risk, high-reward attacks
+- Suppress fortified positions
+- Comedic chaos (unreliable but powerful)
+
+**Risk:** Extremely unreliable, likely to kill own zombies
+
+### 5.11 Headcrab Zombie
+
+**Source:** Aquarium
+**Appearance:** Zombie with sea crab on head
+
+**Abilities:**
+- Survives one sniper shot (crab absorbs damage, then dies)
+- Throw crab at rooftop enemies (distract/kill snipers)
+- After crab thrown, zombie is vulnerable
+
+**Use Case:**
+- Counter snipers and elevated defenders
+- Tank one high-damage shot
+- Clear rooftop threats
+
+---
+
+## 6. HUMAN DEFENDERS
+
+### 6.1 Current Prototype (Sentry Type)
+
+**Basic Sentry:**
+- Health: 75
+- Speed: 90 (fleeing), 50 (patrolling)
+- Behavior: Patrols waypoints OR stands watch
+- Vision: Arc vision (180px range, 90° angle)
+- Swing arc: Optional (scans left/right while stationary)
+- Panic spreading: Triggers when ally grappled within 40px
+- Combat: None (doesn't fight back yet)
+- Conversion: Becomes zombie on death
+
+**Sentry States:**
+- IDLE: Stationary, circle vision
+- SENTRY: On patrol or watching, arc vision
+- FLEEING: Running from zombies, forward arc vision
+- GRAPPLED: Pinned by zombie, no vision
+- DEAD: Converting to zombie
+
+### 6.2 Planned Defender Types (Future)
+
+**Civilians**
+- **Weapons:** Unarmed (or 1-in-4 with sidearms)
+- **Morale:** Flee if outnumbered
+- **Behavior:** Run to police/military blockades, may barricade in buildings
+- **Accuracy:** Low (shots scatter)
+- **Special:** Can be armed by police (become militia)
+
+**Police**
+- **Weapons:** All have sidearms, 1-in-4 with shotguns
+- **Morale:** Flee if 3:1 zombie ratio
+- **Behavior:** Position in front of civilians, use cover
+- **Accuracy:** +1 reload speed, +1 accuracy
+- **Special:** Turn civilians into militia (give sidearms)
+
+**General Infantry (G.I.)**
+- **Weapons:** Assault rifles, mounted machine guns
+- **Morale:** Never flee
+- **Behavior:** Hold barricades, flank melees
+- **Accuracy:** +3 reload speed, +3 accuracy
+- **Special:** Static defense, vulnerable to rear attacks
+
+**Special Operations (Spec Ops)**
+- **Weapons:** SMGs, grenades, RPGs (2 per squad)
+- **Morale:** Never flee
+- **Behavior:** Roam, escort civilians, reinforce weak points
+- **Accuracy:** +5 reload speed, +5 accuracy
+- **Special:** Called in as reinforcements when outposts threatened
+
+**Snipers (Future)**
+- **Weapons:** Long-range rifle
+- **Position:** Rooftops, elevated positions
+- **Behavior:** One-shot kills from extreme range
+- **Counter:** Headcrab Zombie, Costume Zombie
+
+---
+
+## 7. BUILDING SYSTEM
+
+### 7.1 Planned Interaction (Not Yet Implemented)
+
+**Transformation System:**
+- Zombies enter specific buildings
+- Building transforms zombie into special type
+- Building remains (can be used multiple times)
+- Process is instant (no animation in prototype)
+
+### 7.2 Building-Zombie Mapping
+```
+Fast Food Restaurant → Fat Zombie
+Fire Station → Fireman Zombie
+Construction Site/Police Station → Traffic Controller Zombie
+School/Theater/Music Hall → Marching Band Zombie
+Dive Shop/Aquarium → Scuba Zombie (also Headcrab Zombie)
+Hardware Store → Headless Zombie
+Costume Shop/Theater → Costume Zombie
+Petrol Station/Gas Station → Petrol Zombie
+Motorcycle Dealership/Repair Shop → Motorcycle Zombie
+Military Checkpoint/Army Surplus → Ordnance Zombie
+Aquarium → Headcrab Zombie (also Scuba Zombie)
+```
+
+### 7.3 Building as Obstacles
+
+**Current Implementation:**
+- Buildings block movement (StaticBody2D collision)
+- Buildings block line-of-sight (raycasting)
+- Creates tactical positioning opportunities
+- Humans use for cover, zombies path around
+- **NEW:** Navigation system paths around buildings (v0.17.0+)
+
+---
+
+## 8. LEVEL DESIGN PHILOSOPHY
+
+### 8.1 Design Principles
+
+**Sandbox Puzzle Approach:**
+- Levels are tactical puzzles with multiple solutions
+- Player creativity encouraged (no "correct" path)
+- Environmental storytelling over explicit objectives
+
+**Three Design Levers:**
+1. **Building Placement** - Which zombie types are available?
+2. **Enemy Placement** - Where are defenders positioned?
+3. **Terrain Variation** - What hazards/obstacles exist?
+
+**NEW: Patrol Integration (v0.18.0+):**
+- Sentry patrol routes add dynamic challenge
+- Predictable patterns allow planning
+- LOOP vs PING_PONG affects difficulty
+- Tight vs loose formations affect panic spreading
+
+**Replayability:**
+- Different zombie type combinations = different strategies
+- Speedrun potential (time bonuses incentivize optimization)
+- Score-chasing (keep zombies alive for max points)
+- Patrol route optimization (intercept at optimal points)
+
+### 8.2 Prototype Level
+
+**Current Test Scenario:**
+- 3 buildings (obstacles only)
+- 1 escape zone (right side of map)
+- 4-5 humans with patrol routes
+- 3 starting zombies
+- Goal: Prevent humans from escaping
+- NavigationRegion2D for pathfinding
+
+### 8.3 Future Level Types
+
+**Urban Streets:**
+- Dense buildings, narrow alleys
+- Rooftop snipers (requires Headcrab Zombie)
+- Barricades and checkpoints
+- Patrolling sentries with overlapping routes
+
+**Suburban Neighborhoods:**
+- Houses with civilians
+- Police patrols
+- Water hazards (pools, rivers)
+- Interconnected patrol routes
+
+**Industrial Zones:**
+- Factories, warehouses
+- Mounted guns, heavy defenses
+- Environmental hazards (fire, machinery)
+- Complex multi-level patrol patterns
+
+**Special Scenarios:**
+- VIP Assassination (kill specific target)
+- Timed Escape (reach exit before reinforcements)
+- Horde Survival (maximize zombie count)
+- Stealth Missions (avoid detection until ready)
+
+### 8.4 Progression Curve
+
+**Early Levels:**
+- Few defenders, simple layouts
+- Tutorial special zombies
+- Basic patrol patterns (LOOP, straight lines)
+- Forgiving panic radius (spaced sentries)
+
+**Mid Levels:**
+- Complex terrain, mixed defender types
+- Multi-stage objectives
+- Overlapping patrol routes
+- Tight formations (panic spreading matters)
+
+**Late Levels:**
+- Heavy defenses, requires all zombie types
+- Precise execution
+- Complex patrol coordination
+- Multiple simultaneous threats
+
+---
+
+## 9. FUTURE FEATURES
+
+### 9.1 Patrol System Phase C (Next Priority)
+
+**Per-Waypoint Customization:**
+- Pause duration at each waypoint
+- Swing arc at specific waypoints (observation points)
+- Facing direction override at waypoints
+- Different behaviors per waypoint
+
+**Example Phase C Behavior:**
+```
+Waypoint1: Walk to corner
+Waypoint2: PAUSE 3s, SWING 60°, look around
+Waypoint3: Walk to hallway
+Waypoint4: PAUSE 2s, FACE 90° (look down corridor)
+Waypoint5: Return to start
+```
+
+### 9.2 Campaign Structure (Post-Prototype)
+
+**Narrative Arc:**
+- Zombie outbreak spreads across city
+- 10-20 levels telling progression of apocalypse
+- Unlock new areas as infection spreads
+
+**Level Progression:**
+- Linear or branching paths (TBD)
+- Difficulty scaling through defender quantity/quality
+- Environmental variety (urban → suburban → industrial → military)
+
+**Unlock System (Option 1):** Progressive zombie type unlocks
+**Unlock System (Option 2):** All types available, level design determines usage
+
+### 9.3 Audio System
+
+**Music:**
+- Dark but playful (horror-comedy tone)
+- Dynamic intensity based on horde size
+- Orchestral horror OR electronic/industrial (TBD)
+
+**Sound Effects:**
+- Unit footsteps, attacks, special abilities
+- Conversion sound (human → zombie)
+- Zombie groans, human screams
+- Environmental ambience (city sounds, gunfire)
+- Patrol alerts (sentry detection sounds)
+
+**Voiceover (Optional):**
+- Darkly comedic narrator commenting on player actions
+- Unit barks (zombies groan, humans shout)
+
+### 9.4 Art Style (TBD)
+
+**Options Under Consideration:**
+- Pixelated/Retro (low-res sprites, distinct style)
+- Cartoonish (exaggerated proportions, humorous)
+- Gritty/Realistic (detailed, dark atmosphere)
+- Minimalist (simple shapes, clear silhouettes)
+
+**Key Requirements:**
+- Each zombie type instantly recognizable by silhouette
+- Clear building identities (color-coding)
+- Isometric clarity (no gameplay obscuration)
+- Patrol routes visible and readable
+
+### 9.5 Multiplayer (Future Consideration)
+
+**Co-op Mode:**
+- Two players control separate zombie hordes
+- Shared objective (combine forces)
+- Unique zombie types per player
+
+**Versus Mode:**
+- Asymmetric: One player zombies, one controls defenders
+- Zombies must reach objective, defenders must stop them
+- Different strategies for each side
+
+**Current Decision:** Multiplayer NOT in initial scope. Evaluate after single-player is polished.
+
+### 9.6 Accessibility Features
+
+- Colorblind mode (UI color adjustments)
+- Difficulty options (easier/harder AI)
+- Control remapping (keyboard customization)
+- Text size options
+- Keyboard-only alternative to mouse controls
+- Patrol speed indicators for timing-impaired players
+
+---
+
+## 10. ORIGINAL IDEAS NOT YET IMPLEMENTED
+
+### 10.1 Advanced Unit Control
+
+**Group Splitting (from original GDD):**
+- Press numeral 1-4 to split selection into subgroups
+- Each subgroup gets different shade of green
+- Issue commands in rotation to each subgroup
+- Allows simultaneous multi-pronged attacks
+
+**Current Status:** Not implemented. Using standard RTS control groups instead (Ctrl+1-9).
+**Evaluation:** May add later if players need more granular control.
+
+### 10.2 Incubation Time
+
+**Original Design:**
+- 10-second delay before human becomes zombie
+- Enemies can shoot incubating zombies (instant death)
+- Players can't control zombie in melee until incubation starts
+
+**Current Status:** Instant conversion on kill.
+**Evaluation:** Incubation adds tension but may slow gameplay. Consider for harder difficulty modes.
+
+### 10.3 Attack Speed Multipliers
+
+**Original Design:**
+- 1 zombie on human = 1x kill speed
+- 2 zombies = 1.5x multiplier
+- 3 zombies = 1.75x multiplier
+- Rewards coordinating attacks
+
+**Current Status:** Fixed attack speed (1.5 sec cooldown, 15 damage, 75 health = ~8 seconds per kill with 1 zombie).
+**Evaluation:** Could add multipliers to reward tactical coordination. Low priority.
+
+### 10.4 Zombie Milling Behavior
+
+**Original Design:**
+- Idle zombies slowly wander randomly
+- Forces player to constantly manage units
+- Creates "mindless wandering" zombie feel
+
+**Current Status:** Zombies stay perfectly still when idle.
+**Evaluation:** Could add subtle idle movement for atmosphere. Risk: accidental detection. Low priority.
+
+### 10.5 Unit Morale/Fleeing Mechanics
+
+**Original Design (for future defender types):**
+- Different morale thresholds per class
+- Civilians flee easily, military never flees
+- Flee when outnumbered by specific ratios
+
+**Current Status:** All humans flee at 150px detection (sentries have patrol behavior).
+**Evaluation:** Will implement when adding defender variety (police, military, etc.).
+
+### 10.6 Delayed Command Execution
+
+**Original Design:**
+- Hold Alt while issuing commands to queue but not execute
+- Allows setting up synchronized multi-unit maneuvers
+- Execute all at once when Alt released
+
+**Current Status:** Commands execute immediately.
+**Evaluation:** Advanced feature for tactical depth. Post-launch consideration.
+
+### 10.7 Building Entry/Exit
+
+**Original Design:**
+- Zombies can enter buildings through ground-floor doors
+- Exit through doors OR upper-story windows
+- Complex building navigation
+
+**Current Status:** Buildings are solid obstacles.
+**Evaluation:** Will implement with special zombie transformation system.
+
+### 10.8 Sniper Threat to Incubating Zombies
+
+**Original Design:**
+- Snipers prioritize shooting incubating zombies
+- Creates urgency to protect fresh converts
+- Requires crowd control
+
+**Current Status:** No incubation, no snipers yet.
+**Evaluation:** Adds tension when both are implemented.
+
+---
+
+## 11. DESIGN PHILOSOPHY & DECISIONS
+
+### 11.1 Why Tactical Puzzle Over Action RTS?
+
+**Decision:** Emphasize planning and positioning over fast clicking.
+
+**Reasoning:**
+- Differentiation: Not another Starcraft clone
+- Accessibility: Lower APM barrier to entry
+- Depth: Thoughtful solutions more satisfying than brute force
+- Zombie Theme: Shambling hordes fit methodical pacing
+
+**Implementation:**
+- Pursuit lock prevents micromanagement
+- Pre-placed defenders (no dynamic spawning during play)
+- Environmental puzzles require specific zombie types
+- Score rewards efficiency over aggression
+- **NEW:** Patrol patterns allow planning (predictable routes)
+
+### 11.2 Why Guaranteed Leap Pin?
+
+**Decision:** Hybrid system (continuous speed boost + discrete pin at 40px).
+
+**Evolution:**
+- v0.1-0.6: Pure speed boost, unreliable catches
+- v0.7 attempt: Pin at leap start (felt wrong)
+- v0.8: Pin at 40px (landing point)
+
+**Reasoning:**
+- **Frustration:** Players hated humans escaping mid-leap
+- **Game Feel:** Guaranteed catch feels satisfying
+- **Balance:** Human had enough escape time (60px → 40px)
+- **Organic:** Speed boost feels natural, pin is reliable
+
+### 11.3 Why BOID Separation Over Physics Collision?
+
+**Decision:** Use BOID forces, disable unit-unit physics collision.
+
+**Evolution:**
+- v0.1-0.6: Physics collision → units pushed each other (janky)
+- v0.7: Disabled collision → units stacked (ugly)
+- v0.8: BOID separation → smooth spacing
+
+**Reasoning:**
+- Physics collision caused units to bump pinned zombies away
+- Stacking looked bad (not like a horde)
+- BOID gives organic spacing without pushing
+- Disable separation for melee attackers (locked in combat)
+
+### 11.4 Why Shambling Formation Over Perfect Grid?
+
+**Decision:** Add ±15px jitter to formation positions.
+
+**Reasoning:**
+- Perfect grid looked like Roman legionnaires (wrong aesthetic)
+- Zombies should be chaotic, not regimented
+- Jitter creates "shambling horde" appearance
+- Still maintains spacing (40px base + jitter)
+
+### 11.5 Why Lock Pursuing Zombies from Commands?
+
+**Decision:** Once zombie has target, ignore player commands.
+
+**Reasoning:**
+- **Zombie Theme:** Mindless predators can't be called off
+- **Balance:** Prevents perfect kiting/micromanagement
+- **Tension:** Forces commitment (no take-backs)
+- **Tactical Depth:** Player must position carefully before zombies see humans
+
+**Counter-Argument Considered:** Could frustrate players who want full control.
+**Verdict:** Theme and balance trump convenience. Tutorial must explain clearly.
+
+### 11.6 Why Smart Targeting (Unpinned First)?
+
+**Decision:** Zombies prioritize unpinned humans over pinned ones.
+
+**Problem:** All zombies dogpiled first target, others escaped.
+
+**Solution:** Check if human is grappled, if so, find different target.
+
+**Reasoning:**
+- Spreads attacks naturally (no micromanagement needed)
+- Prevents frustrating "tunnel vision" AI
+- Still allows dogpiling if no other targets available
+- Emergent: Creates dynamic chases across map
+
+### 11.7 Why 25 Points Per Zombie (Not Per Created)?
+
+**Decision:** Score for total zombies alive, not zombies created.
+
+**Evolution:**
+- Original design: Points for conversion (+1 per convert)
+- v0.7: Points for zombies created (final - starting)
+- v0.8: Points for all zombies alive (final count × 25)
+
+**Reasoning:**
+- Incentivizes keeping starting zombies alive (they're valuable too!)
+- Rewards tactical play (minimize deaths)
+- Simpler to explain (total × 25 vs created × 25)
+- Creates risk/reward (use zombies aggressively vs preserve them)
+
+### 11.8 Why Degrees Over Vectors for Sentry Facing? (NEW - v0.14.0)
+
+**Decision:** Use 0-360 degree system instead of Vector2.
+
+**Reasoning:**
+- **Designer-Friendly:** "90 degrees" more intuitive than "Vector2(1, 0)"
+- **Compass-Based:** 0°=North, 90°=East matches mental model
+- **Editor UI:** Slider with degrees easier than vector input
+- **Precision:** Exact angles easier (45°, 90°, 180°) than normalized vectors
+
+**Implementation:**
+- Internally converts to Vector2 for calculations
+- Export property uses degrees for designer input
+- Visual arrow in editor shows direction clearly
+
+### 11.9 Why Swing Only When Stationary? (NEW - v0.19.0)
+
+**Decision:** Disable swing arc while patrolling, only when standing still.
+
+**Problem:** Swing while walking looked jerky and unnatural.
+
+**Reasoning:**
+- **Realism:** Walking guard looks forward (where they're going)
+- **Clarity:** Forward arc follows movement direction (predictable)
+- **Game Feel:** Clean movement more important than swing
+- **Future:** Phase C will add pause-then-swing at waypoints
+
+**Evolution:**
+- v0.14.0: Swing works always (tried it)
+- v0.19.0: Swing disabled while moving (better feel)
+- v0.20.0+: Per-waypoint pause-and-swing (planned)
+
+### 11.10 Why 40px Panic Radius? (NEW - v0.16.0)
+
+**Decision:** Panic spreads to allies within 40px of grappled human.
+
+**Testing:**
+- 120px: Too large (entire groups panicked from single chase)
+- 60px: Still too large (4-5 units affected)
+- 40px: Just right (2-3 immediate neighbors)
+
+**Reasoning:**
+- **Realism:** Only those "standing right next to" victim panic
+- **Tactical:** Formation spacing matters (tight vs loose)
+- **Balance:** Allows isolated sentries without chain reaction
+- **Emergent:** Creates formation decision (tight = risky, loose = safe)
+
+**Example:**
+```
+Formation spacing 40px (tight):
+[S] [S] [S] [S] [S]
+     ↑
+  GRAPPLED
+Result: Middle + 2 adjacent panic (3 total)
+
+Formation spacing 60px (loose):
+[S]    [S]    [S]    [S]    [S]
+            ↑
+         GRAPPLED
+Result: Only victim (1 total)
+```
+
+### 11.11 Why Visual Waypoints Over Typed Arrays? (NEW - v0.19.0)
+
+**Decision:** Add child Node2D waypoint placement (Phase B2).
+
+**Evolution:**
+- v0.18.0: Manual typing `[(100,100), (200,100)]` (tedious)
+- v0.19.0: Drag Waypoint1, Waypoint2 nodes (visual)
+
+**Reasoning:**
+- **Designer-Friendly:** See waypoints in editor, no coordinate math
+- **Iteration Speed:** Drag to adjust, no typing/testing cycle
+- **Visual Feedback:** Yellow path shows route immediately
+- **Backwards Compatible:** Manual arrays still work
+
+**Implementation:**
+- Waypoint nodes are children of sentry
+- Natural string sort handles Waypoint1-10+ correctly
+- Loads positions on `_ready()`
+
+---
+
+## 12. OPEN QUESTIONS & DESIGN GAPS
+
+### 12.1 Art Style
+
+**Gap:** No visual direction decided
+**Impact:** Can't produce final art
+**Options:** Pixelated, cartoonish, gritty, minimalist
+**Action:** Prototype with placeholders, decide after validating gameplay
+**Timeline:** Post-prototype
+
+### 12.2 Audio Design
+
+**Gap:** No audio/music style decided
+**Impact:** Atmosphere and tone unclear
+**Options:** Orchestral horror, electronic/industrial, comedic sound effects
+**Action:** Add audio in post-prototype polish
+**Timeline:** Post-prototype
+
+### 12.3 Campaign Narrative
+
+**Gap:** No story arc or level progression
+**Impact:** Unknown how many levels, what order, what narrative
+**Options:** Linear progression, branching paths, standalone scenarios
+**Action:** Design after validating core loop
+**Timeline:** Post-prototype
+
+### 12.4 Special Zombie Implementation Priority
+
+**Gap:** Which zombie types to implement first?
+**Impact:** Development time allocation
+
+**Suggested Priority:**
+1. **Tier 1 (Simplest):** Fat, Scuba, Costume (passive abilities)
+2. **Tier 2 (Moderate):** Fireman, Marching Band, Petrol (active abilities)
+3. **Tier 3 (Complex):** Traffic Controller, Headless, Headcrab (special mechanics)
+4. **Tier 4 (Advanced):** Motorcycle, Ordnance (physics/randomness)
+
+### 12.5 Level Design Philosophy: Linear vs Sandbox
+
+**Gap:** How open should levels be?
+**Impact:** Puzzle design, replayability
+
+**Options:**
+- Puzzle box (one optimal solution)
+- Sandbox (multiple valid approaches)
+- Hybrid (optional objectives, ranked efficiency)
+
+**Action:** Prototype one linear scenario, evaluate
+**Current Lean:** Sandbox with score-based optimization
+
+### 12.6 Multiplayer Scope
+
+**Gap:** Is multiplayer core feature or bonus?
+**Impact:** Architecture decisions (server/client, networking)
+**Options:** Co-op, versus, both, neither
+**Action:** Defer until single-player polished
+**Current Lean:** Post-launch consideration
+
+### 12.7 Accessibility Priority
+
+**Gap:** Which accessibility features are must-have?
+**Impact:** Development time, player base reach
+**Options:** Colorblind mode, keyboard-only, difficulty options, text size
+**Action:** Audit post-prototype
+**Current Lean:** Colorblind mode and control remapping minimum
+
+### 12.8 Exact Special Zombie Mechanics
+
+**Gap:** Detailed implementation specs for each type
+
+**Examples:**
+- Fat Zombie: Does cushion disappear after one use or permanent?
+- Traffic Controller: Radius of effect? Can redirect mid-air jumps?
+- Headless: Exactly how far can head be thrown? Arc or straight line?
+
+**Action:** Detail during implementation phase
+**Priority:** Block out rough versions, refine through playtesting
+
+### 12.9 Environmental Hazard Mechanics
+
+**Gap:** How do hazards work exactly?
+
+**Questions:**
+- Water: Instant death or damage over time?
+- Fire: Spread to adjacent units? Duration?
+- Spikes: Damage or instant kill?
+- Cliffs: Fall damage or death?
+
+**Action:** Define alongside special zombies (they interact heavily)
+
+### 12.10 Building Capacity Limits
+
+**Gap:** Can one building transform unlimited zombies?
+
+**Options:**
+- Unlimited uses (player can spam special types)
+- Limited uses (strategic resource management)
+- Cooldown (time between uses)
+
+**Action:** Playtest different approaches
+**Current Lean:** Unlimited uses, level design controls availability
+
+### 12.11 Phase C Patrol Customization (NEW)
+
+**Gap:** How granular should per-waypoint control be?
+
+**Questions:**
+- Pause duration range? (0.5s to 10s?)
+- Per-waypoint swing range? (different at each waypoint?)
+- Facing override vs automatic? (manual angle or face next waypoint?)
+- Inspection actions? (sentry looks at specific object?)
+
+**Options:**
+1. **Simple:** Just pause duration
+2. **Moderate:** Pause + swing enable/disable
+3. **Complex:** Pause + swing range + facing angle + actions
+
+**Action:** Start simple, add complexity if needed
+**Current Lean:** Moderate (pause + swing toggle)
+
+### 12.12 Patrol Resume After Threat (NEW)
+
+**Gap:** Should sentries resume patrol after zombies gone?
+
+**Current:** Patrol stops permanently when zombie detected
+
+**Options:**
+- Never resume (current)
+- Resume after X seconds of no threats
+- Resume only if not grappled (survivors continue)
+- Manual resume (player commands)
+
+**Action:** Playtest current behavior, evaluate need
+**Current Lean:** Never resume (simpler, clear consequence)
+
+---
+
+## APPENDIX A: CONTROLS REFERENCE
+
+**CAMERA**
+```
+WASD / Arrow Keys - Pan camera
+Mouse Edge Scroll - Pan camera (when near screen edge)
+Mouse Wheel - Zoom (disabled in prototype)
+```
+
+**SELECTION**
+```
+Left Click - Select unit
+Left Drag - Box select multiple units
+Shift + Left Click - Add/remove from selection
+Ctrl + Left Click - Remove from selection
+```
+
+**COMMANDS**
+```
+Right Click (ground) - Move selected units (formation)
+Right Click (enemy) - Attack target (idle zombies only)
+```
+
+**CONTROL GROUPS**
+```
+Ctrl + 1-9 - Assign selection to group
+1-9 - Recall control group
+Ctrl + 0 - Clear control group from selection
+```
+
+**DEBUG**
+```
+R - Reset level
+```
+
+---
+
+## APPENDIX B: DEVELOPMENT TIMELINE
+
+**Prototype Phase (v0.1-0.8 Complete):**
+- ✅ Core systems (camera, selection, movement)
+- ✅ Combat and conversion
+- ✅ AI behaviors (flee, pursue, smart targeting)
+- ✅ Polish (formations, control groups, scoring)
+
+**Vision & Sentry Phase (v0.9-0.14.0 Complete):**
+- ✅ State-based vision system
+- ✅ Degree-based sentry facing
+- ✅ Swing arc mechanics
+- ✅ Editor visual indicators
+
+**Human AI Phase (v0.15.0-0.17.0 Complete):**
+- ✅ Panic spreading system
+- ✅ Escape zone improvements
+- ✅ Navigation system implementation
+
+**Patrol Phase (v0.18.0-0.19.4 Complete):**
+- ✅ Phase B1: Manual waypoint patrol
+- ✅ Phase B2: Visual waypoint placement
+- ✅ Integration fixes
+
+**Next Phase (Phase C - In Planning):**
+- Per-waypoint pause durations
+- Per-waypoint swing arcs
+- Per-waypoint facing overrides
+- Enhanced patrol behaviors
+
+**Future Phases:**
+- Building transformation system
+- First 4 special zombie types (Fat, Scuba, Costume, Fireman)
+- 3-5 complete levels with varied patrol patterns
+- Refined art style selection
+- Remaining 7 special zombie types
+- Full campaign (10-20 levels)
+- Audio implementation
+- Defender variety (police, military, etc.)
+- Playtesting and balance
+
+---
+
+## APPENDIX C: VERSION CHANGELOG (Recent)
+
+**v0.19.4 (March 2, 2026):**
+- Removed waypoint visual markers (gameplay visibility issues)
+- Editor movement fix (game logic disabled in editor)
+
+**v0.19.2 (March 2, 2026):**
+- Fixed waypoint order (natural string sort)
+- Fixed swing behavior during patrol (disabled while moving)
+- Added waypoint visual markers (later removed in v0.19.4)
+
+**v0.19.0 (March 1, 2026):**
+- Phase B2: Visual waypoint placement
+- Child Node2D waypoint system
+- Drag-and-drop positioning in editor
+
+**v0.18.0 (February 28, 2026):**
+- Phase B1: Manual waypoint patrol
+- LOOP and PING_PONG modes
+- Visual waypoint path in editor
+
+**v0.17.3 (February 27, 2026):**
+- Navigation corner clearance optimization
+- Complete navigation documentation
+
+**v0.17.0 (February 26, 2026):**
+- Zombie navigation system (NavigationAgent2D)
+- Panic spreading fixes (40px radius, grapple-only)
+
+**v0.16.0 (February 25, 2026):**
+- Panic spreading initial implementation
+- Global_position fixes for escape zones
+
+**v0.14.0 (February 20, 2026):**
+- Phase A: Sentry degrees and swing arcs
+- Editor visual indicators
+
+---
+
+**END OF DESIGN DOCUMENT**
+
+---
+
+**Document Maintenance:**
+- Update this doc after each major milestone
+- Track implemented features in Section 2
+- Move resolved questions out of Section 12
+- Archive old design decisions in change log
+
+**Last Major Update:** v0.19.4 - Phase B2 complete, visual waypoints, patrol system polished
+**Next Planned Update:** Phase C implementation (per-waypoint customization)

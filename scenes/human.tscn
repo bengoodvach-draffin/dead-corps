@@ -1,0 +1,50 @@
+[gd_scene load_steps=3 format=3 uid="uid://brqxu82wy6h2r"]
+
+[ext_resource type="Script" path="res://scripts/human.gd" id="1_human"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_1"]
+radius = 12.0
+
+[node name="Human" type="CharacterBody2D" groups=["humans", "units"]]
+collision_layer = 4
+collision_mask = 1
+script = ExtResource("1_human")
+unit_type = 12
+team = 1
+max_health = 40.0
+move_speed = 85.0
+attack_damage = 0.0
+attack_range = 0.0
+attack_cooldown = 0.0
+flee_detection_radius = 150.0
+flee_distance = 200.0
+detection_interval = 0.3
+reaction_time = 0.2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_1")
+
+[node name="Sprite" type="Sprite2D" parent="."]
+
+[node name="Body" type="ColorRect" parent="Sprite"]
+offset_left = -8.0
+offset_top = -15.0
+offset_right = 8.0
+offset_bottom = 15.0
+color = Color(0.6, 0.4, 0.3, 1)
+
+[node name="SelectionIndicator" type="Node2D" parent="."]
+visible = false
+
+[node name="SelectionCircle" type="Line2D" parent="SelectionIndicator"]
+points = PackedVector2Array(-15, -15, 15, -15, 15, 15, -15, 15, -15, -15)
+width = 2.0
+default_color = Color(0.8, 0.2, 0.2, 1)
+
+[node name="HealthBar" type="ProgressBar" parent="."]
+visible = false
+offset_left = -15.0
+offset_top = -25.0
+offset_right = 15.0
+offset_bottom = -20.0
+show_percentage = false
