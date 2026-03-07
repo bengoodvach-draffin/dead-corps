@@ -24,7 +24,7 @@
 
 ---
 
-## 📊 **Current Build Status: v0.19.5**
+## 📊 **Current Build Status: v0.21.2**
 
 ### **What's Implemented & Working:**
 
@@ -112,13 +112,10 @@
 - Manual polygon drawing works but tedious
 - Navigation layers must match (Region and Agent both on Layer 1)
 
-⚠️ **Swing Arc:**
-- Only works when stationary (disabled while patrolling)
-- Phase C will add per-waypoint swing (pause and look around)
-
-⚠️ **Patrol System:**
-- No per-waypoint customization yet (pauses, facing, swing)
-- This is Phase C (planned next)
+⚠️ **Patrol Resume After Threat:**
+- Patrol stops permanently when a zombie is detected (by design for now)
+- Sentries do not resume their route after the threat passes
+- Evaluate during playtesting whether auto-resume is needed
 
 ---
 
@@ -138,8 +135,10 @@
 - Human unit class (extends Unit)
 - States: IDLE, SENTRY, FLEEING, GRAPPLED, DEAD
 - Patrol modes: LOOP, PING_PONG
+- Phase C: per-waypoint pause, swing, and facing overrides
+- Formation squad system: leader/follower with 5 shapes (LINE_ABREAST, COLUMN, WEDGE, ECHELON, DIAMOND)
+- Panic spreading: depth-capped (default 2 hops), distance-based cascade delays
 - Sentry features: degrees, swing arcs, visual editor
-- Panic spreading system
 - Escape zone seeking with line-of-sight
 - Waypoint loading from child nodes
 
@@ -178,7 +177,7 @@
 ## 🗃️ **Scripts & Files Inventory**
 
 > **Purpose:** Prevent naming conflicts and wasted effort. Before creating any new file, check this list first.
-> **Last Updated:** v0.19.5
+> **Last Updated:** v0.21.2
 
 ---
 
@@ -188,7 +187,7 @@
 |------|-----------|---------|---------|
 | `unit.gd` | `Unit` | `CharacterBody2D` | Base class for all units. Handles movement, combat, health, selection, BOID flocking, and world boundary clamping. Inherited by Zombie and Human. |
 | `zombie.gd` | `Zombie` | `Unit` | Player-controlled zombie units. Handles states (IDLE/MOVING/PURSUING/LEAPING/MELEE/DEAD), vision detection, leap attacks, and human conversion signal. Optional NavigationAgent2D support. |
-| `human.gd` | `Human` | `Unit` | AI-controlled human enemies. Handles states (IDLE/SENTRY/FLEEING/GRAPPLED/DEAD), sentry facing/swing arc, patrol system (LOOP/PING_PONG), visual waypoints via child Node2D, panic spreading, and escape zone seeking. Uses @tool for editor visuals. |
+| `human.gd` | `Human` | `Unit` | AI-controlled human enemies. Handles states (IDLE/SENTRY/FLEEING/GRAPPLED/DEAD), sentry facing/swing arc, patrol system (LOOP/PING_PONG) with Phase C per-waypoint pause/swing/facing, formation squad system (leader/follower, 5 shapes), depth-capped panic spreading with distance-based delays, and escape zone seeking. Uses @tool for editor visuals. |
 | `game_manager.gd` | `GameManager` | `Node` | **Core gameplay coordinator. Do NOT rename or replace.** Tracks all_zombies and all_humans arrays, handles spawning, zombie conversion after incubation, escape counting, win/loss conditions, and game time. Found in scene via group `"game_manager"`. |
 | `selection_manager.gd` | `SelectionManager` | `Node2D` | RTS unit selection. Handles click selection, drag box selection, Shift+click multi-select, and Ctrl+1-9 control group assignment/recall. Found in scene via group `"selection_manager"`. |
 | `camera_controller.gd` | `CameraController` | `Camera2D` | RTS camera. WASD pan, mouse wheel zoom with smoothing, edge scrolling, and configurable bounds. Syncs bounds from WorldBounds autoload on ready. Found in scene via group `"camera"`. |
@@ -233,7 +232,7 @@
 | `2.5D_CONVERSION_PLAN.md` | Future consideration only — plan for converting to 2.5D with height gameplay. Not being implemented. |
 | `BASELINE_SUMMARY.md` | Snapshot of v0.9.0 state. Historical reference only. |
 | `BASELINE_SUMMARY_v0.12.4.md` | Snapshot of v0.12.4 stable baseline. Historical reference only. |
-| `CHANGELOG_v0.9.1.md` through `CHANGELOG_v0.19.2.md` | Per-version change logs. Useful for understanding why decisions were made. |
+| `CHANGELOG_v0.9.1.md` through `CHANGELOG_v0.21.2.md` | Per-version change logs. Useful for understanding why decisions were made. |
 
 
 ---
@@ -290,11 +289,34 @@ Human (Sentry)
 - **LOOP:** Circular patrol (0→1→2→3→0)
 - **PING_PONG:** Back-and-forth (0→1→2→3→2→1→0)
 
-**Behavior:**
-- Walks at `patrol_speed` (default 50)
-- Faces movement direction
-- Stops when zombie detected (switches to fleeing)
-- Swing disabled while moving
+**Phase C — Per-Waypoint Behaviour:**
+- `patrol_pause_durations: Array[float]` — seconds to pause at each waypoint (0.0 = no pause)
+- `patrol_waypoint_swing: Array[bool]` — whether to swing the vision cone during the pause
+- `patrol_waypoint_facing: Array[float]` — facing override on arrival (-1.0 = no override, 0–360°)
+- Swing during pause works even if `sentry_has_swing` is globally false
+
+**Example Phase C setup:**
+```
+patrol_pause_durations  = [0.0, 3.0, 0.0, 2.0]
+patrol_waypoint_swing   = [false, true, false, false]
+patrol_waypoint_facing  = [-1.0, -1.0, -1.0, 90.0]
+→ Waypoint 1: walk through
+→ Waypoint 2: pause 3s, swing vision cone
+→ Waypoint 3: walk through
+→ Waypoint 4: pause 2s, face East (90°)
+```
+
+**Formation Squads (v0.21.0):**
+```
+Leader (Human — has waypoints)
+├─ Follower A  patrol_leader = Leader, formation_slot = 1
+├─ Follower B  patrol_leader = Leader, formation_slot = 2
+└─ Follower C  patrol_leader = Leader, formation_slot = 3
+```
+- Leader patrols normally; waits at each waypoint for followers to regroup
+- Formation shapes: LINE_ABREAST, COLUMN, WEDGE, ECHELON, DIAMOND
+- Followers go IDLE if leader dies
+- Followers use ramped catch-up speed when out of position
 
 ---
 
@@ -332,18 +354,28 @@ if ally.current_state == GRAPPLED:
 ```
 
 **Design:**
-- 40px radius (immediate neighbors only)
+- 40px proximity radius (immediate grapple check)
 - Only triggers on GRAPPLED (not being chased)
-- Creates realistic panic waves
-- Formation spacing matters tactically
+- Propagation uses `propagate_flee_to_group()` — depth-capped, distance-based wave
 
-**Example:**
+**Propagation Chain (v0.21.2):**
+- `panic_propagation_depth` export (default: 2) controls how many hops panic spreads
+- Depth 0 = only direct detector flees
+- Depth 1 = detector + immediate neighbours
+- Depth 2 = two rings outward (default — recommended)
+- Delay per ally is distance-based: ally 80px away = 0.4s delay, 5px away = ~0.025s
+
+**Example (default depth 2, 80px propagation radius):**
 ```
-[S] [S] [S] [S] [S]  (40px spacing)
-         ↑
-      GRAPPLED
-Result: Middle + 2 adjacent panic (3 total)
+Depth 0: Human A sees zombie → flees + propagates
+Depth 1: B, C, D (within 80px of A) flee + propagate
+Depth 2: E, F, G (within 80px of B/C/D) flee — CHAIN STOPS
+Humans further than ~160px from contact: unaffected ✅
 ```
+
+**Console debug output:**
+- `PANIC MOB (depth 0): 4 humans fleeing together!`
+- `🛑 PANIC CHAIN stopped at depth 2 for Human5`
 
 ---
 
@@ -392,13 +424,13 @@ Result: Middle + 2 adjacent panic (3 total)
 
 ## 🚀 **Next Steps / Roadmap**
 
-### **Immediate (Phase C):**
-- Per-waypoint pause durations
-- Per-waypoint swing arcs (observation points)
-- Per-waypoint facing overrides
-- Example: Walk → Pause → Swing to look around → Continue
+### **Immediate (First Validation Slice):**
+- Costume Zombie + Fat Zombie abilities (first special zombie types)
+- Police and barricaded GI defender classes
+- A handcrafted test level featuring both: the recommended target for validating core fun
 
 ### **Near-Term:**
+- Building transformation system (zombies enter buildings to change type)
 - More zombie types (11 planned total)
 - Level editor basics
 - Save/load system
@@ -407,7 +439,6 @@ Result: Middle + 2 adjacent panic (3 total)
 ### **Long-Term:**
 - Community level sharing
 - Campaign mode
-- Special zombie abilities
 - Advanced puzzle mechanics
 
 ---
@@ -433,9 +464,11 @@ Result: Middle + 2 adjacent panic (3 total)
 
 ### **Panic Not Spreading:**
 ```
-1. Check spacing: <40px for panic to work
+1. Check spacing: <80px for propagation to work (propagation_radius = 80px)
 2. Verify state: Must be GRAPPLED (not just chased)
-3. Formation matters: tight = panic waves, loose = isolated
+3. Check panic_propagation_depth — default 2, set higher to test wider spread
+4. Console: "PANIC MOB (depth X)" confirms chain is firing
+5. Console: "🛑 PANIC CHAIN stopped at depth X" shows where it was cut off
 ```
 
 ### **Swing Arc Erratic:**
@@ -491,7 +524,7 @@ If using Project Knowledge these load automatically.
 If starting a fresh project or new Claude account, attach all three manually.
 
 **What to say:**
-"I'm working on Dead Corps v0.19.5.
+"I'm working on Dead Corps v0.21.2.
 Ready to [specific task or question]"
 
 **Claude will have:**
@@ -567,11 +600,14 @@ Debug → Visible Navigation
 **Default Values:**
 - Zombie radius: 12px
 - Human radius: 12px
-- Panic radius: 40px
+- Panic propagation radius: 80px
+- Panic propagation depth: 2 hops
 - Navigation agent radius: 30px
 - Patrol speed: 50 px/sec
 - Swing range: 45°
 - Swing speed: 30°/sec
+- Formation spacing: 40px
+- Formation regroup timeout: 10s
 
 ---
 
@@ -617,4 +653,4 @@ Debug → Visible Navigation
 
 *This document should be updated after major changes or new feature implementations.*
 *Store in Google Drive for easy access across conversations.*
-*Filename suggestion: `DeadCorps_Context_v0.19.5.md`*
+*Filename suggestion: `DeadCorps_Context_v0.21.2.md`*
