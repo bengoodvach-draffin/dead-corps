@@ -1,7 +1,7 @@
 # Dead Corps - Project Context Document
 
 **Last Updated:** March 7, 2026  
-**Current Version:** v0.21.2  
+**Current Version:** v0.21.3  
 **Purpose:** Complete context for starting fresh Claude conversations
 
 ---
@@ -177,7 +177,7 @@
 ## 🗃️ **Scripts & Files Inventory**
 
 > **Purpose:** Prevent naming conflicts and wasted effort. Before creating any new file, check this list first.
-> **Last Updated:** v0.21.2
+> **Last Updated:** v0.21.3
 
 ---
 
@@ -198,6 +198,7 @@
 | `debug_overlay.gd` | *(none)* | `CanvasLayer` | In-game HUD showing live zombie/human/escaped counts, selected unit count, control group assignments, and a reset button. References GameManager and SelectionManager via groups. |
 | `end_game_overlay.gd` | *(none)* | `CanvasLayer` | Win/loss screen shown when game ends. Displays result message and score breakdown. Hidden by default, shown when GameManager emits `game_won` or `game_lost` signals. |
 | `world_bounds.gd` | *(none, Autoload)* | `Node` | **Added v0.19.5.** Autoload singleton registered as `WorldBounds`. Single source of truth for world bounds (`world_bounds_min`, `world_bounds_max`). Read by unit.gd and camera_controller.gd. Change bounds here and everything updates automatically. |
+| `level_bounds.gd` | *(none)* | `Node2D` | **Added v0.21.3.** @tool Node placed in each level scene. Exports `bounds_min` / `bounds_max` (Vector2). On `_ready()` writes values into WorldBounds autoload so all unit clamping and camera update automatically. Draws orange boundary rectangle in editor and at runtime. Replace the old approach of editing world_bounds.gd directly. |
 
 ---
 
@@ -482,6 +483,7 @@ Humans further than ~160px from contact: unaffected ✅
 
 ## 📦 **Version History (Recent)**
 
+**v0.21.3** - Bug fixes: flee fallback dead code, level_bounds.gd, boundary edge clamping, false stuck detection, formation bounds hardcode, patrol speed persisting into flee
 **v0.21.2** - Depth-capped, distance-based panic propagation
 **v0.21.1** - Formation follower polish: ramped catch-up speed, reduced separation while converging
 **v0.21.0** - Formation squad patrols — leader/follower system with 5 formation shapes and regroup waiting

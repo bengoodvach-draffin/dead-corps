@@ -252,6 +252,10 @@ var detection_timer: float = 0.0
 ## Last direction we were fleeing in (used by momentum priority in calculate_flee_direction)
 var last_flee_direction: Vector2 = Vector2.ZERO
 
+## Cached original move_speed (set after super._ready initialises it).
+## Patrol overwrites move_speed with patrol_speed; this lets flee restore the real value.
+var _base_move_speed: float = 0.0
+
 ## Reference to selection circle for targeting visual (selection_indicator is inherited from Unit)
 @onready var selection_circle: Line2D = $SelectionIndicator/SelectionCircle
 
@@ -304,6 +308,11 @@ func _ready() -> void:
 	
 	# Call the parent class's _ready() to initialize all base unit functionality
 	super._ready()
+	
+	# Cache the real flee speed AFTER super._ready() sets it.
+	# Patrol will overwrite move_speed with patrol_speed; this lets flee restore
+	# the correct speed when a patrolling human spots a zombie.
+	_base_move_speed = move_speed
 	
 	# Cache the physics space state for raycasting
 	space_state = get_world_2d().direct_space_state
@@ -1398,15 +1407,16 @@ func calculate_flee_direction() -> Vector2:
 				# No threats, just head straight to zone
 				return to_zone
 	
-	# If no nearby zone, use pure threat avoidance
+	# If no nearby zone, use pure threat avoidance or fallback priorities
 	if total_threat.length() > 0.01:
+		# Visible threats detected - flee directly away
 		if enable_debug_logging:
 			print("Visible threats detected!")
 			print("FINAL FLEE DIRECTION: ", total_threat.normalized())
 		last_threat_time = Time.get_ticks_msec() / 1000.0
 		return total_threat.normalized()
-	
-	# If no visible threats, use intelligent fallback system
+	else:
+		# No visible threats - use intelligent fallback priority system
 		if enable_debug_logging:
 			print("No visible threats - checking fallback priorities...")
 		
@@ -1465,17 +1475,6 @@ func calculate_flee_direction() -> Vector2:
 			print("  Priority 4: TRULY SAFE - stopping")
 			print("=================================\n")
 		return Vector2.ZERO
-	
-	# Visible threats detected - update last threat time and flee
-	last_threat_time = Time.get_ticks_msec() / 1000.0
-	
-	var final_direction := total_threat.normalized()
-	if enable_debug_logging:
-		print("Visible threats detected!")
-		print("FINAL FLEE DIRECTION: ", final_direction)
-		print("Updated last_threat_time")
-		print("=================================\n")
-	return final_direction
 
 
 ## Initiates flee behavior - human abandons everything and runs from zombie
@@ -1483,6 +1482,11 @@ func calculate_flee_direction() -> Vector2:
 ## @param threat: The zombie that triggered the flee response
 func start_fleeing(threat: Unit) -> void:
 	# State is already set to FLEEING by caller
+	
+	# Restore full flee speed — patrol_speed may have lowered move_speed
+	if _base_move_speed > 0.0:
+		move_speed = _base_move_speed
+	is_patrolling = false
 	
 	# DEBUG: Enable logging for first human that flees
 	if Human.debug_logged_human == null:
@@ -1510,6 +1514,10 @@ func start_fleeing(threat: Unit) -> void:
 func start_fleeing_with_direction(threat: Unit, inherited_direction: Vector2) -> void:
 	# Set state
 	current_state = State.FLEEING
+	# Restore full flee speed — patrol_speed may have lowered move_speed
+	if _base_move_speed > 0.0:
+		move_speed = _base_move_speed
+	is_patrolling = false
 	velocity = Vector2.ZERO
 	has_target = false
 	attack_target = null
@@ -1585,6 +1593,10 @@ func update_flee_direction(_threat: Unit) -> void:
 ## Used when nearby humans are attacked but zombie isn't visible
 ## @param direction: The direction to flee in (should be normalized)
 func start_fleeing_in_direction(direction: Vector2) -> void:
+	# Restore full flee speed — patrol_speed may have lowered move_speed
+	if _base_move_speed > 0.0:
+		move_speed = _base_move_speed
+	is_patrolling = false
 	# Stop current movement
 	velocity = Vector2.ZERO
 	has_target = false

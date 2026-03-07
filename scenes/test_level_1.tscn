@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://de3qfbeuvvxem"]
 
 [ext_resource type="Script" uid="uid://crornii8mcmn3" path="res://scripts/initializer.gd" id="1_tjyah"]
+[ext_resource type="Script" uid="uid://b112ultiv3ox0" path="res://scripts/level_bounds.gd" id="2_n3hb3"]
 [ext_resource type="Script" uid="uid://3sf8250t3l5r" path="res://scripts/camera_controller.gd" id="2_vdb5j"]
 [ext_resource type="PackedScene" uid="uid://bmw8qx5r2n8pk" path="res://scenes/building.tscn" id="3_n3hb3"]
 [ext_resource type="PackedScene" uid="uid://bvx8qw2m7n5pk" path="res://scenes/escape_zone.tscn" id="4_j7tik"]
@@ -27,6 +28,10 @@ agent_radius = 25.0
 script = ExtResource("2_vdb5j")
 bounds_max = Vector2(1000, 500)
 
+[node name="LevelBounds" type="Node2D" parent="." unique_id=649738750]
+script = ExtResource("2_n3hb3")
+bounds_max = Vector2(1275, 500)
+
 [node name="Initializer" type="Node" parent="." unique_id=1515215272]
 script = ExtResource("1_tjyah")
 enabled = false
@@ -48,6 +53,7 @@ offset_top = -500.0
 offset_right = 1271.0
 offset_bottom = 500.0
 color = Color(0.2, 0.3, 0.2, 1)
+metadata/_edit_use_anchors_ = true
 
 [node name="Buildings" type="Node2D" parent="TestLevel" unique_id=985347166]
 
@@ -160,10 +166,6 @@ sentry_facing_degrees = 175.0
 patrol_enabled = true
 patrol_mode = 1
 patrol_waypoints = Array[Vector2]([Vector2(-16, 169), Vector2(-10, 100), Vector2(-300, 100)])
-patrol_pause_durations = Array[float]([1.0, 5.0, 10.0])
-patrol_waypoint_swing = Array[bool]([false, true, true])
-patrol_waypoint_facing = Array[float]([0.0, 180.0, 0.0])
-move_speed = 50.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
@@ -203,7 +205,7 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human9" parent="TestLevel/Humans" unique_id=789827049 instance=ExtResource("9_xkd54")]
-position = Vector2(1027, -201)
+position = Vector2(988, -201)
 initial_state = 1
 sentry_has_swing = true
 sentry_swing_range = 74.0
@@ -228,7 +230,7 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human11" parent="TestLevel/Humans" unique_id=1190820206 instance=ExtResource("9_xkd54")]
-position = Vector2(1030, -381)
+position = Vector2(988, -381)
 initial_state = 1
 sentry_has_swing = true
 sentry_swing_range = 74.0
@@ -239,7 +241,7 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human12" parent="TestLevel/Humans" unique_id=505802504 instance=ExtResource("9_xkd54")]
-position = Vector2(1056, -296)
+position = Vector2(988, -296)
 initial_state = 1
 sentry_has_swing = true
 sentry_swing_range = 74.0
@@ -260,8 +262,14 @@ alignment_rate = 0.3
 
 [node name="Zombies" type="Node" parent="TestLevel" unique_id=393150134]
 
+[node name="Zombie3" parent="TestLevel/Zombies" unique_id=1124305879 instance=ExtResource("8_6m5u5")]
+position = Vector2(997, 433)
+
 [node name="Zombie" parent="TestLevel/Zombies" unique_id=114495039 instance=ExtResource("8_6m5u5")]
 position = Vector2(265, 469)
+
+[node name="Zombie2" parent="TestLevel/Zombies" unique_id=1375503877 instance=ExtResource("8_6m5u5")]
+position = Vector2(1121, 422)
 
 [node name="Units" type="Node2D" parent="." unique_id=1968361044 groups=["units_parent"]]
 
@@ -274,7 +282,11 @@ position = Vector2(1, -2)
 navigation_polygon = SubResource("NavigationPolygon_vdb5j")
 
 [node name="DebugOverlay" parent="." unique_id=468344591 instance=ExtResource("10_7i356")]
-visible = false
 
 [node name="EndGameOverlay" parent="." unique_id=2000451810 instance=ExtResource("11_o0lgx")]
 visible = false
+
+[node name="Building13" parent="." unique_id=391058070 instance=ExtResource("3_n3hb3")]
+position = Vector2(497, 128)
+building_width = 20.0
+building_height = 1000.0

@@ -114,17 +114,25 @@ const MELEE_VISION_DELAY: float = 0.5
 
 # === STUCK DETECTION ===
 
-## How long zombie must be stuck before finding new target (seconds)
-var stuck_timeout: float = 2.0
+## How often (seconds) to sample position for stuck checking
+## Longer interval = more movement accumulated before comparing
+var stuck_check_interval: float = 0.5
 
-## Timer tracking how long zombie has been stuck
-var stuck_timer: float = 0.0
+## Timer counting down to next position sample
+var stuck_check_timer: float = 0.0
 
-## Last position (used to detect if zombie is moving)
-var last_position: Vector2 = Vector2.ZERO
+## Position recorded at last sample point (compared against current position)
+var stuck_sample_position: Vector2 = Vector2.ZERO
 
-## Minimum distance zombie must move to not be considered stuck
-var stuck_threshold: float = 5.0
+## How many consecutive intervals zombie must fail to move before considered stuck
+var stuck_max_count: int = 3
+
+## How many consecutive stuck intervals have elapsed
+var stuck_count: int = 0
+
+## Minimum pixels zombie must move per interval to not be considered stuck
+## At 90px/s over 0.5s = ~45px expected. 15px threshold is very generous.
+var stuck_distance_threshold: float = 15.0
 
 
 ## Called when the node enters the scene tree
@@ -137,7 +145,8 @@ func _ready() -> void:
 	normal_speed = move_speed
 	
 	# Initialize position tracking for stuck detection
-	last_position = position
+	stuck_sample_position = position
+	stuck_check_timer = stuck_check_interval
 	
 	# Call the parent class's _ready() to initialize all base unit functionality
 	super._ready()
@@ -245,8 +254,9 @@ func _physics_process(delta: float) -> void:
 	if attack_target and is_instance_valid(attack_target):
 		check_if_stuck(delta)
 	else:
-		# Reset stuck timer if no target
-		stuck_timer = 0.0
+		# Reset stuck detection if no target
+		stuck_count = 0
+		stuck_check_timer = stuck_check_interval
 	
 	# Manage melee attacker status (only for humans)
 	if attack_target and is_instance_valid(attack_target) and attack_target.is_human():
@@ -254,9 +264,6 @@ func _physics_process(delta: float) -> void:
 	
 	# Check if we should start or stop leaping
 	update_leap_state()
-	
-	# Update last position for next frame
-	last_position = position
 	
 	# Call parent physics processing (movement/combat)
 	super._physics_process(delta)
@@ -688,56 +695,63 @@ func manage_melee_attacker_status() -> void:
 
 
 ## Checks if zombie is stuck (not moving despite having a target)
-## If stuck for too long, finds new target or goes idle
+## Samples position every stuck_check_interval seconds rather than per-frame,
+## so normal per-frame movement (1-2px) doesn't trigger false positives.
+## If zombie fails to move stuck_distance_threshold pixels over several intervals,
+## it finds a new target or goes idle.
 ## @param delta: Physics timestep in seconds
 func check_if_stuck(delta: float) -> void:
 	# Don't check stuck for player-commanded zombies
-	# Players know what they want - let them command freely!
 	if is_player_commanded:
-		stuck_timer = 0.0
+		stuck_check_timer = stuck_check_interval
+		stuck_count = 0
 		return
 	
-	var distance_moved := position.distance_to(last_position)
+	# Count down to next sample
+	stuck_check_timer -= delta
+	if stuck_check_timer > 0.0:
+		return
 	
-	# Check if zombie moved significantly
-	if distance_moved > stuck_threshold:
-		# Moving fine, reset timer
-		stuck_timer = 0.0
+	# Sample interval elapsed — check how far we moved since last sample
+	stuck_check_timer = stuck_check_interval
+	var distance_moved := position.distance_to(stuck_sample_position)
+	stuck_sample_position = position  # Record new sample point
+	
+	if distance_moved >= stuck_distance_threshold:
+		# Moved enough — not stuck, reset counter
+		stuck_count = 0
+		return
+	
+	# Didn't move enough this interval
+	# Don't count as stuck if actively in combat (melee, committed, grappling)
+	if is_committed_to_target or is_melee_attacker or has_leap_grappled:
+		print("⏸️ Zombie barely moved but in combat - staying engaged")
+		stuck_count = 0
+		return
+	
+	stuck_count += 1
+	print("⚠️ ZOMBIE STUCK CHECK: ", name, " moved only ", snappedf(distance_moved, 0.1), 
+		  "px (count: ", stuck_count, "/", stuck_max_count, ")")
+	
+	if stuck_count < stuck_max_count:
+		return  # Give it more intervals before acting
+	
+	# Stuck confirmed — find new target or go idle
+	stuck_count = 0
+	print("🚧 ZOMBIE STUCK CONFIRMED - FINDING NEW TARGET:")
+	print("  Zombie: ", name, " at ", position)
+	print("  Current target: ", attack_target.name if attack_target else "NONE")
+	
+	var new_target := find_nearest_human_in_range(active_vision_range)
+	
+	if new_target and new_target != attack_target:
+		set_attack_target(new_target, false)
+		is_locked_in_pursuit = true
+		update_selection_visual()
+		print("  ✅ Switched to new target: ", new_target.name)
 	else:
-		# Not moving much, increment timer
-		stuck_timer += delta
-		
-		# If stuck too long, find new target
-		if stuck_timer >= stuck_timeout:
-			# Don't abandon target if we're in combat (melee, committed, or grappling from leap)
-			# Being "stuck" during combat is normal - you're fighting!
-			if is_committed_to_target or is_melee_attacker or has_leap_grappled:
-				print("⏸️ Zombie stuck but in combat - staying engaged")
-				stuck_timer = 0.0  # Reset timer, keep fighting
-				return
-			
-			print("🚧 ZOMBIE STUCK - FINDING NEW TARGET:")
-			print("  Zombie: ", name, " at ", position)
-			print("  Current target: ", attack_target.name if attack_target else "NONE")
-			print("  Distance moved: ", position.distance_to(last_position), "px")
-			print("  Stuck duration: ", stuck_timeout, "s")
-			
-			# Try to find a different target
-			var new_target := find_nearest_human_in_range(active_vision_range)
-			
-			if new_target and new_target != attack_target:
-				# Found a different target - this is auto-pursuit, not player command
-				set_attack_target(new_target, false)
-				is_locked_in_pursuit = true  # Lock from player control
-				update_selection_visual()  # Update color to red
-				print("Zombie switched to new target")
-			else:
-				# No other targets available, go idle
-				clear_attack_target()
-				print("Zombie going idle - no available targets")
-			
-			# Reset stuck timer
-			stuck_timer = 0.0
+		clear_attack_target()
+		print("  ❌ No other targets — going idle")
 
 
 ## Override set_attack_target to clean up melee attacker status and leap tracking

@@ -355,9 +355,13 @@ func calculate_formation_positions(target_pos: Vector2, units: Array[Unit]) -> A
 			start_y + row * spacing + jitter_y
 		)
 		
-		# Clamp to game bounds (same as in unit.gd)
-		pos.x = clamp(pos.x, -500, 500)
-		pos.y = clamp(pos.y, -500, 500)
+		# Clamp to game bounds — read from WorldBounds autoload so this
+		# stays in sync when level size changes (was hardcoded ±500, broke
+		# multi-unit commands in expanded levels)
+		var bounds_min := WorldBounds.world_bounds_min
+		var bounds_max := WorldBounds.world_bounds_max
+		pos.x = clamp(pos.x, bounds_min.x, bounds_max.x)
+		pos.y = clamp(pos.y, bounds_min.y, bounds_max.y)
 		
 		positions.append(pos)
 	

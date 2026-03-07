@@ -59,6 +59,10 @@ enum Team {
 ## Movement speed in pixels per second
 @export var move_speed: float = 100.0
 
+## Collision radius of this unit in pixels - used for boundary clamping
+## Must match the CollisionShape2D radius on this unit's scene
+@export var unit_radius: float = 12.0
+
 # === COMBAT ===
 @export_group("Combat")
 
@@ -210,21 +214,26 @@ func move_to_target(_delta: float) -> void:
 
 
 ## Constrains the unit's position to stay within the game bounds
+## Accounts for unit_radius so the unit's edge (not centre) stays inside the boundary
 ## Called after every movement to prevent units from leaving the play area
 func clamp_position_to_bounds() -> void:
 	var bounds_min: Vector2 = WorldBounds.world_bounds_min
 	var bounds_max: Vector2 = WorldBounds.world_bounds_max
 	
-	# Clamp X position to horizontal bounds
-	position.x = clamp(position.x, bounds_min.x, bounds_max.x)
+	# Inset bounds by unit radius so the unit edge — not its centre — hits the wall
+	var min_x := bounds_min.x + unit_radius
+	var max_x := bounds_max.x - unit_radius
+	var min_y := bounds_min.y + unit_radius
+	var max_y := bounds_max.y - unit_radius
 	
-	# Clamp Y position to vertical bounds
-	position.y = clamp(position.y, bounds_min.y, bounds_max.y)
+	# Clamp position to inset bounds
+	position.x = clamp(position.x, min_x, max_x)
+	position.y = clamp(position.y, min_y, max_y)
 	
-	# If we hit a boundary while moving, stop the movement
-	if position.x == bounds_min.x or position.x == bounds_max.x:
+	# If we hit a boundary while moving, stop velocity on that axis
+	if position.x == min_x or position.x == max_x:
 		velocity.x = 0
-	if position.y == bounds_min.y or position.y == bounds_max.y:
+	if position.y == min_y or position.y == max_y:
 		velocity.y = 0
 
 
