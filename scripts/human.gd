@@ -34,6 +34,15 @@ enum PatrolMode {
 	PING_PONG    ## 0→1→2→3→2→1→0 (back and forth)
 }
 
+## Formation shapes for squad patrols (set on leader only)
+enum FormationShape {
+	LINE_ABREAST, ## Side by side perpendicular to travel (wide coverage)
+	COLUMN,       ## Single file behind leader (narrow corridors)
+	WEDGE,        ## V-shape, leader at point (general purpose)
+	ECHELON,      ## Diagonal line to the right (flanking coverage)
+	DIAMOND       ## Diamond shape, best for exactly 3 followers
+}
+
 ## Signal emitted when this human dies
 ## GameManager listens to this for win condition checking
 ## @param human: This human that died
@@ -44,7 +53,8 @@ signal human_died(human: Human)
 ## Initial state when human spawns (can be set in editor for level design)
 @export var initial_state: State = State.IDLE
 
-# === SENTRY CONFIGURATION ===
+# === SENTRY ===
+@export_group("Sentry")
 
 ## Sentry facing direction in DEGREES (0° = North/Up, 90° = East/Right, 180° = South/Down, 270° = West/Left)
 ## Only used if initial_state = SENTRY
@@ -63,14 +73,11 @@ signal human_died(human: Human)
 ## Pause duration (in seconds) at each extreme of the swing
 @export_range(0.0, 2.0, 0.1) var sentry_swing_pause: float = 0.5
 
-# === PATROL CONFIGURATION ===
+# === PATROL ===
+@export_group("Patrol")
 
 ## Whether this sentry patrols between waypoints
 @export var patrol_enabled: bool = false
-
-## Patrol waypoints (positions to walk between)
-## Example: [(100, 100), (200, 100), (200, 200), (100, 200)]
-@export var patrol_waypoints: Array[Vector2] = []
 
 ## Patrol mode (LOOP or PING_PONG)
 @export var patrol_mode: PatrolMode = PatrolMode.LOOP
@@ -78,11 +85,50 @@ signal human_died(human: Human)
 ## Movement speed while patrolling (usually slower than flee speed)
 @export_range(10.0, 100.0, 5.0) var patrol_speed: float = 50.0
 
-# DEPRECATED: Old vector-based direction (kept for backwards compatibility)
-# Use sentry_facing_degrees instead
-var sentry_direction: Vector2 = Vector2.RIGHT
+## Patrol waypoints (positions to walk between)
+## Example: [(100, 100), (200, 100), (200, 200), (100, 200)]
+@export var patrol_waypoints: Array[Vector2] = []
 
-# === VISION PARAMETERS ===
+## Pause duration (seconds) at each waypoint. Index matches waypoint index.
+## 0.0 or missing = no pause. Empty array = no pauses (backwards compatible).
+## Example: [2.0, 0.0, 3.0] = pause 2s at waypoint 0, skip waypoint 1, pause 3s at waypoint 2
+@export var patrol_pause_durations: Array[float] = []
+
+## Whether to swing vision arc during pause at each waypoint. Index matches waypoint index.
+## Only has effect when the corresponding pause_duration > 0.
+## Example: [true, false, true] = swing at waypoints 0 and 2, stand still at 1
+@export var patrol_waypoint_swing: Array[bool] = []
+
+## Facing direction override (degrees) at each waypoint. Index matches waypoint index.
+## -1.0 = no override (keep arrival facing). 0.0-360.0 = face this direction (0°=North, 90°=East).
+## Example: [90.0, -1.0, 270.0] = face East at waypoint 0, no override at 1, face West at 2
+@export var patrol_waypoint_facing: Array[float] = []
+
+@export_subgroup("Leader")
+
+## Formation shape for this squad (set on leader only - ignored on followers)
+@export var formation_shape: FormationShape = FormationShape.WEDGE
+
+## Distance in pixels between formation slots
+@export_range(20.0, 120.0, 5.0) var formation_spacing: float = 40.0
+
+## Seconds to wait at a waypoint for followers to regroup before advancing without them
+@export_range(1.0, 30.0, 1.0) var formation_regroup_timeout: float = 10.0
+
+@export_subgroup("Follower")
+
+## NodePath to this unit's patrol leader. Set this to make this human a formation follower.
+## Leave empty for leaders and standalone sentries.
+@export var patrol_leader: NodePath = NodePath("")
+
+## Which slot in the formation this follower occupies (1-based).
+## Slot layout depends on leader's formation_shape setting.
+@export_range(1, 7, 1) var formation_slot: int = 1
+
+@export_subgroup("")
+
+# === VISION ===
+@export_group("Vision")
 
 ## Idle state: circular vision radius
 @export var idle_vision_radius: float = 100.0  # Individual detection range (reduced from 120)
@@ -91,25 +137,39 @@ var sentry_direction: Vector2 = Vector2.RIGHT
 @export var sentry_vision_range: float = 180.0
 @export var sentry_vision_angle: float = 90.0  # Degrees
 
-## Fleeing state: forward arc vision range and angle  
+## Fleeing state: forward arc vision range and angle
 @export var flee_vision_range: float = 100.0
 @export var flee_vision_angle: float = 90.0  # Degrees
-
-## Unit collision radius (must match CollisionShape2D radius)
-const UNIT_RADIUS: float = 12.0
 
 ## How often (in seconds) to check for nearby zombies
 ## Lower values = more responsive but more expensive
 ## Higher values = less CPU but delayed reactions
 @export var detection_interval: float = 0.3
 
-## Distance at which humans will start seeking the escape zone (in pixels)
-## Humans within this range with LOS to zone will be pulled toward it
-@export var escape_zone_seek_range: float = 200.0
+# === FLEE ===
+@export_group("Flee")
 
 ## How far (in pixels) the human tries to flee from zombies
 ## Used to calculate flee target position
 @export var flee_distance: float = 200.0
+
+## Distance at which humans will start seeking the escape zone (in pixels)
+## Humans within this range with LOS to zone will be pulled toward it
+@export var escape_zone_seek_range: float = 200.0
+
+## How many hops panic can propagate from the original zombie sighting.
+## 0 = only the direct detector flees. 1 = detector + immediate neighbours.
+## 2 = detector + 2 rings outward (recommended). 99 = unlimited (old behaviour).
+@export_range(0, 10, 1) var panic_propagation_depth: int = 2
+
+@export_group("")
+
+# DEPRECATED: Old vector-based direction (kept for backwards compatibility)
+# Use sentry_facing_degrees instead
+var sentry_direction: Vector2 = Vector2.RIGHT
+
+## Unit collision radius (must match CollisionShape2D radius)
+const UNIT_RADIUS: float = 12.0
 
 # === RUNTIME STATE VARIABLES ===
 
@@ -135,6 +195,18 @@ var current_waypoint_index: int = 0  # Which waypoint we're heading to (0-based)
 var patrol_direction: int = 1  # 1 = forward through waypoints, -1 = backward (for PING_PONG)
 var is_patrolling: bool = false  # Whether currently executing patrol
 var patrol_move_target: Vector2 = Vector2.ZERO  # Current waypoint position we're moving to
+
+## PHASE C: WAYPOINT OBSERVATION STATE
+var is_patrol_paused: bool = false    # Whether currently paused at a waypoint
+var patrol_pause_timer: float = 0.0   # Countdown for current waypoint pause (seconds)
+var is_waypoint_swinging: bool = false # Whether swinging vision during current pause
+
+## FORMATION STATE (leader)
+var is_waiting_to_regroup: bool = false  # Whether holding at waypoint waiting for followers
+var regroup_timer: float = 0.0           # Countdown before advancing without full squad
+
+## FORMATION STATE (follower)
+var _leader_node: Human = null  # Cached resolved reference to patrol_leader node
 
 ## Whether this human is currently grappled (synced with State.GRAPPLED for compatibility)
 ## Used by zombies to check grapple status
@@ -218,11 +290,12 @@ func _ready() -> void:
 	
 	# Load waypoints from child nodes (if no manual waypoints set)
 	# This allows visual waypoint placement by dragging Node2D children
-	if patrol_enabled and patrol_waypoints.size() == 0:
+	# Skip for followers - they don't use waypoints directly
+	if patrol_enabled and patrol_waypoints.size() == 0 and patrol_leader.is_empty():
 		load_waypoints_from_children()
 	
-	# Initialize patrol if enabled and waypoints exist
-	if patrol_enabled and patrol_waypoints.size() > 0:
+	# Initialize patrol if enabled, waypoints exist, and this is a leader (not a follower)
+	if patrol_enabled and patrol_waypoints.size() > 0 and patrol_leader.is_empty():
 		is_patrolling = true
 		current_waypoint_index = 0
 		patrol_direction = 1
@@ -388,8 +461,11 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector2.ZERO
 		return  # Skip normal movement processing
 	
-	# Update patrol if enabled and in SENTRY state (not fleeing)
-	if is_patrolling and current_state == State.SENTRY and not (current_state == State.FLEEING):
+	# Update patrol if enabled and in SENTRY state
+	# Followers use update_formation_follow() instead of update_patrol()
+	if not patrol_leader.is_empty() and current_state == State.SENTRY:
+		update_formation_follow(delta)
+	elif is_patrolling and current_state == State.SENTRY and not (current_state == State.FLEEING):
 		update_patrol(delta)
 	
 	# Check for nearby zombies periodically (not every frame for performance)
@@ -402,10 +478,26 @@ func _physics_process(delta: float) -> void:
 	# Fleeing: strong cohesion (panic as a group)
 	match current_state:
 		State.IDLE, State.SENTRY:
-			self.cohesion_strength = 12.0  # Increased from 8 - slightly stronger
-			self.alignment_rate = 0.3       # Humans don't need aligned facing
-			self.separation_radius = 30.0
-			self.separation_strength = 100.0
+			# Formation followers reduce separation while converging to avoid shoving each other
+			# off their paths. Once in position they restore normal values.
+			if not patrol_leader.is_empty() and _leader_node != null and is_instance_valid(_leader_node):
+				var slot_target := _leader_node.global_position + _leader_node.get_formation_offset(formation_slot)
+				var dist_to_slot := global_position.distance_to(slot_target)
+				if dist_to_slot > formation_slot * 5.0:  # Still converging
+					self.cohesion_strength = 0.0
+					self.alignment_rate = 0.0
+					self.separation_radius = 8.0    # Much smaller — let them pass through
+					self.separation_strength = 20.0  # Much weaker — soft nudge only
+				else:
+					self.cohesion_strength = 0.0    # No cohesion — slot target handles positioning
+					self.alignment_rate = 0.0
+					self.separation_radius = 20.0   # Normal-ish once in position
+					self.separation_strength = 80.0
+			else:
+				self.cohesion_strength = 12.0
+				self.alignment_rate = 0.3
+				self.separation_radius = 30.0
+				self.separation_strength = 100.0
 		State.FLEEING:
 			self.cohesion_strength = 0.0  # DISABLED when fleeing - no pull
 			self.alignment_rate = 0.0      # No alignment when fleeing
@@ -419,21 +511,21 @@ func _physics_process(delta: float) -> void:
 			self.separation_strength = 50.0
 	
 	# Update sentry swing arc (if applicable)
-	# Only swing when stationary (not actively patrolling)
-	# When patrolling, face movement direction instead
-	if current_state == State.SENTRY and sentry_has_swing and not is_patrolling:
+	# Only swing when stationary (not actively patrolling), and only for leaders/standalone
+	# Followers face their leader's direction instead
+	if current_state == State.SENTRY and sentry_has_swing and not is_patrolling and patrol_leader.is_empty():
 		update_swing_arc(delta)
 	
 	# Update facing direction based on movement
-	# Patrol overrides swing - face where you're walking
+	# Patrol and formation following both face movement direction
 	if velocity.length() > 0.1:
-		if is_patrolling:
-			# While patrolling, always face movement direction
+		if is_patrolling or not patrol_leader.is_empty():
+			# Leaders face where they're walking; followers face their movement direction
 			facing_direction = velocity.normalized()
 		elif current_state != State.SENTRY:
 			# Non-sentries face movement direction
 			facing_direction = velocity.normalized()
-		# Sentries (not patrolling) maintain swing direction
+		# Stationary sentries (not patrolling, not following) maintain swing direction
 	
 	# Run normal Unit physics processing (movement/combat)
 	super._physics_process(delta)
@@ -808,8 +900,9 @@ func load_waypoints_from_children() -> void:
 ## Uses smooth sin/cos oscillation for natural head-turning motion
 ## Called every frame when in SENTRY state with swing enabled
 ## @param delta: Time since last frame in seconds
-func update_swing_arc(delta: float) -> void:
-	if not sentry_has_swing:
+## @param force: If true, bypasses sentry_has_swing check (used for per-waypoint swing)
+func update_swing_arc(delta: float, force: bool = false) -> void:
+	if not sentry_has_swing and not force:
 		return
 	
 	# Handle pause at extremes
@@ -848,36 +941,120 @@ func update_swing_arc(delta: float) -> void:
 
 ## Updates patrol movement for sentries
 ## Moves between waypoints in LOOP or PING_PONG mode
-## Called every frame when patrolling is enabled
+## Phase C: Supports per-waypoint pause, swing, and facing overrides
+## v0.21.0: Supports formation regroup waiting before advancing
 ## @param delta: Time since last frame in seconds
-func update_patrol(_delta: float) -> void:
+func update_patrol(delta: float) -> void:
 	if patrol_waypoints.size() == 0:
 		is_patrolling = false
 		return
 	
-	# Get current waypoint target
-	var target_waypoint = patrol_waypoints[current_waypoint_index]
+	# === PHASE C: HANDLE ACTIVE WAYPOINT PAUSE ===
+	if is_patrol_paused:
+		# Run swing if enabled for this waypoint (force=true bypasses sentry_has_swing)
+		if is_waypoint_swinging:
+			update_swing_arc(delta, true)
+		
+		patrol_pause_timer -= delta
+		if patrol_pause_timer <= 0.0:
+			is_patrol_paused = false
+			is_waypoint_swinging = false
+			print("▶️ PATROL RESUMING from waypoint ", current_waypoint_index)
+			# Check regroup before advancing
+			if _has_followers() and not all_followers_in_formation():
+				is_waiting_to_regroup = true
+				regroup_timer = formation_regroup_timeout
+				has_target = false
+				velocity = Vector2.ZERO
+				print("⏳ WAITING TO REGROUP after pause at waypoint ", current_waypoint_index)
+				return
+			# All followers in position (or no followers) - advance now
+			advance_to_next_waypoint()
+			if patrol_waypoints.size() > 0:
+				set_move_target(patrol_waypoints[current_waypoint_index])
+				move_speed = patrol_speed
+		return  # Stay stopped until pause completes
 	
-	# Calculate distance to current waypoint
+	# === FORMATION REGROUP WAIT ===
+	if is_waiting_to_regroup:
+		regroup_timer -= delta
+		if all_followers_in_formation() or regroup_timer <= 0.0:
+			if regroup_timer <= 0.0:
+				print("⏱️ REGROUP TIMEOUT - advancing without full squad at waypoint ", current_waypoint_index)
+			else:
+				print("✅ SQUAD REGROUPED - advancing from waypoint ", current_waypoint_index)
+			is_waiting_to_regroup = false
+			advance_to_next_waypoint()
+			if patrol_waypoints.size() > 0:
+				set_move_target(patrol_waypoints[current_waypoint_index])
+				move_speed = patrol_speed
+		return  # Hold position while waiting
+	
+	# === WAYPOINT ARRIVAL CHECK ===
+	var target_waypoint = patrol_waypoints[current_waypoint_index]
 	var distance_to_waypoint = global_position.distance_to(target_waypoint)
 	
-	# Check if reached waypoint (within 10 pixels)
 	if distance_to_waypoint < 10.0:
-		# Reached waypoint - advance to next
+		# Arrived - apply Phase C observation behaviour if configured
+		
+		# 1. FACING OVERRIDE: Turn to face a specific direction on arrival
+		if current_waypoint_index < patrol_waypoint_facing.size():
+			var override_degrees = patrol_waypoint_facing[current_waypoint_index]
+			if override_degrees >= 0.0:  # -1.0 = no override
+				swing_center_angle = override_degrees
+				facing_direction = degrees_to_vector(override_degrees)
+				current_swing_offset = 0.0  # Reset swing to center of new facing
+				print("🧭 FACING OVERRIDE at waypoint ", current_waypoint_index, ": ", override_degrees, "°")
+		
+		# 2. PAUSE: Stop and observe for a duration
+		var pause_duration := 0.0
+		if current_waypoint_index < patrol_pause_durations.size():
+			pause_duration = patrol_pause_durations[current_waypoint_index]
+		
+		if pause_duration > 0.0:
+			is_patrol_paused = true
+			patrol_pause_timer = pause_duration
+			
+			# Stop movement for duration of pause
+			has_target = false
+			velocity = Vector2.ZERO
+			
+			# 3. SWING: Look around during the pause
+			var should_swing := false
+			if current_waypoint_index < patrol_waypoint_swing.size():
+				should_swing = patrol_waypoint_swing[current_waypoint_index]
+			
+			if should_swing:
+				is_waypoint_swinging = true
+				# Reset swing state for a clean start from current facing
+				current_swing_offset = 0.0
+				swing_direction = 1
+				is_swing_paused = false
+				print("⏸️ PATROL PAUSED at waypoint ", current_waypoint_index,
+						" for ", pause_duration, "s (🔍 swinging)")
+			else:
+				print("⏸️ PATROL PAUSED at waypoint ", current_waypoint_index,
+						" for ", pause_duration, "s")
+			return  # Don't advance until pause completes
+		
+		# 4. REGROUP CHECK (no pause configured)
+		if _has_followers() and not all_followers_in_formation():
+			is_waiting_to_regroup = true
+			regroup_timer = formation_regroup_timeout
+			has_target = false
+			velocity = Vector2.ZERO
+			print("⏳ WAITING TO REGROUP at waypoint ", current_waypoint_index)
+			return
+		
+		# No pause, no regroup needed - advance immediately
 		advance_to_next_waypoint()
 		
 		# Get new target after advancing
 		if current_waypoint_index < patrol_waypoints.size():
 			target_waypoint = patrol_waypoints[current_waypoint_index]
 	
-	# Move toward current waypoint
-	var direction = (target_waypoint - global_position).normalized()
-	# Note: facing_direction is now set in _physics_process based on velocity
-	
-	# Use Unit's movement system
+	# Move toward current waypoint at patrol speed
 	set_move_target(target_waypoint)
-	
-	# Override speed for patrol (slower than combat)
 	move_speed = patrol_speed
 
 
@@ -900,6 +1077,153 @@ func advance_to_next_waypoint() -> void:
 			# Reached beginning, reverse
 			current_waypoint_index = 1  # Go forward one
 			patrol_direction = 1
+
+
+## Returns true if this human is a formation follower (has a patrol_leader set)
+func is_follower() -> bool:
+	return not patrol_leader.is_empty()
+
+
+## Returns true if this leader has any formation followers
+func _has_followers() -> bool:
+	if not get_tree():
+		return false
+	var humans := get_tree().get_nodes_in_group("humans")
+	for human in humans:
+		if not human is Human or human == self:
+			continue
+		var follower := human as Human
+		if follower.patrol_leader.is_empty():
+			continue
+		var leader_node = follower.get_node_or_null(follower.patrol_leader)
+		if leader_node == self:
+			return true
+	return false
+
+
+## Returns true if all SENTRY-state followers are within range of their formation slots
+## Ignores followers who are fleeing or grappled (out of action)
+func all_followers_in_formation() -> bool:
+	if not get_tree():
+		return true
+	var humans := get_tree().get_nodes_in_group("humans")
+	var threshold := formation_spacing * 2.0  # Generous tolerance
+	for human in humans:
+		if not human is Human or human == self:
+			continue
+		var follower := human as Human
+		if follower.patrol_leader.is_empty():
+			continue
+		var leader_node = follower.get_node_or_null(follower.patrol_leader)
+		if leader_node != self:
+			continue
+		# Only count SENTRY followers - fleeing/grappled ones are out of action
+		if follower.current_state != State.SENTRY:
+			continue
+		var target_pos := global_position + get_formation_offset(follower.formation_slot)
+		if follower.global_position.distance_to(target_pos) > threshold:
+			return false
+	return true
+
+
+## Calculates the world-space offset for a given formation slot number
+## Based on this leader's current facing_direction and formation_shape
+## @param slot: 1-based slot index
+## @return: Offset vector to add to leader's global_position
+func get_formation_offset(slot: int) -> Vector2:
+	# Use facing direction, fall back to UP if stationary
+	var forward := facing_direction if facing_direction.length() > 0.1 else Vector2.UP
+	var right := forward.rotated(PI / 2.0)
+	var back := -forward
+	var s := formation_spacing
+	
+	match formation_shape:
+		FormationShape.LINE_ABREAST:
+			# Side by side perpendicular to travel: R1, L1, R2, L2, R3...
+			var side_index := int(ceil(float(slot) / 2.0))
+			var side_sign := 1 if slot % 2 == 1 else -1
+			return right * side_sign * side_index * s
+		
+		FormationShape.COLUMN:
+			# Single file directly behind leader
+			return back * slot * s
+		
+		FormationShape.WEDGE:
+			# V-shape: followers spread behind and to the sides
+			var row := int(ceil(float(slot) / 2.0))
+			var side_sign := 1 if slot % 2 == 1 else -1
+			return back * row * s + right * side_sign * row * s * 0.75
+		
+		FormationShape.ECHELON:
+			# Diagonal line extending right and behind
+			return back * slot * s + right * slot * s * 0.75
+		
+		FormationShape.DIAMOND:
+			# Diamond: right, left, behind — overflow to column for 4+
+			match slot:
+				1: return right * s
+				2: return -right * s
+				3: return back * s
+				_: return back * (slot - 2) * s
+	
+	return Vector2.ZERO
+
+
+## Formation follower update — called each frame instead of update_patrol()
+## Resolves leader reference lazily (handles node ordering in scene)
+## Moves this follower to their assigned formation slot behind the leader
+## @param delta: Physics timestep in seconds
+func update_formation_follow(delta: float) -> void:
+	# Lazy-resolve leader NodePath to a cached node reference
+	if _leader_node == null or not is_instance_valid(_leader_node):
+		if not patrol_leader.is_empty():
+			_leader_node = get_node_or_null(patrol_leader) as Human
+		# Still null - node not found yet, try again next frame
+		if _leader_node == null:
+			return
+	
+	# Leader validity check every frame — handles leader death
+	if not is_instance_valid(_leader_node):
+		_leader_node = null
+		# Go idle if we were still on patrol duty
+		if current_state == State.SENTRY:
+			print("⚠️ ", name, ": leader gone — going idle")
+			current_state = State.IDLE
+			has_target = false
+			velocity = Vector2.ZERO
+		return
+	
+	# If we're not in a moveable state, don't try to hold formation
+	if current_state == State.FLEEING or current_state == State.GRAPPLED or current_state == State.DEAD:
+		return
+	
+	# If the leader is fleeing, don't try to follow them
+	# Our own check_for_nearby_zombies() will trigger our flee independently
+	if _leader_node.current_state == State.FLEEING:
+		return
+	
+	# Calculate where our slot is right now
+	var slot_target: Vector2 = _leader_node.global_position + _leader_node.get_formation_offset(formation_slot)
+	var distance_to_slot: float = global_position.distance_to(slot_target)
+	var base_speed: float = _leader_node.patrol_speed
+	
+	# Ramp speed smoothly based on distance from slot.
+	# In position: 1× speed. Far behind: up to 2.5× speed.
+	# Uses lerp for smooth acceleration/deceleration rather than sudden jumps.
+	var distance_ratio: float = distance_to_slot / 15.0
+	var target_speed_multiplier: float = clamp(distance_ratio, 1.0, 1.5)
+	# Smooth the multiplier over time to avoid sudden speed changes
+	var current_multiplier: float = move_speed / max(base_speed, 1.0)
+	var smooth_multiplier: float = lerp(current_multiplier, target_speed_multiplier, 0.1)
+	move_speed = base_speed * smooth_multiplier
+	
+	if distance_to_slot > 5.0:
+		set_move_target(slot_target)
+	else:
+		# In position — stop and face same direction as leader
+		has_target = false
+		velocity = Vector2.ZERO
+		facing_direction = _leader_node.facing_direction
 
 
 ## Adjusts flee direction to avoid obstacles (buildings)
@@ -1437,16 +1761,19 @@ func update_targeting_visual() -> void:
 
 ## === GROUP STATE PROPAGATION ===
 
-## Propagates flee state to nearby allies when this human spots a zombie
-## Creates panic mob behavior - one human panics, whole group flees
+## Propagates flee state to nearby allies when this human spots a zombie.
+## Uses distance-based reaction delays (closer allies react sooner).
+## Depth parameter limits how many hops the panic can spread from the original sighting.
 ## @param threat: The zombie that triggered the flee
-func propagate_flee_to_group(threat: Unit) -> void:
-	# Find nearby idle/sentry humans within propagation radius
+## @param depth: How many hops this propagation is from the original sighting (0 = direct detector)
+func propagate_flee_to_group(threat: Unit, depth: int = 0) -> void:
+	# Stop propagating if we've reached the depth cap
+	if depth >= panic_propagation_depth:
+		print("🛑 PANIC CHAIN stopped at depth ", depth, " for ", name)
+		return
+	
 	var propagation_radius: float = 80.0
 	var min_group_size: int = 4
-	
-	# Calculate MY flee direction first (this will be inherited by the group)
-	var initial_flee_direction := calculate_flee_direction()
 	
 	var nearby_allies: Array[Human] = []
 	var humans := get_tree().get_nodes_in_group("humans")
@@ -1461,31 +1788,35 @@ func propagate_flee_to_group(threat: Unit) -> void:
 		if human.current_state != State.IDLE and human.current_state != State.SENTRY:
 			continue
 		
-		# Check distance
 		var distance: float = position.distance_to(human.position)
 		if distance <= propagation_radius:
 			nearby_allies.append(human)
 	
 	# Only propagate if we have enough allies to form a panic mob
-	if nearby_allies.size() >= min_group_size - 1:  # -1 because we don't count self
-		print("PANIC MOB: ", nearby_allies.size() + 1, " humans fleeing together!")
+	if nearby_allies.size() < min_group_size - 1:
+		return
+	
+	print("PANIC MOB (depth ", depth, "): ", nearby_allies.size() + 1, " humans fleeing together!")
+	
+	for ally in nearby_allies:
+		# Distance-based delay: 0px away = 0.0s, 80px away = max_delay
+		# Closer allies react sooner — tight formations react near-simultaneously
+		var max_delay: float = 0.4
+		var distance: float = position.distance_to(ally.position)
+		var delay: float = (distance / propagation_radius) * max_delay
 		
-		# Create cascading panic wave with delays (but no direction inheritance)
-		for i in range(nearby_allies.size()):
-			var ally := nearby_allies[i]
-			
-			# Cascading delay: 0.05s per human (creates wave effect)
-			var delay: float = i * 0.05  # 0.0s, 0.05s, 0.1s, 0.15s...
-			
-			if delay > 0.0:
-				# Delayed start with NORMAL flee (no inheritance)
-				get_tree().create_timer(delay).timeout.connect(
-					func(): 
-						if is_instance_valid(ally) and ally.current_state != State.FLEEING:
-							ally.current_state = State.FLEEING
-							ally.start_fleeing(threat)  # Normal flee, no inherited direction
-				)
-			else:
-				# Immediate start for first human
+		if delay > 0.01:
+			get_tree().create_timer(delay).timeout.connect(
+				func():
+					if is_instance_valid(ally) and ally.current_state != State.FLEEING:
+						ally.current_state = State.FLEEING
+						ally.start_fleeing(threat)
+						# Propagate onwards at depth + 1
+						ally.propagate_flee_to_group(threat, depth + 1)
+			)
+		else:
+			# Close enough to react immediately
+			if ally.current_state != State.FLEEING:
 				ally.current_state = State.FLEEING
-				ally.start_fleeing(threat)  # Normal flee, no inherited direction
+				ally.start_fleeing(threat)
+				ally.propagate_flee_to_group(threat, depth + 1)

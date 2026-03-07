@@ -50,11 +50,17 @@ enum Team {
 ## Which team this unit belongs to (affects targeting and conversion)
 @export var team: Team = Team.ZOMBIES
 
+# === STATS ===
+@export_group("Stats")
+
 ## Maximum health points - unit dies when current_health reaches 0
 @export var max_health: float = 100.0
 
 ## Movement speed in pixels per second
 @export var move_speed: float = 100.0
+
+# === COMBAT ===
+@export_group("Combat")
 
 ## Damage dealt per attack
 @export var attack_damage: float = 10.0
@@ -65,7 +71,8 @@ enum Team {
 ## Time in seconds between attacks (prevents rapid-fire)
 @export var attack_cooldown: float = 1.0
 
-# === FORMATION COHESION PARAMETERS ===
+# === FORMATION ===
+@export_group("Formation")
 
 ## Distance to search for nearby allies for formation cohesion
 @export var formation_detection_radius: float = 100.0
@@ -86,6 +93,8 @@ enum Team {
 
 ## Strength of separation/repulsion force
 @export var separation_strength: float = 100.0
+
+@export_group("")
 
 # === GAME BOUNDS ===
 # World bounds are defined in the WorldBounds autoload singleton.

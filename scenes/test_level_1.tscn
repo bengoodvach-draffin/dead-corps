@@ -134,8 +134,8 @@ position = Vector2(-76, 425)
 initial_state = 1
 sentry_has_swing = true
 patrol_enabled = true
-patrol_waypoints = Array[Vector2]([Vector2(-76, 425), Vector2(-236, 363), Vector2(-390, 423)])
 patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(-76, 425), Vector2(-236, 363), Vector2(-390, 423)])
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
@@ -158,8 +158,11 @@ velocity = Vector2(49.999966, -0.0579082)
 initial_state = 1
 sentry_facing_degrees = 175.0
 patrol_enabled = true
-patrol_waypoints = Array[Vector2]([Vector2(-16, 169), Vector2(-10, 100), Vector2(-300, 100)])
 patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(-16, 169), Vector2(-10, 100), Vector2(-300, 100)])
+patrol_pause_durations = Array[float]([1.0, 5.0, 10.0])
+patrol_waypoint_swing = Array[bool]([false, true, true])
+patrol_waypoint_facing = Array[float]([0.0, 180.0, 0.0])
 move_speed = 50.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
@@ -200,38 +203,49 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human9" parent="TestLevel/Humans" unique_id=789827049 instance=ExtResource("9_xkd54")]
-position = Vector2(482, -66)
+position = Vector2(1027, -201)
 initial_state = 1
 sentry_has_swing = true
 sentry_swing_range = 74.0
 sentry_swing_pause = 0.1
+patrol_leader = NodePath("../Human10")
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human10" parent="TestLevel/Humans" unique_id=573677926 instance=ExtResource("9_xkd54")]
-position = Vector2(480, 0)
+position = Vector2(622, -339)
 initial_state = 1
+sentry_facing_degrees = 182.0
 sentry_has_swing = true
 sentry_swing_range = 74.0
 sentry_swing_pause = 0.1
+patrol_enabled = true
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(622, -339), Vector2(622, 0), Vector2(800, 0), Vector2(800, 200), Vector2(622, 300)])
+patrol_pause_durations = Array[float]([5.0])
+formation_shape = 4
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human11" parent="TestLevel/Humans" unique_id=1190820206 instance=ExtResource("9_xkd54")]
-position = Vector2(473, 123)
+position = Vector2(1030, -381)
 initial_state = 1
 sentry_has_swing = true
 sentry_swing_range = 74.0
 sentry_swing_pause = 0.1
+patrol_leader = NodePath("../Human10")
+formation_slot = 2
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human12" parent="TestLevel/Humans" unique_id=505802504 instance=ExtResource("9_xkd54")]
-position = Vector2(481, 64)
+position = Vector2(1056, -296)
 initial_state = 1
 sentry_has_swing = true
 sentry_swing_range = 74.0
 sentry_swing_pause = 0.1
+patrol_leader = NodePath("../Human10")
+formation_slot = 3
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
