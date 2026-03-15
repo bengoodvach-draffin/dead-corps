@@ -1,6 +1,6 @@
 # Dead Corps - Project Context Document
 
-**Last Updated:** March 7, 2026  
+**Last Updated:** March 15, 2026  
 **Current Version:** v0.21.3  
 **Purpose:** Complete context for starting fresh Claude conversations
 
@@ -104,6 +104,17 @@
 
 ---
 
+❌ **Human Defender Classes (v0.22.0 — designed, not implemented):**
+- Five classes: Civilian, Militia, Police, GI, Spec Ops
+- Morale bar system replacing binary flee trigger and `propagate_flee_to_group()`
+- Shooting system with aim time and tracer lines
+- Dual-zone vision arcs (detection zone + shooting zone)
+- Tunnel Vision state for GI/Spec Ops (10s, 45° locked cone)
+- Zombie death visual (dark red color + shot knockback)
+- See `HUMAN_DEFENDER_SYSTEM_SPEC.md` for full design
+
+---
+
 ### **Known Issues & Limitations:**
 
 ⚠️ **Navigation Mesh Baking (Godot 4.6):**
@@ -111,6 +122,11 @@
 - Workaround: Use Groups method (add buildings to "buildings" group)
 - Manual polygon drawing works but tedious
 - Navigation layers must match (Region and Agent both on Layer 1)
+
+⚠️ **Vision Range (pre-v0.22.0):**
+- Human SENTRY and FLEEING arcs currently 180px
+- Will increase to 350px in v0.22.0 as part of human defender system
+- Idle circle stays at 100px
 
 ⚠️ **Patrol Resume After Threat:**
 - Patrol stops permanently when a zombie is detected (by design for now)
@@ -134,10 +150,11 @@
 **scripts/human.gd:**
 - Human unit class (extends Unit)
 - States: IDLE, SENTRY, FLEEING, GRAPPLED, DEAD
+- Planned new states (v0.22.0): TUNNEL_VISION, FREEZE (deferred), MELEE_CHARGE (deferred)
 - Patrol modes: LOOP, PING_PONG
 - Phase C: per-waypoint pause, swing, and facing overrides
 - Formation squad system: leader/follower with 5 shapes (LINE_ABREAST, COLUMN, WEDGE, ECHELON, DIAMOND)
-- Panic spreading: depth-capped (default 2 hops), distance-based cascade delays
+- Panic spreading: depth-capped (default 2 hops), distance-based cascade delays — to be replaced by morale system in v0.22.0
 - Sentry features: degrees, swing arcs, visual editor
 - Escape zone seeking with line-of-sight
 - Waypoint loading from child nodes
@@ -345,21 +362,23 @@ Leader (Human — has waypoints)
 
 ---
 
-### **4. Panic System**
+### **4. Panic / Morale System**
 
-**How It Works:**
+**Current implementation (to be replaced in v0.22.0):**
 ```gdscript
 // Check nearby humans (40px radius)
 if ally.current_state == GRAPPLED:
     panic()  // Only when actually pinned!
 ```
 
-**Design:**
-- 40px proximity radius (immediate grapple check)
-- Only triggers on GRAPPLED (not being chased)
-- Propagation uses `propagate_flee_to_group()` — depth-capped, distance-based wave
+**Planned morale system (v0.22.0):**
+- Every defender has a morale bar (morale_max varies by class)
+- Stress events drain it: sighting (within weapon range for armed units), ally grappled, ally fleeing, ally killed
+- Bar reaches 0 → primary response (flee or tunnel vision depending on class)
+- Replaces propagate_flee_to_group() and panic_propagation_depth entirely
+- See HUMAN_DEFENDER_SYSTEM_SPEC.md for full design and drain values
 
-**Propagation Chain (v0.21.2):**
+**Propagation Chain (current, v0.21.2 — being deprecated):**
 - `panic_propagation_depth` export (default: 2) controls how many hops panic spreads
 - Depth 0 = only direct detector flees
 - Depth 1 = detector + immediate neighbours
@@ -483,6 +502,7 @@ Humans further than ~160px from contact: unaffected ✅
 
 ## 📦 **Version History (Recent)**
 
+**v0.22.0 (planned)** - Human defender system: five classes, morale bar, shooting system, dual-zone vision arcs, tunnel vision state, zombie death visuals
 **v0.21.3** - Bug fixes: flee fallback dead code, level_bounds.gd, boundary edge clamping, false stuck detection, formation bounds hardcode, patrol speed persisting into flee
 **v0.21.2** - Depth-capped, distance-based panic propagation
 **v0.21.1** - Formation follower polish: ramped catch-up speed, reduced separation while converging
@@ -504,6 +524,7 @@ Humans further than ~160px from contact: unaffected ✅
 ## 📚 **Documentation Files**
 
 **Available in /docs:**
+- HUMAN_DEFENDER_SYSTEM_SPEC.md (new — v0.22.0 design)
 - PATROL_PHASE_B2_VISUAL_WAYPOINTS.md
 - PATROL_QUICKSTART_PHASE_B1.md
 - PATROL_SYSTEM_ROADMAP.md
@@ -548,10 +569,12 @@ Ready to [specific task or question]"
 **Waypoint:** Position marker for patrol routes  
 **BOID:** Flocking algorithm (separation, cohesion, alignment)  
 **Grappled:** Human pinned by zombie (being attacked)  
-**Panic Spreading:** Nearby humans flee when ally grappled  
+**Panic Spreading:** Current system — nearby humans flee when ally grappled (being replaced by morale system)  
+**Morale Bar:** Planned v0.22.0 system — continuous drain from stress events, replaces panic spreading  
 **Navigation Mesh:** Pathfinding data structure (blue areas in editor)  
 **Phase A/B/C:** Development phases for patrol system  
 **LOOP/PING_PONG:** Patrol modes (circular vs back-and-forth)  
+**Tunnel Vision:** Planned v0.22.0 GI/Spec Ops response — locked rotation, narrowed 45° cone, 10s duration
 
 ---
 
@@ -593,6 +616,9 @@ Debug → Visible Navigation
 - FLEEING (forward arc, running)
 - GRAPPLED (no vision, pinned)
 - DEAD (incubating zombie)
+- TUNNEL_VISION (v0.22.0 — GI/Spec Ops, locked 45° cone, 10s)
+- FREEZE (v0.22.0 deferred — Civilian only)
+- MELEE_CHARGE (v0.22.0 deferred — Militia only)
 
 **Collision Layers:**
 - Layer 1: Buildings/Obstacles
@@ -602,14 +628,26 @@ Debug → Visible Navigation
 **Default Values:**
 - Zombie radius: 12px
 - Human radius: 12px
-- Panic propagation radius: 80px
-- Panic propagation depth: 2 hops
+- Panic propagation radius: 80px (current — being replaced by morale system)
+- Panic propagation depth: 2 hops (current — being replaced)
 - Navigation agent radius: 30px
 - Patrol speed: 50 px/sec
 - Swing range: 45°
 - Swing speed: 30°/sec
 - Formation spacing: 40px
 - Formation regroup timeout: 10s
+- Human vision (SENTRY/FLEEING): 180px arc, 90° (increasing to 350px in v0.22.0)
+- Human vision (IDLE): 100px circle
+- Camera target zoom: ~2.5× (Shadow Tactics scale)
+
+**Planned values (v0.22.0):**
+- Human vision (SENTRY/FLEEING): 350px arc, 90°
+- Morale drain radius: 80px
+- Weapon range — Militia/Police: 150px
+- Weapon range — GI/Spec Ops: 250px
+- Tunnel Vision duration: 10s, cone: 45°
+- Dead zombie color: Color(0.4, 0.0, 0.0)
+- Dead human color: Color(0.7, 0.1, 0.1)
 
 ---
 
