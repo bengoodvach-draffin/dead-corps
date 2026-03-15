@@ -1,7 +1,7 @@
 # Dead Corps - Project Context Document
 
 **Last Updated:** March 15, 2026  
-**Current Version:** v0.21.3  
+**Current Version:** v0.22.6  
 **Purpose:** Complete context for starting fresh Claude conversations
 
 ---
@@ -24,7 +24,7 @@
 
 ---
 
-## 📊 **Current Build Status: v0.21.2**
+## 📊 **Current Build Status: v0.22.6**
 
 ### **What's Implemented & Working:**
 
@@ -104,14 +104,27 @@
 
 ---
 
-❌ **Human Defender Classes (v0.22.0 — designed, not implemented):**
-- Five classes: Civilian, Militia, Police, GI, Spec Ops
-- Morale bar system replacing binary flee trigger and `propagate_flee_to_group()`
-- Shooting system with aim time and tracer lines
-- Dual-zone vision arcs (detection zone + shooting zone)
-- Tunnel Vision state for GI/Spec Ops (10s, 45° locked cone)
-- Zombie death visual (dark red color + shot knockback)
-- See `HUMAN_DEFENDER_SYSTEM_SPEC.md` for full design
+✅ **Human Defender System (v0.22.0 - v0.22.6):**
+- Five defender classes: Civilian, Militia, Police, GI, Spec Ops — set via `defender_class` Inspector export
+- `DefenderClass` enum with per-class morale and weapon defaults auto-applied in `_ready()`
+- Morale bar system replacing binary flee trigger and `propagate_flee_to_group()` cascade
+- Dual-zone vision arcs: outer detection zone (350px) + inner shooting zone (weapon range)
+- Shooting system: aim timer starts on target acquisition in vision cone, fires on entering weapon range
+- Tracer line on firing (bright yellow, 0.1s fade) from bottom-center of sprite
+- TUNNEL_VISION state for GI/Spec Ops: 22.5° locked orange cone, 10s, locks toward threat zombie
+- Morale recovers to 50% on flee recovery and tunnel vision expiry
+- Zombie death visual: dark red Color(0.4, 0.0, 0.0), 0.3s delay, shot knockback tween (8px)
+- Navigation debug logging silenced in zombie.gd
+- Camera default zoom 1.0×, max zoom 2.5×, windowed 1920×1080
+- Vision range increased: SENTRY/FLEEING arcs 180px → 350px
+
+**Key spec amendments made during implementation:**
+- Ally event radius changed from 80px → 150px (more realistic spread)
+- Tunnel vision cone narrowed from 45° → 22.5° (tighter, more dramatic)
+- Tunnel vision locks toward threat zombie position (not current facing)
+- Morale bar shows only in IDLE/SENTRY states (hides on FLEEING, GRAPPLED, DEAD)
+- No color tint on morale drain — bar only
+- `propagate_flee_to_group()` and `panic_propagation_depth` deprecated (commented out, not deleted)
 
 ---
 
@@ -123,15 +136,14 @@
 - Manual polygon drawing works but tedious
 - Navigation layers must match (Region and Agent both on Layer 1)
 
-⚠️ **Vision Range (pre-v0.22.0):**
-- Human SENTRY and FLEEING arcs currently 180px
-- Will increase to 350px in v0.22.0 as part of human defender system
-- Idle circle stays at 100px
-
 ⚠️ **Patrol Resume After Threat:**
 - Patrol stops permanently when a zombie is detected (by design for now)
 - Sentries do not resume their route after the threat passes
 - Evaluate during playtesting whether auto-resume is needed
+
+⚠️ **Morale/shooting tuning:**
+- Kill counts per class are higher than spec due to aim timer starting at vision range
+- Intentionally left for playtesting tuning — fundamentally working correctly
 
 ---
 
@@ -146,15 +158,21 @@
 - Navigation support via optional NavigationAgent2D
 - Leap attack mechanics
 - Conversion signal when killing humans
+- `take_damage(amount, knockback_direction)` override — optional knockback tween on death
+- Death: dark red color, 0.3s delay, movement stops immediately on DEAD state
 
 **scripts/human.gd:**
 - Human unit class (extends Unit)
-- States: IDLE, SENTRY, FLEEING, GRAPPLED, DEAD
-- Planned new states (v0.22.0): TUNNEL_VISION, FREEZE (deferred), MELEE_CHARGE (deferred)
+- States: IDLE, SENTRY, FLEEING, GRAPPLED, DEAD, TUNNEL_VISION
+- FREEZE and MELEE_CHARGE states designed but deferred
+- `DefenderClass` enum: CIVILIAN, MILITIA, POLICE, GI, SPEC_OPS
+- Morale system: continuous sighting drain, ally event hooks (150px radius), flee/tunnel vision response
+- Shooting system: aim timer, tracer line, LOS pause, weapon range gating
+- TUNNEL_VISION: 22.5° locked cone, threat-facing, 10s duration, immune to drain
 - Patrol modes: LOOP, PING_PONG
 - Phase C: per-waypoint pause, swing, and facing overrides
-- Formation squad system: leader/follower with 5 shapes (LINE_ABREAST, COLUMN, WEDGE, ECHELON, DIAMOND)
-- Panic spreading: depth-capped (default 2 hops), distance-based cascade delays — to be replaced by morale system in v0.22.0
+- Formation squad system: leader/follower with 5 shapes
+- `propagate_flee_to_group()` deprecated (commented out)
 - Sentry features: degrees, swing arcs, visual editor
 - Escape zone seeking with line-of-sight
 - Waypoint loading from child nodes
@@ -444,16 +462,16 @@ Humans further than ~160px from contact: unaffected ✅
 
 ## 🚀 **Next Steps / Roadmap**
 
-### **Immediate (First Validation Slice):**
-- Costume Zombie + Fat Zombie abilities (first special zombie types)
-- Police and barricaded GI defender classes
-- A handcrafted test level featuring both: the recommended target for validating core fun
+### **Immediate (Integration Testing + First Validation Slice):**
+- Complete integration testing of v0.22.x human defender system
+- Tune morale/weapon values (kill counts currently higher than spec)
+- Costume Zombie + Fat Zombie (first special zombie types)
+- A handcrafted test level with Civilian, Militia, Police, GI, Spec Ops and both zombie types
+- Validate core tactical puzzle loop is fun
 
 ### **Near-Term:**
 - Building transformation system (zombies enter buildings to change type)
 - More zombie types (11 planned total)
-- Level editor basics
-- Save/load system
 - More test levels
 
 ### **Long-Term:**
@@ -502,7 +520,13 @@ Humans further than ~160px from contact: unaffected ✅
 
 ## 📦 **Version History (Recent)**
 
-**v0.22.0 (planned)** - Human defender system: five classes, morale bar, shooting system, dual-zone vision arcs, tunnel vision state, zombie death visuals
+**v0.22.6 (planned — integration testing)** - Full human defender system validation
+**v0.22.5** - Zombie death visual: dark red color, 0.3s delay, shot knockback tween
+**v0.22.4** - Tunnel Vision state: 22.5° locked cone, threat-facing, 10s, immune to drain
+**v0.22.3** - Shooting system: aim timer, tracer line, LOS pause, weapon range gating
+**v0.22.2** - Morale bar: sighting drain, ally event hooks, flee/tunnel vision response
+**v0.22.1** - Vision range 350px, dual-zone arcs, camera zoom 1.0×/2.5× max
+**v0.22.0** - Defender class scaffolding: DefenderClass enum, morale/weapon exports
 **v0.21.3** - Bug fixes: flee fallback dead code, level_bounds.gd, boundary edge clamping, false stuck detection, formation bounds hardcode, patrol speed persisting into flee
 **v0.21.2** - Depth-capped, distance-based panic propagation
 **v0.21.1** - Formation follower polish: ramped catch-up speed, reduced separation while converging
@@ -616,9 +640,9 @@ Debug → Visible Navigation
 - FLEEING (forward arc, running)
 - GRAPPLED (no vision, pinned)
 - DEAD (incubating zombie)
-- TUNNEL_VISION (v0.22.0 — GI/Spec Ops, locked 45° cone, 10s)
-- FREEZE (v0.22.0 deferred — Civilian only)
-- MELEE_CHARGE (v0.22.0 deferred — Militia only)
+- TUNNEL_VISION (GI/Spec Ops — 22.5° locked orange cone, 10s, threat-facing)
+- FREEZE (designed, deferred — Civilian only)
+- MELEE_CHARGE (designed, deferred — Militia only)
 
 **Collision Layers:**
 - Layer 1: Buildings/Obstacles
@@ -628,26 +652,42 @@ Debug → Visible Navigation
 **Default Values:**
 - Zombie radius: 12px
 - Human radius: 12px
-- Panic propagation radius: 80px (current — being replaced by morale system)
-- Panic propagation depth: 2 hops (current — being replaced)
+- Morale event radius: 150px (ally grappled/fleeing/killed hooks)
 - Navigation agent radius: 30px
 - Patrol speed: 50 px/sec
 - Swing range: 45°
 - Swing speed: 30°/sec
 - Formation spacing: 40px
 - Formation regroup timeout: 10s
-- Human vision (SENTRY/FLEEING): 180px arc, 90° (increasing to 350px in v0.22.0)
-- Human vision (IDLE): 100px circle
-- Camera target zoom: ~2.5× (Shadow Tactics scale)
-
-**Planned values (v0.22.0):**
 - Human vision (SENTRY/FLEEING): 350px arc, 90°
-- Morale drain radius: 80px
-- Weapon range — Militia/Police: 150px
-- Weapon range — GI/Spec Ops: 250px
-- Tunnel Vision duration: 10s, cone: 45°
+- Human vision (IDLE): 100px circle
+- Tunnel Vision cone: 22.5°, duration: 10s
+- Morale recovery on flee/tunnel vision end: 50% of morale_max
 - Dead zombie color: Color(0.4, 0.0, 0.0)
-- Dead human color: Color(0.7, 0.1, 0.1)
+- Dead human color: Color(0.8, 0.2, 0.2)
+- Shot knockback: 8px tween over 0.15s
+- Camera default zoom: 1.0× (debug), target game zoom: 2.5×
+- Window: 1920×1080 windowed
+
+**Planned values (tuning pass — post integration testing):**
+- Kill counts per class (currently higher than spec — morale/aim values need tuning)
+
+**Weapon Stats:**
+- Civilian: unarmed
+- Militia: shotgun, 150px range, 0.7s aim time
+- Police: pistol, 150px range, 0.55s aim time
+- GI: assault rifle, 250px range, 0.525s aim time
+- Spec Ops: assault rifle, 250px range, 0.26s aim time
+
+**Morale Stats:**
+
+| Unit | Max | Sighting/sec | Grappled | Fleeing | Killed |
+|------|-----|-------------|----------|---------|--------|
+| Civilian | 65 | 30 | 100 | 50 | 150 |
+| Militia | 150 | 35 | 100 | 40 | 150 |
+| Police | 200 | 0 | 100 | 40 | 150 |
+| GI | 400 | 0 | 275 | 20 | 150 |
+| Spec Ops | 1000 | 0 | 100 | 0 | 150 |
 
 ---
 

@@ -151,18 +151,18 @@ func _ready() -> void:
 	# Call the parent class's _ready() to initialize all base unit functionality
 	super._ready()
 	
-	# DEBUG: Check navigation setup
-	print("\n=== ZOMBIE NAVIGATION DEBUG ===")
-	print("Zombie: ", name)
-	if nav_agent:
-		print("✓ HAS NavigationAgent2D")
-		print("  Enabled: ", nav_agent.is_inside_tree())
-		print("  Navigation Layers: ", nav_agent.navigation_layers)
-		print("  Path Desired Distance: ", nav_agent.path_desired_distance)
-		print("  Target Desired Distance: ", nav_agent.target_desired_distance)
-	else:
-		print("✗ NO NavigationAgent2D - will use direct movement")
-	print("===============================\n")
+	# DEBUG: Check navigation setup (commented out — too noisy during gameplay testing)
+	# print("\n=== ZOMBIE NAVIGATION DEBUG ===")
+	# print("Zombie: ", name)
+	# if nav_agent:
+	# 	print("✓ HAS NavigationAgent2D")
+	# 	print("  Enabled: ", nav_agent.is_inside_tree())
+	# 	print("  Navigation Layers: ", nav_agent.navigation_layers)
+	# 	print("  Path Desired Distance: ", nav_agent.path_desired_distance)
+	# 	print("  Target Desired Distance: ", nav_agent.target_desired_distance)
+	# else:
+	# 	print("✗ NO NavigationAgent2D - will use direct movement")
+	# print("===============================\n")
 
 
 ## Override selection visual to show red when locked in pursuit
@@ -185,6 +185,11 @@ func update_selection_visual() -> void:
 ## Handles auto-pursuit, leap attack detection, stuck detection, melee attacker management, and speed management
 ## @param delta: Physics timestep in seconds
 func _physics_process(delta: float) -> void:
+	# Dead zombies don't move — just wait for queue_free() after death delay
+	if current_state == State.DEAD:
+		velocity = Vector2.ZERO
+		return
+	
 	# Update state based on current activity FIRST (before vision checks)
 	update_zombie_state()
 	
@@ -287,33 +292,33 @@ func handle_combat(_delta: float) -> void:
 			# Update navigation target
 			nav_agent.target_position = attack_target.position
 			
-			# DEBUG
-			print("\n🧭 NAVIGATION ACTIVE (COMBAT)")
-			print("  Zombie pos: ", position)
-			print("  Target pos: ", attack_target.position)
-			print("  Distance: ", distance)
-			print("  Nav finished: ", nav_agent.is_navigation_finished())
-			print("  Distance to target: ", nav_agent.distance_to_target())
+			# DEBUG (commented out — too noisy during gameplay testing)
+			# print("\n🧭 NAVIGATION ACTIVE (COMBAT)")
+			# print("  Zombie pos: ", position)
+			# print("  Target pos: ", attack_target.position)
+			# print("  Distance: ", distance)
+			# print("  Nav finished: ", nav_agent.is_navigation_finished())
+			# print("  Distance to target: ", nav_agent.distance_to_target())
 			
 			# Get next position on navigation path
 			if not nav_agent.is_navigation_finished():
 				var next_position = nav_agent.get_next_path_position()
-				print("  Next waypoint: ", next_position)
-				print("  Direction to waypoint: ", (next_position - position).normalized())
+				# print("  Next waypoint: ", next_position)
+				# print("  Direction to waypoint: ", (next_position - position).normalized())
 				
 				var direction = (next_position - position).normalized()
 				velocity = direction * move_speed
-				print("  Velocity set: ", velocity)
+				# print("  Velocity set: ", velocity)
 				move_and_slide()
 			else:
 				# Path finished but still out of range - move direct
-				print("  ⚠️ Path finished but still out of range - using direct")
+				# print("  ⚠️ Path finished but still out of range - using direct")
 				var direction := (attack_target.position - position).normalized()
 				velocity = direction * move_speed
 				move_and_slide()
 		else:
 			# No navigation - use direct movement (original behavior)
-			print("\n❌ NO NAVIGATION - using direct movement")
+			# print("\n❌ NO NAVIGATION - using direct movement")
 			var direction := (attack_target.position - position).normalized()
 			velocity = direction * move_speed
 			move_and_slide()
@@ -835,8 +840,34 @@ func die() -> void:
 		attack_target.remove_attacker()
 		is_melee_attacker = false
 	
-	# Just remove this zombie from the game
-	queue_free()
+	# Stop all movement immediately
+	current_state = State.DEAD
+	velocity = Vector2.ZERO
+	
+	# Dark red color — distinct from dead human Color(0.8, 0.2, 0.2)
+	modulate = Color(0.4, 0.0, 0.0)
+	
+	# Brief delay so color is visible before removing
+	await get_tree().create_timer(0.3).timeout
+	if is_instance_valid(self):
+		queue_free()
+
+
+## Takes damage. Accepts optional knockback direction for shot deaths.
+## Knockback tweens position since velocity is frozen on DEAD state.
+## Override of Unit.take_damage() — zombies only.
+## @param amount: Damage to apply
+## @param knockback_direction: Normalized direction away from shooter (Vector2.ZERO = none)
+func take_damage(amount: float, knockback_direction: Vector2 = Vector2.ZERO) -> void:
+	current_health -= amount
+	update_health_bar()
+	
+	if current_health <= 0:
+		die()
+		# Apply knockback as a position nudge after die() freezes velocity
+		if knockback_direction != Vector2.ZERO and is_instance_valid(self):
+			var tween := create_tween()
+			tween.tween_property(self, "position", position + knockback_direction * 8.0, 0.15)
 
 
 ## Performs an attack on the current target

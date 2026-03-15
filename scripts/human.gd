@@ -21,11 +21,12 @@ class_name Human
 
 ## Human behavioral states - determines vision shape and behavior
 enum State {
-	IDLE,        ## Standing around, circular vision (360°)
-	SENTRY,      ## Watching a direction, arc vision (90°)
-	FLEEING,     ## Running from zombies, forward arc vision (90°)
-	GRAPPLED,    ## Being attacked, no vision
-	DEAD         ## Incubating corpse, no vision
+	IDLE,          ## Standing around, circular vision (360°)
+	SENTRY,        ## Watching a direction, arc vision (90°)
+	FLEEING,       ## Running from zombies, forward arc vision (90°)
+	GRAPPLED,      ## Being attacked, no vision
+	DEAD,          ## Incubating corpse, no vision
+	TUNNEL_VISION  ## GI/Spec Ops stress response — locked 45° cone, 10s (v0.22.4)
 }
 
 ## Patrol modes for sentry movement
@@ -43,6 +44,17 @@ enum FormationShape {
 	DIAMOND       ## Diamond shape, best for exactly 3 followers
 }
 
+## Defender class — determines combat capability, morale profile, and weapon stats
+## Set this in the Inspector to define what kind of human this unit is.
+## Class defaults are auto-applied in _ready() and can be overridden per-unit.
+enum DefenderClass {
+	CIVILIAN,   ## Unarmed, panics easily, collapses almost immediately
+	MILITIA,    ## Shotgun, unreliable under pressure, dangerous up close
+	POLICE,     ## Pistol, calm under sightings, breaks on social events
+	GI,         ## Assault rifle, nearly unbreakable, tunnel vision response
+	SPEC_OPS    ## Assault rifle, elite, effectively immune to normal pressure
+}
+
 ## Signal emitted when this human dies
 ## GameManager listens to this for win condition checking
 ## @param human: This human that died
@@ -52,6 +64,50 @@ signal human_died(human: Human)
 
 ## Initial state when human spawns (can be set in editor for level design)
 @export var initial_state: State = State.IDLE
+
+# === DEFENDER CLASS ===
+@export_group("Defender Class")
+
+## The class of this defender — auto-populates morale and weapon defaults on _ready().
+## Override individual values below if you need per-unit tweaks.
+@export var defender_class: DefenderClass = DefenderClass.CIVILIAN
+
+# === MORALE ===
+@export_group("Morale")
+
+## Maximum morale — bar starts full and drains under stress.
+## Populated automatically from defender_class on _ready().
+@export var morale_max: float = 65.0
+
+## Morale drained per second per visible zombie within weapon range (armed units)
+## or within full vision range (civilians). Stacks per zombie.
+## Populated automatically from defender_class on _ready().
+@export var sighting_drain: float = 30.0
+
+## Flat morale drained when a nearby ally transitions to GRAPPLED state (one-time hit per event).
+## Populated automatically from defender_class on _ready().
+@export var grappled_drain: float = 100.0
+
+## Flat morale drained when a fleeing ally moves through this unit's vicinity (one-time hit).
+## Populated automatically from defender_class on _ready().
+@export var fleeing_drain: float = 50.0
+
+## Flat morale drained when a nearby ally is killed (one-time hit per death).
+## Populated automatically from defender_class on _ready().
+@export var killed_drain: float = 150.0
+
+# === WEAPON ===
+@export_group("Weapon")
+
+## Maximum range at which this unit will engage zombies (pixels).
+## Armed units only drain morale when zombies are within this range.
+## Civilians are unarmed — this value is unused for them.
+## Populated automatically from defender_class on _ready().
+@export var weapon_range: float = 0.0
+
+## Time in seconds from target acquisition to shot firing.
+## Populated automatically from defender_class on _ready().
+@export var aim_time: float = 0.0
 
 # === SENTRY ===
 @export_group("Sentry")
@@ -134,11 +190,11 @@ signal human_died(human: Human)
 @export var idle_vision_radius: float = 100.0  # Individual detection range (reduced from 120)
 
 ## Sentry state: arc vision range and angle
-@export var sentry_vision_range: float = 180.0
+@export var sentry_vision_range: float = 350.0
 @export var sentry_vision_angle: float = 90.0  # Degrees
 
 ## Fleeing state: forward arc vision range and angle
-@export var flee_vision_range: float = 100.0
+@export var flee_vision_range: float = 350.0
 @export var flee_vision_angle: float = 90.0  # Degrees
 
 ## How often (in seconds) to check for nearby zombies
@@ -157,10 +213,12 @@ signal human_died(human: Human)
 ## Humans within this range with LOS to zone will be pulled toward it
 @export var escape_zone_seek_range: float = 200.0
 
-## How many hops panic can propagate from the original zombie sighting.
-## 0 = only the direct detector flees. 1 = detector + immediate neighbours.
-## 2 = detector + 2 rings outward (recommended). 99 = unlimited (old behaviour).
-@export_range(0, 10, 1) var panic_propagation_depth: int = 2
+## DEPRECATED (v0.22.2): Replaced by morale system — depth cap no longer needed.
+## Morale bar naturally limits cascade spread via per-unit drain values.
+## Kept for reference; has no effect when morale system is active.
+## Will be removed in a future cleanup pass.
+# @export_range(0, 10, 1) var panic_propagation_depth: int = 2
+var panic_propagation_depth: int = 2  # Kept as non-export for any legacy references
 
 @export_group("")
 
@@ -208,7 +266,12 @@ var regroup_timer: float = 0.0           # Countdown before advancing without fu
 ## FORMATION STATE (follower)
 var _leader_node: Human = null  # Cached resolved reference to patrol_leader node
 
-## Whether this human is currently grappled (synced with State.GRAPPLED for compatibility)
+## Current morale value — drains under stress, triggers response when it reaches 0.
+## Starts at morale_max (set after _apply_class_defaults() runs in _ready()).
+## No drain logic yet — wired up in Phase 3 (v0.22.2).
+var morale: float = 65.0
+
+## Whether this unit is currently grappled (synced with State.GRAPPLED for compatibility)
 ## Used by zombies to check grapple status
 var is_grappled: bool = false
 
@@ -263,10 +326,137 @@ var _base_move_speed: float = 0.0
 ## Cached for performance
 var space_state: PhysicsDirectSpaceState2D
 
+## === MORALE SYSTEM RUNTIME (v0.22.2) ===
+
+## Number of zombies currently visible within morale drain range.
+## Updated on each detection timer tick; used for per-frame sighting drain.
+## For armed units: zombies within weapon_range.
+## For civilians: zombies within full vision range.
+var zombies_in_drain_range_count: int = 0
+
+## Position of the nearest zombie currently in drain range.
+## Updated each detection tick alongside zombies_in_drain_range_count.
+## Used to set tunnel vision facing direction when morale empties from sighting drain.
+var _nearest_drain_zombie_pos: Vector2 = Vector2.ZERO
+
+## World position of the last event that drained morale.
+## When morale hits 0, GI/Spec Ops lock their tunnel vision toward this point.
+var _last_threat_position: Vector2 = Vector2.ZERO
+
+## Last known states of nearby allies, keyed by instance_id.
+## Used to detect ally state transitions (→ GRAPPLED, → FLEEING) for one-time drain hits.
+## Cleared when ally leaves 150px radius or dies.
+var _last_ally_states: Dictionary = {}
+
+## Programmatically created morale bar (shown when morale is below 80%).
+## Created in _ready() — no scene changes needed.
+var _morale_bar: ProgressBar = null
+
+## === TUNNEL VISION RUNTIME (v0.22.4) ===
+
+## Countdown timer for tunnel vision duration (10 seconds).
+var _tunnel_vision_timer: float = 0.0
+
+## Facing direction locked at the moment tunnel vision triggered.
+## Vision cone is fixed to this direction for the duration.
+var _tunnel_vision_locked_direction: Vector2 = Vector2.RIGHT
+
+## Tunnel vision cone angle (degrees) — narrowed from 90° to 22.5°.
+const TUNNEL_VISION_ANGLE: float = 22.5
+
+## Duration of tunnel vision state (seconds).
+const TUNNEL_VISION_DURATION: float = 10.0
+
+## The zombie currently being aimed at. Null when not aiming.
+var shoot_target: Unit = null
+
+## Countdown timer for aim — fires when it reaches 0.
+## Starts at aim_time on target acquisition, pauses if LOS lost, resets on new target.
+var _aim_timer: float = 0.0
+
+## Whether aim timer is currently paused (target temporarily lost LOS).
+var _aim_paused: bool = false
+
+## Line2D node used to draw the tracer line on firing.
+## Created in _ready() as a child node.
+var _tracer_line: Line2D = null
+
+## How long the tracer line stays visible after firing (seconds).
+const TRACER_FADE_DURATION: float = 0.1
+
+## Countdown for tracer fade.
+var _tracer_timer: float = 0.0
+
+
+## Applies morale and weapon stat defaults based on defender_class.
+## Called at the start of _ready() so all systems see correct values.
+## Individual Inspector exports override these after this runs —
+## so you can still tweak per-unit values on top of the class baseline.
+##
+## Morale values: morale_max, sighting_drain, grappled_drain, fleeing_drain, killed_drain
+## Weapon values: weapon_range, aim_time
+##
+## Source of truth: HUMAN_DEFENDER_SYSTEM_SPEC.md v0.22.0
+func _apply_class_defaults() -> void:
+	match defender_class:
+		DefenderClass.CIVILIAN:
+			morale_max       = 65.0
+			sighting_drain   = 30.0   # Drains at full vision range (350px) — no weapon threshold
+			grappled_drain   = 100.0
+			fleeing_drain    = 50.0
+			killed_drain     = 150.0
+			weapon_range     = 0.0    # Unarmed
+			aim_time         = 0.0    # Unarmed
+		DefenderClass.MILITIA:
+			morale_max       = 150.0
+			sighting_drain   = 35.0   # Drains within weapon range only
+			grappled_drain   = 100.0
+			fleeing_drain    = 40.0
+			killed_drain     = 150.0
+			weapon_range     = 150.0  # Shotgun
+			aim_time         = 0.7
+		DefenderClass.POLICE:
+			morale_max       = 200.0
+			sighting_drain   = 0.0    # Immune to sighting drain
+			grappled_drain   = 100.0
+			fleeing_drain    = 40.0
+			killed_drain     = 150.0
+			weapon_range     = 150.0  # Pistol
+			aim_time         = 0.55
+		DefenderClass.GI:
+			morale_max       = 400.0
+			sighting_drain   = 0.0    # Immune to sighting drain
+			grappled_drain   = 275.0  # Primary breaking point
+			fleeing_drain    = 20.0
+			killed_drain     = 150.0
+			weapon_range     = 250.0  # Assault rifle
+			aim_time         = 0.525
+		DefenderClass.SPEC_OPS:
+			morale_max       = 1000.0
+			sighting_drain   = 0.0    # Immune to sighting drain
+			grappled_drain   = 100.0
+			fleeing_drain    = 0.0    # Immune to fleeing drain
+			killed_drain     = 150.0
+			weapon_range     = 250.0  # Assault rifle
+			aim_time         = 0.26
+	
+	# Initialise morale to full bar after defaults applied
+	morale = morale_max
+	
+	print("🪖 ", name, " initialised as ", DefenderClass.keys()[defender_class],
+		" | morale_max: ", morale_max,
+		" | weapon_range: ", weapon_range,
+		" | aim_time: ", aim_time)
+
 
 ## Called when the node enters the scene tree
 ## Ensures this unit is always on the human team
 func _ready() -> void:
+	# Apply morale and weapon defaults for the selected defender class.
+	# Must run first — other systems may read these values.
+	# Individual export overrides in the Inspector take effect after this.
+	_apply_class_defaults()
+	
 	# Force this unit to be on the human team
 	team = Team.HUMANS
 	
@@ -316,6 +506,38 @@ func _ready() -> void:
 	
 	# Cache the physics space state for raycasting
 	space_state = get_world_2d().direct_space_state
+	
+	# Create morale bar programmatically — hidden when healthy, shown when draining
+	# Sized and positioned to match the health bar (offset-based, not size-based)
+	# Health bar: offset_left=-15, offset_top=-25, offset_right=15, offset_bottom=-20 (30×5px)
+	# Morale bar sits just above it at offset_top=-32, offset_bottom=-27
+	_morale_bar = ProgressBar.new()
+	_morale_bar.min_value = 0.0
+	_morale_bar.max_value = morale_max
+	_morale_bar.value = morale_max
+	_morale_bar.offset_left = -15.0
+	_morale_bar.offset_top = -32.0
+	_morale_bar.offset_right = 15.0
+	_morale_bar.offset_bottom = -27.0
+	_morale_bar.show_percentage = false
+	_morale_bar.visible = false  # Hidden until morale starts dropping
+	# Style: yellow fill on dark background
+	var style_bg := StyleBoxFlat.new()
+	style_bg.bg_color = Color(0.1, 0.1, 0.1, 0.8)
+	var style_fill := StyleBoxFlat.new()
+	style_fill.bg_color = Color(0.9, 0.8, 0.1, 1.0)  # Yellow
+	_morale_bar.add_theme_stylebox_override("background", style_bg)
+	_morale_bar.add_theme_stylebox_override("fill", style_fill)
+	add_child(_morale_bar)
+	
+	# Create tracer Line2D — hidden until a shot fires
+	# Start point at bottom-center of sprite (y=15 = bottom edge in local space)
+	_tracer_line = Line2D.new()
+	_tracer_line.width = 1.5
+	_tracer_line.default_color = Color(1.0, 0.9, 0.3, 0.9)  # Bright yellow
+	_tracer_line.visible = false
+	_tracer_line.z_index = 2
+	add_child(_tracer_line)
 
 
 ## Called every frame (including in editor)
@@ -482,6 +704,24 @@ func _physics_process(delta: float) -> void:
 		check_for_nearby_zombies()
 		detection_timer = detection_interval
 	
+	# === MORALE SIGHTING DRAIN (v0.22.2) ===
+	# Apply continuous drain from visible zombies in range — runs every frame for smoothness.
+	# Suppressed during TUNNEL_VISION (immune to all drain while active).
+	if zombies_in_drain_range_count > 0 and current_state != State.DEAD and current_state != State.GRAPPLED and current_state != State.TUNNEL_VISION:
+		_last_threat_position = _nearest_drain_zombie_pos
+		_drain_morale(sighting_drain * zombies_in_drain_range_count * delta)
+	
+	# === TUNNEL VISION TIMER (v0.22.4) ===
+	if current_state == State.TUNNEL_VISION:
+		_tunnel_vision_timer -= delta
+		if _tunnel_vision_timer <= 0.0:
+			print("🔓 ", name, " tunnel vision ended → SENTRY")
+			current_state = State.SENTRY
+			facing_direction = _tunnel_vision_locked_direction
+			morale = morale_max * 0.5
+			_update_morale_visual()
+		# Don't return here — fall through to shooting system below
+	
 	# Adjust formation cohesion based on state (BEFORE calling super)
 	# Idle/sentry: moderate cohesion (maintain patrol formations)
 	# Fleeing: strong cohesion (panic as a group)
@@ -536,6 +776,17 @@ func _physics_process(delta: float) -> void:
 			facing_direction = velocity.normalized()
 		# Stationary sentries (not patrolling, not following) maintain swing direction
 	
+	# === SHOOTING SYSTEM (v0.22.3) ===
+	# Armed units shoot in IDLE, SENTRY, or TUNNEL_VISION states
+	if weapon_range > 0.0 and (current_state == State.IDLE or current_state == State.SENTRY or current_state == State.TUNNEL_VISION):
+		_update_shooting(delta)
+	
+	# Fade tracer line
+	if _tracer_timer > 0.0:
+		_tracer_timer -= delta
+		if _tracer_timer <= 0.0:
+			_tracer_line.visible = false
+	
 	# Run normal Unit physics processing (movement/combat)
 	super._physics_process(delta)
 
@@ -576,6 +827,12 @@ func can_see_unit(target: Unit) -> bool:
 			if in_range:
 				in_range = is_in_vision_arc(target.position, facing_direction, sentry_vision_angle)
 		
+		State.TUNNEL_VISION:
+			# Locked 45° cone — uses stored locked direction, not current facing
+			in_range = effective_distance <= sentry_vision_range
+			if in_range:
+				in_range = is_in_vision_arc(target.position, _tunnel_vision_locked_direction, TUNNEL_VISION_ANGLE)
+		
 		State.FLEEING:
 			# Fleeing vision - hyper-aware panic state with 360° awareness!
 			# Use 200px range with NO arc restriction (see threats from all directions)
@@ -610,150 +867,6 @@ func is_in_vision_arc(target_pos: Vector2, arc_direction: Vector2, arc_angle_deg
 	return abs(angle_to_target) <= half_angle_rad
 
 
-## Checks for zombies within vision that have line of sight
-## If any are found, initiates flee behavior
-func check_for_nearby_zombies() -> void:
-	# Skip if dead or grappled (no detection)
-	if current_state == State.DEAD or current_state == State.GRAPPLED:
-		return
-	
-	# PANIC SPREADING: Check if nearby humans are being attacked
-	# This allows sentries to react even when facing away from zombies
-	var panic_radius: float = 40.0  # Close range - only immediate neighbors panic
-	var all_humans := get_tree().get_nodes_in_group("humans")
-	
-	for other in all_humans:
-		if other == self or not other is Human:
-			continue
-		
-		var ally := other as Human
-		var distance_to_ally := position.distance_to(ally.position)
-		
-		# Check if nearby ally is in distress
-		if distance_to_ally <= panic_radius:
-			# Only panic when ally is actually GRAPPLED (pinned/in melee)
-			# Not just being chased - has to be in serious danger
-			if ally.current_state == State.GRAPPLED:
-				# PANIC! Friend is being attacked!
-				if current_state != State.FLEEING:
-					print("Human at ", position, " panicking - ally grappled nearby!")
-					current_state = State.FLEEING
-					
-					# Flee away from the ally's position (zombies are there)
-					var flee_away := (position - ally.position).normalized()
-					start_fleeing_in_direction(flee_away)
-					return  # Start fleeing immediately
-	
-	# GROUP VISION SYSTEM:
-	# When humans are grouped (within 50px), they share a collective vision radius
-	# Only the human CLOSEST to a detected zombie reacts first (maintains cascade effect)
-	
-	# Find nearby humans to form a group (reuse all_humans from above)
-	var group_radius: float = 50.0
-	var nearby_humans := []
-	for other in all_humans:  # Reuse all_humans variable from panic spreading check
-		if other == self or not other is Human:
-			continue
-		if position.distance_to(other.position) <= group_radius:
-			nearby_humans.append(other)
-	
-	# Determine vision range: individual or group
-	var effective_vision_range: float = idle_vision_radius  # 100px
-	
-	# Check for zombies within vision range (individual or group shared)
-	var zombies_in_vision := []
-	var zombies := get_tree().get_nodes_in_group("zombies")
-	
-	for zombie in zombies:
-		if not zombie is Unit:
-			continue
-		
-		var zombie_unit := zombie as Unit
-		var distance_to_me := position.distance_to(zombie_unit.position)
-		
-		# If zombie is within effective vision range of this human or any group member
-		# NOTE: Don't subtract UNIT_RADIUS here - can_see_unit() handles it internally!
-		var in_group_vision := false
-		
-		# Check my own vision (can_see_unit does range + LOS + radius adjustment)
-		if can_see_unit(zombie_unit):
-			in_group_vision = true
-		
-		# Check group members' vision (if I'm in a group)
-		if not in_group_vision and nearby_humans.size() > 0:
-			for ally in nearby_humans:
-				var ally_human := ally as Human
-				# Check if ally can see it (can_see_unit handles range + LOS + radius)
-				if ally_human.can_see_unit(zombie_unit):
-					in_group_vision = true
-					break
-		
-		if in_group_vision:
-			zombies_in_vision.append({"zombie": zombie_unit, "distance": distance_to_me})
-	
-	# If zombies detected in group vision, determine which human should react
-	if zombies_in_vision.size() > 0:
-		# Find closest zombie to THIS human
-		zombies_in_vision.sort_custom(func(a, b): return a.distance < b.distance)
-		var nearest_zombie: Unit = zombies_in_vision[0].zombie
-		
-		# In a group, only the human CLOSEST to the zombie reacts first
-		if nearby_humans.size() > 0:
-			# Find which human in the group is closest to the zombie
-			var closest_human: Human = self
-			var closest_distance := position.distance_to(nearest_zombie.position)
-			
-			for ally in nearby_humans:
-				var ally_human := ally as Human
-				var ally_distance: float = ally_human.position.distance_to(nearest_zombie.position)
-				if ally_distance < closest_distance:
-					closest_distance = ally_distance
-					closest_human = ally_human
-			
-			# Only react if I'm the closest (maintains cascade effect)
-			if closest_human != self:
-				return  # Let the closer human react first
-		
-		# This human is the designated detector - react!
-		if current_state != State.FLEEING:
-			# Not fleeing yet - start fleeing immediately
-			print("Human at ", position, " detected zombie - fleeing!")
-			current_state = State.FLEEING
-			
-			# Stop patrolling if we were
-			is_patrolling = false
-			
-			start_fleeing(nearest_zombie)
-			
-			# GROUP STATE PROPAGATION: Tell nearby allies to flee too
-			propagate_flee_to_group(nearest_zombie)
-		else:
-			# Already fleeing, update flee direction based on new threat
-			update_flee_direction(nearest_zombie)
-	else:
-		# No zombies visible - use intelligent priority system
-		if current_state == State.FLEEING:
-			# Call our smart flee system which handles:
-			# - Being pursued detection
-			# - Escape zone seeking
-			# - 5-second momentum timeout
-			# - Stopping when truly safe
-			var flee_dir := calculate_flee_direction()
-			
-			if flee_dir == Vector2.ZERO:
-				# Priority system determined we're truly safe - stop fleeing
-				print("Human at ", position, " stopped fleeing - truly safe (timeout/no threats)")
-				last_flee_direction = Vector2.ZERO
-				if initial_state == State.SENTRY:
-					current_state = State.SENTRY
-				else:
-					current_state = State.IDLE
-			else:
-				# Priority system says keep fleeing (momentum/pursuit/escape zone)
-				var flee_target := position + flee_dir * flee_distance
-				set_move_target(flee_target)
-
-
 ## Finds the nearest zombie that is both within vision range AND visible
 ## Uses vision cones/circles and line-of-sight raycasting
 ## @return: The nearest visible zombie, or null if none found
@@ -783,7 +896,314 @@ func find_nearest_visible_zombie() -> Unit:
 	return nearest_visible
 
 
-## Checks if there's a clear line of sight between this human and a target
+## Checks for nearby zombies and allies each detection tick.
+## Drives the morale system:
+##   - Counts zombies in drain range → stored for per-frame sighting drain
+##   - Detects ally state transitions → applies one-time morale hits
+##   - Continues updating flee direction if already fleeing
+## (v0.22.2 — replaces binary flee trigger and propagate_flee_to_group cascade)
+func check_for_nearby_zombies() -> void:
+	# Skip if dead or grappled (no detection)
+	# Also skip during tunnel vision — immune to all morale drain events while active
+	if current_state == State.DEAD or current_state == State.GRAPPLED or current_state == State.TUNNEL_VISION:
+		return
+	
+	var all_humans := get_tree().get_nodes_in_group("humans")
+	var morale_event_radius: float = 150.0  # Radius for ally event hooks
+	
+	# === ALLY STATE TRANSITION HOOKS ===
+	# Scan nearby allies and detect state transitions since last tick.
+	# One-time flat morale hits are applied on the tick the transition is first detected.
+	var current_ally_states: Dictionary = {}
+	
+	for other in all_humans:
+		if other == self or not other is Human:
+			continue
+		var ally := other as Human
+		if not is_instance_valid(ally) or ally.current_state == State.DEAD:
+			continue
+		
+		var dist := position.distance_to(ally.position)
+		if dist > morale_event_radius:
+			continue
+		
+		var ally_id := ally.get_instance_id()
+		var current_ally_state := ally.current_state
+		current_ally_states[ally_id] = current_ally_state
+		
+		# Only fire transition events if we knew this ally before
+		if _last_ally_states.has(ally_id):
+			var last_state = _last_ally_states[ally_id]
+			
+			# Ally just transitioned to GRAPPLED → apply grappled_drain
+			if current_ally_state == State.GRAPPLED and last_state != State.GRAPPLED:
+				print("💛 ", name, " morale hit: ally grappled nearby (", int(dist), "px) — -", grappled_drain)
+				# Point toward the zombie on top of the ally, not the ally themselves
+				_last_threat_position = _find_closest_zombie_to(ally.position)
+				_drain_morale(grappled_drain)
+			
+			# Ally just transitioned to FLEEING (moving past) → apply fleeing_drain
+			if current_ally_state == State.FLEEING and last_state != State.FLEEING:
+				if ally.velocity.length() > 10.0:  # Must be actually moving (fleeing past)
+					print("💛 ", name, " morale hit: ally fleeing past (", int(dist), "px) — -", fleeing_drain)
+					_last_threat_position = _find_closest_zombie_to(ally.position)
+					_drain_morale(fleeing_drain)
+	
+	# Replace last known ally states with current snapshot (only tracked allies)
+	_last_ally_states = current_ally_states
+	
+	# === ZOMBIE DRAIN RANGE COUNT ===
+	# Count visible zombies within morale drain range.
+	# For armed units: weapon_range threshold. For civilians: full vision range.
+	# Result stored in zombies_in_drain_range_count for per-frame sighting drain.
+	var drain_threshold: float = weapon_range if weapon_range > 0.0 else sentry_vision_range
+	var zombies := get_tree().get_nodes_in_group("zombies")
+	var new_drain_count: int = 0
+	var nearest_drain_dist := INF
+	
+	for zombie in zombies:
+		if not zombie is Zombie or not is_instance_valid(zombie):
+			continue
+		var z := zombie as Zombie
+		if z.current_state == Zombie.State.DEAD:
+			continue
+		var dist_to_zombie := position.distance_to(z.position)
+		if dist_to_zombie <= drain_threshold and can_see_unit(z):
+			new_drain_count += 1
+			if dist_to_zombie < nearest_drain_dist:
+				nearest_drain_dist = dist_to_zombie
+				_nearest_drain_zombie_pos = z.position
+	
+	zombies_in_drain_range_count = new_drain_count
+	
+	# === FLEE DIRECTION UPDATE ===
+	# If already fleeing, keep updating movement direction toward safety.
+	# (Flee initiation is now handled by _check_morale(), not here.)
+	if current_state == State.FLEEING:
+		var flee_dir := calculate_flee_direction()
+		if flee_dir == Vector2.ZERO:
+			# Priority system says we're safe — stop fleeing
+			print("Human at ", position, " stopped fleeing - truly safe")
+			last_flee_direction = Vector2.ZERO
+			zombies_in_drain_range_count = 0
+			current_state = State.SENTRY if initial_state == State.SENTRY else State.IDLE
+			# Recover to half morale — still rattled, more vulnerable to second trigger
+			morale = morale_max * 0.5
+			_update_morale_visual()
+		else:
+			var flee_target := position + flee_dir * flee_distance
+			set_move_target(flee_target)
+
+
+## === SHOOTING SYSTEM METHODS (v0.22.3) ===
+
+## Main shooting update — called every frame for armed units in IDLE/SENTRY.
+## Handles target acquisition, aim countdown, LOS pause, and firing.
+## @param delta: Time since last frame
+func _update_shooting(delta: float) -> void:
+	# If we have a target, check it's still valid
+	if shoot_target != null:
+		if not is_instance_valid(shoot_target) or shoot_target.current_state == Zombie.State.DEAD:
+			shoot_target = null
+			_aim_timer = 0.0
+			_aim_paused = false
+			return
+		
+		var in_vision := can_see_unit(shoot_target)  # Full vision cone check
+		var in_weapon_range := position.distance_to(shoot_target.position) <= weapon_range
+		
+		if in_vision:
+			# Target visible in cone — run aim timer regardless of weapon range
+			_aim_paused = false
+			_aim_timer -= delta
+			if _aim_timer <= 0.0:
+				if in_weapon_range:
+					# In range — fire
+					_fire_at(shoot_target)
+					# Reacquire immediately
+					shoot_target = _acquire_shoot_target()
+					_aim_timer = aim_time if shoot_target != null else 0.0
+					_aim_paused = false
+				else:
+					# Timer expired but not in range yet — hold at 0, wait for zombie to close
+					_aim_timer = 0.0
+		else:
+			# Lost vision entirely (building or left cone) — pause timer
+			if not _aim_paused:
+				_aim_paused = true
+				print("⏸️ ", name, " aim paused — target lost from vision cone")
+			# If target has also left vision range entirely, drop it and reacquire
+			if position.distance_to(shoot_target.position) > sentry_vision_range:
+				shoot_target = _acquire_shoot_target()
+				_aim_timer = aim_time if shoot_target != null else 0.0
+				_aim_paused = false
+	else:
+		# No target — try to acquire within vision cone
+		shoot_target = _acquire_shoot_target()
+		if shoot_target:
+			_aim_timer = aim_time
+			_aim_paused = false
+			print("🎯 ", name, " acquired target: ", shoot_target.name, " (", int(position.distance_to(shoot_target.position)), "px)")
+
+
+## Finds the closest zombie visible in the vision cone (full vision range).
+## Acquisition range = full vision (350px), not weapon range.
+## @return: Closest valid shoot target, or null if none found
+func _acquire_shoot_target() -> Unit:
+	var zombies := get_tree().get_nodes_in_group("zombies")
+	var best_target: Unit = null
+	var best_dist := INF
+	
+	for z in zombies:
+		if not z is Zombie or not is_instance_valid(z):
+			continue
+		var zombie := z as Zombie
+		if zombie.current_state == Zombie.State.DEAD:
+			continue
+		if not can_see_unit(zombie):  # Uses full vision range + cone + LOS
+			continue
+		var dist := position.distance_to(zombie.position)
+		if dist < best_dist:
+			best_dist = dist
+			best_target = zombie
+	
+	return best_target
+
+
+## Fires a shot at the target — draws tracer first, then applies damage.
+## Tracer drawn before damage so it's visible even if the zombie dies instantly.
+## @param target: The zombie to shoot
+func _fire_at(target: Unit) -> void:
+	if not is_instance_valid(target):
+		return
+	
+	print("⚡ ", name, " fired at ", target.name, " (", int(position.distance_to(target.position)), "px)")
+	
+	# Draw tracer FIRST — before damage — so it's visible even if zombie dies this frame
+	var start_local := Vector2(0.0, 15.0)  # Bottom edge of sprite
+	var target_local := to_local(target.global_position)
+	_tracer_line.clear_points()
+	_tracer_line.add_point(start_local)
+	_tracer_line.add_point(target_local)
+	_tracer_line.visible = true
+	_tracer_timer = TRACER_FADE_DURATION
+	
+	# Apply damage after tracer is set up — 50 = one-shot kill (humans have 75hp)
+	# Knockback pushes zombie AWAY from shooter (target - shooter = toward target, so negate it)
+	var shot_direction := (target.global_position - global_position).normalized()
+	if target is Zombie:
+		(target as Zombie).take_damage(50.0, shot_direction)
+	else:
+		target.take_damage(50.0)
+
+
+## === MORALE SYSTEM METHODS (v0.22.2) ===
+
+## Applies a morale drain, clamps to 0, and checks for response trigger.
+## @param amount: Amount to subtract from current morale (positive value)
+func _drain_morale(amount: float) -> void:
+	if current_state == State.DEAD or current_state == State.GRAPPLED:
+		return
+	morale = max(0.0, morale - amount)
+	_update_morale_visual()
+	_check_morale()
+
+
+## Checks if morale has hit 0 and triggers the primary stress response.
+## For Civilian, Militia, Police: flee.
+## Tunnel Vision (GI, Spec Ops) implemented in Phase 5.
+func _check_morale() -> void:
+	if morale > 0.0 or current_state == State.FLEEING:
+		return
+	if current_state == State.DEAD or current_state == State.GRAPPLED:
+		return
+	
+	match defender_class:
+		DefenderClass.CIVILIAN, DefenderClass.MILITIA, DefenderClass.POLICE:
+			print("💀 ", name, " morale empty → FLEEING (", DefenderClass.keys()[defender_class], ")")
+			current_state = State.FLEEING
+			is_patrolling = false
+			# Find nearest visible zombie to flee from; fall back to direction-only if none
+			var threat := find_nearest_visible_zombie()
+			if threat:
+				start_fleeing(threat)
+			else:
+				# No visible zombie — flee away from nearest zombie in any direction
+				var zombies := get_tree().get_nodes_in_group("zombies")
+				var nearest_zombie: Unit = null
+				var nearest_dist := INF
+				for z in zombies:
+					if z is Zombie and z.current_state != Zombie.State.DEAD:
+						var d := position.distance_to(z.position)
+						if d < nearest_dist:
+							nearest_dist = d
+							nearest_zombie = z
+				if nearest_zombie:
+					var away := (position - nearest_zombie.position).normalized()
+					start_fleeing_in_direction(away)
+		DefenderClass.GI, DefenderClass.SPEC_OPS:
+			print("🔍 ", name, " tunnel vision → locked toward threat")
+			current_state = State.TUNNEL_VISION
+			is_patrolling = false
+			# Lock toward the event that broke morale — face the threat, not just forward
+			if _last_threat_position != Vector2.ZERO:
+				_tunnel_vision_locked_direction = ((_last_threat_position - position).normalized())
+			else:
+				_tunnel_vision_locked_direction = facing_direction  # Fallback to current facing
+			_tunnel_vision_timer = TUNNEL_VISION_DURATION
+
+
+## Updates the morale bar visibility based on current morale.
+## Bar appears below 80% morale only when unit is IDLE or SENTRY.
+## Hidden when fleeing, grappled, or dead — no longer actionable in those states.
+func _update_morale_visual() -> void:
+	if not _morale_bar:
+		return
+	
+	# Only show bar when unit is standing their ground
+	if current_state != State.IDLE and current_state != State.SENTRY:
+		_morale_bar.visible = false
+		return
+	
+	var ratio := morale / morale_max if morale_max > 0.0 else 0.0
+	_morale_bar.max_value = morale_max
+	_morale_bar.value = morale
+	_morale_bar.visible = ratio < 0.8
+
+
+## Finds the world position of the closest zombie to a given point.
+## Used to point tunnel vision toward the zombie causing an ally event,
+## rather than toward the ally themselves.
+## Falls back to the reference point if no zombies found.
+## @param point: World position to search near
+## @return: Position of closest zombie, or point if none found
+func _find_closest_zombie_to(point: Vector2) -> Vector2:
+	var zombies := get_tree().get_nodes_in_group("zombies")
+	var closest_pos := point  # Fallback
+	var closest_dist := INF
+	for z in zombies:
+		if not z is Zombie or not is_instance_valid(z):
+			continue
+		if (z as Zombie).current_state == Zombie.State.DEAD:
+			continue
+		var d := point.distance_to(z.position)
+		if d < closest_dist:
+			closest_dist = d
+			closest_pos = z.position
+	return closest_pos
+
+
+## Called by a dying nearby ally to apply killed_drain to this unit.
+## Invoked from die() on humans within 150px.
+## @param ally_position: World position of the ally that died
+func receive_ally_killed_shock(ally_position: Vector2) -> void:
+	if current_state == State.DEAD or current_state == State.GRAPPLED:
+		return
+	print("💛 ", name, " morale hit: ally killed nearby — -", killed_drain)
+	_last_threat_position = _find_closest_zombie_to(ally_position)
+	_drain_morale(killed_drain)
+
+
 ## Uses raycasting to detect if buildings are blocking the view
 ## @param target: The Unit to check line of sight to
 ## @return: true if we can see the target, false if buildings block the view
@@ -1626,6 +2046,13 @@ func die() -> void:
 	# (GameManager uses this to check win conditions and track remaining humans)
 	human_died.emit(self)
 	
+	# Notify nearby humans of this death — triggers killed_drain on their morale bars
+	var all_humans := get_tree().get_nodes_in_group("humans")
+	for other in all_humans:
+		if other is Human and other != self and is_instance_valid(other):
+			if position.distance_to(other.position) <= 150.0:
+				other.receive_ally_killed_shock(position)
+	
 	# Enter dead state (don't remove immediately)
 	current_state = State.DEAD
 	is_dead = true  # Keep for compatibility with other systems
@@ -1771,64 +2198,50 @@ func update_targeting_visual() -> void:
 		selection_indicator.visible = false
 
 
-## === GROUP STATE PROPAGATION ===
-
-## Propagates flee state to nearby allies when this human spots a zombie.
-## Uses distance-based reaction delays (closer allies react sooner).
-## Depth parameter limits how many hops the panic can spread from the original sighting.
-## @param threat: The zombie that triggered the flee
-## @param depth: How many hops this propagation is from the original sighting (0 = direct detector)
-func propagate_flee_to_group(threat: Unit, depth: int = 0) -> void:
-	# Stop propagating if we've reached the depth cap
-	if depth >= panic_propagation_depth:
-		print("🛑 PANIC CHAIN stopped at depth ", depth, " for ", name)
-		return
-	
-	var propagation_radius: float = 80.0
-	var min_group_size: int = 4
-	
-	var nearby_allies: Array[Human] = []
-	var humans := get_tree().get_nodes_in_group("humans")
-	
-	for other in humans:
-		if other == self or not other is Human:
-			continue
-		
-		var human := other as Human
-		
-		# Only propagate to idle/sentry humans (not already fleeing/grappled)
-		if human.current_state != State.IDLE and human.current_state != State.SENTRY:
-			continue
-		
-		var distance: float = position.distance_to(human.position)
-		if distance <= propagation_radius:
-			nearby_allies.append(human)
-	
-	# Only propagate if we have enough allies to form a panic mob
-	if nearby_allies.size() < min_group_size - 1:
-		return
-	
-	print("PANIC MOB (depth ", depth, "): ", nearby_allies.size() + 1, " humans fleeing together!")
-	
-	for ally in nearby_allies:
-		# Distance-based delay: 0px away = 0.0s, 80px away = max_delay
-		# Closer allies react sooner — tight formations react near-simultaneously
-		var max_delay: float = 0.4
-		var distance: float = position.distance_to(ally.position)
-		var delay: float = (distance / propagation_radius) * max_delay
-		
-		if delay > 0.01:
-			get_tree().create_timer(delay).timeout.connect(
-				func():
-					if is_instance_valid(ally) and ally.current_state != State.FLEEING:
-						ally.current_state = State.FLEEING
-						ally.start_fleeing(threat)
-						# Propagate onwards at depth + 1
-						ally.propagate_flee_to_group(threat, depth + 1)
-			)
-		else:
-			# Close enough to react immediately
-			if ally.current_state != State.FLEEING:
-				ally.current_state = State.FLEEING
-				ally.start_fleeing(threat)
-				ally.propagate_flee_to_group(threat, depth + 1)
+## === GROUP STATE PROPAGATION — DEPRECATED (v0.22.2) ===
+##
+## propagate_flee_to_group() is replaced by the morale system.
+## Every unit now drains morale independently based on proximity to events.
+## Explicit propagation chains are no longer needed — runaway cascades are
+## naturally limited by per-class morale_max values rather than a depth cap.
+##
+## Kept for reference. This function is no longer called anywhere.
+## Will be removed in a future cleanup pass.
+##
+## func propagate_flee_to_group(threat: Unit, depth: int = 0) -> void:
+## 	if depth >= panic_propagation_depth:
+## 		print("🛑 PANIC CHAIN stopped at depth ", depth, " for ", name)
+## 		return
+## 	var propagation_radius: float = 80.0
+## 	var min_group_size: int = 4
+## 	var nearby_allies: Array[Human] = []
+## 	var humans := get_tree().get_nodes_in_group("humans")
+## 	for other in humans:
+## 		if other == self or not other is Human:
+## 			continue
+## 		var human := other as Human
+## 		if human.current_state != State.IDLE and human.current_state != State.SENTRY:
+## 			continue
+## 		var distance: float = position.distance_to(human.position)
+## 		if distance <= propagation_radius:
+## 			nearby_allies.append(human)
+## 	if nearby_allies.size() < min_group_size - 1:
+## 		return
+## 	print("PANIC MOB (depth ", depth, "): ", nearby_allies.size() + 1, " humans fleeing together!")
+## 	for ally in nearby_allies:
+## 		var max_delay: float = 0.4
+## 		var distance: float = position.distance_to(ally.position)
+## 		var delay: float = (distance / propagation_radius) * max_delay
+## 		if delay > 0.01:
+## 			get_tree().create_timer(delay).timeout.connect(
+## 				func():
+## 					if is_instance_valid(ally) and ally.current_state != State.FLEEING:
+## 						ally.current_state = State.FLEEING
+## 						ally.start_fleeing(threat)
+## 						ally.propagate_flee_to_group(threat, depth + 1)
+## 			)
+## 		else:
+## 			if ally.current_state != State.FLEEING:
+## 				ally.current_state = State.FLEEING
+## 				ally.start_fleeing(threat)
+## 				ally.propagate_flee_to_group(threat, depth + 1)

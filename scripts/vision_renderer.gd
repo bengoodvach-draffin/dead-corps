@@ -26,6 +26,14 @@ const HUMAN_IDLE_COLOR := Color(0.3, 0.5, 1.0, 0.15)  # Light blue
 const HUMAN_SENTRY_COLOR := Color(0.5, 0.5, 1.0, 0.2)  # Blue
 const HUMAN_FLEEING_COLOR := Color(1.0, 0.3, 0.3, 0.2)  # Red
 
+## Dual-zone arc colors (armed humans only — v0.22.1)
+## Outer zone = detection range (transparent) — aim timer starts here
+## Inner zone = shooting range (more solid) — morale drain and shots fire here
+const HUMAN_DETECTION_ZONE_COLOR := Color(0.5, 0.5, 1.0, 0.10)   # Faint blue — outer zone
+const HUMAN_SHOOTING_ZONE_COLOR  := Color(0.5, 0.8, 1.0, 0.35)   # Bright blue — inner zone
+const HUMAN_FLEE_DETECTION_COLOR := Color(1.0, 0.3, 0.3, 0.10)   # Faint red — outer flee zone
+const HUMAN_FLEE_SHOOTING_COLOR  := Color(1.0, 0.5, 0.3, 0.35)   # Bright red — inner flee zone
+
 const ZOMBIE_IDLE_COLOR := Color(0.3, 1.0, 0.3, 0.15)  # Light green
 const ZOMBIE_ACTIVE_COLOR := Color(0.5, 1.0, 0.5, 0.2)  # Green
 
@@ -186,6 +194,8 @@ func get_unit_state(unit: Unit) -> int:
 				return 1
 			Human.State.FLEEING:
 				return 2
+			Human.State.TUNNEL_VISION:
+				return 3
 			_:
 				return -1  # Dead, grappled = no vision
 	elif unit is Zombie:
@@ -214,6 +224,10 @@ func should_show_vision(unit: Unit, is_human: bool) -> bool:
 		
 		# Always show sentry arcs (tactical watching)
 		if human.current_state == Human.State.SENTRY:
+			return true
+		
+		# Always show tunnel vision cone — important tactical information for player
+		if human.current_state == Human.State.TUNNEL_VISION:
 			return true
 		
 		# REMOVED: Don't show fleeing arcs (reduces action clutter)
@@ -543,31 +557,63 @@ func draw_count_badge(center: Vector2, count: int, color: Color) -> void:
 
 
 ## Draws vision for a human unit
+## Armed humans (weapon_range > 0) get dual-zone arcs:
+##   - Outer zone: detection range (transparent) — aim timer activates here
+##   - Inner zone: shooting range (solid) — morale drain and shots fire here
+## Unarmed civilians get a single-zone arc as before.
 func draw_human_vision(human: Human) -> void:
 	# Skip dead or grappled humans (no vision)
 	if human.current_state == Human.State.DEAD or human.current_state == Human.State.GRAPPLED:
 		return
 	
 	var pos := human.position
-	var color: Color
+	var is_armed: bool = human.weapon_range > 0.0
 	
 	match human.current_state:
 		Human.State.IDLE:
-			# Circle vision with building clipping
-			color = HUMAN_IDLE_COLOR
-			draw_vision_circle(pos, human.idle_vision_radius, color)
+			# Circle vision — single zone, no dual-zone for idle
+			draw_vision_circle(pos, human.idle_vision_radius, HUMAN_IDLE_COLOR)
 		
 		Human.State.SENTRY:
-			# Arc vision
-			color = HUMAN_SENTRY_COLOR
-			draw_vision_arc(pos, human.facing_direction, human.sentry_vision_range, 
-							human.sentry_vision_angle, color)
+			if is_armed:
+				# Dual-zone arc: outer detection zone then inner shooting zone on top
+				draw_vision_arc_dual_zone(
+					pos, human.facing_direction,
+					human.sentry_vision_range, human.weapon_range,
+					human.sentry_vision_angle,
+					HUMAN_DETECTION_ZONE_COLOR, HUMAN_SHOOTING_ZONE_COLOR
+				)
+			else:
+				# Civilian: single zone at full vision range
+				draw_vision_arc(pos, human.facing_direction, human.sentry_vision_range,
+								human.sentry_vision_angle, HUMAN_SENTRY_COLOR)
 		
 		Human.State.FLEEING:
-			# Forward arc
-			color = HUMAN_FLEEING_COLOR
-			draw_vision_arc(pos, human.facing_direction, human.flee_vision_range,
-							human.flee_vision_angle, color)
+			if is_armed:
+				draw_vision_arc_dual_zone(
+					pos, human.facing_direction,
+					human.flee_vision_range, human.weapon_range,
+					human.flee_vision_angle,
+					HUMAN_FLEE_DETECTION_COLOR, HUMAN_FLEE_SHOOTING_COLOR
+				)
+			else:
+				draw_vision_arc(pos, human.facing_direction, human.flee_vision_range,
+								human.flee_vision_angle, HUMAN_FLEEING_COLOR)
+		
+		Human.State.TUNNEL_VISION:
+			# Narrowed 45° locked cone — bright orange to distinguish from normal sentry arc
+			var tv_outer := Color(1.0, 0.5, 0.1, 0.12)  # Faint orange detection zone
+			var tv_inner := Color(1.0, 0.6, 0.1, 0.45)  # Bright orange shooting zone
+			if is_armed:
+				draw_vision_arc_dual_zone(
+					pos, human._tunnel_vision_locked_direction,
+					human.sentry_vision_range, human.weapon_range,
+					human.TUNNEL_VISION_ANGLE,
+					tv_outer, tv_inner
+				)
+			else:
+				draw_vision_arc(pos, human._tunnel_vision_locked_direction,
+								human.sentry_vision_range, human.TUNNEL_VISION_ANGLE, tv_outer)
 
 
 ## Draws vision for a zombie unit
@@ -590,6 +636,32 @@ func draw_zombie_vision(zombie: Zombie) -> void:
 			color = ZOMBIE_ACTIVE_COLOR
 			draw_vision_arc(pos, zombie.facing_direction, zombie.active_vision_range,
 							zombie.active_vision_angle, color)
+
+
+## Draws a dual-zone vision arc for armed human units.
+## Outer zone (detection_range): faint fill — zombies here trigger aim timer only.
+## Inner zone (shooting_range): solid fill — zombies here trigger morale drain and shots.
+## Both zones respect building LOS clipping.
+## @param pos: Unit world position
+## @param direction: Facing direction (normalized Vector2)
+## @param detection_range: Outer zone radius (full vision range, e.g. 350px)
+## @param shooting_range: Inner zone radius (weapon range, e.g. 150px or 250px)
+## @param angle_degrees: Total arc angle (90°)
+## @param outer_color: Color for outer detection zone
+## @param inner_color: Color for inner shooting zone
+func draw_vision_arc_dual_zone(
+	pos: Vector2,
+	direction: Vector2,
+	detection_range: float,
+	shooting_range: float,
+	angle_degrees: float,
+	outer_color: Color,
+	inner_color: Color
+) -> void:
+	# Draw outer detection zone first (underneath)
+	draw_vision_arc(pos, direction, detection_range, angle_degrees, outer_color)
+	# Draw inner shooting zone on top — same arc angle, shorter range
+	draw_vision_arc(pos, direction, shooting_range, angle_degrees, inner_color)
 
 
 ## Draws a vision arc (cone)

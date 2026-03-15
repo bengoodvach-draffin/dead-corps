@@ -37,13 +37,13 @@ class_name CameraController
 ## Smaller values = more gradual zoom, larger values = faster zoom jumps
 @export var zoom_speed: float = 0.1
 
-## Minimum zoom level (0.5 = zoomed out, smaller numbers = even more zoomed out)
-## Prevents zooming out too far
+## Minimum zoom level — most zoomed out the player can go
+## 0.5 = half scale, good overview of the level
 @export var min_zoom: float = 0.5
 
-## Maximum zoom level (2.0 = zoomed in, larger numbers = even more zoomed in)
-## Prevents zooming in too close
-@export var max_zoom: float = 2.0
+## Maximum zoom level — set to default starting zoom so player can only zoom out
+## 2.5 = Shadow Tactics scale (~60px units at 1080p)
+@export var max_zoom: float = 2.5
 
 ## Speed of zoom interpolation (higher = snappier, lower = smoother)
 ## Multiplied by delta time and used in lerp() for smooth transitions
@@ -68,8 +68,9 @@ class_name CameraController
 # === RUNTIME STATE VARIABLES ===
 
 ## The zoom level we're smoothly transitioning toward
+## Default 2.5 = Shadow Tactics-scale (units appear ~60px on screen at 1080p)
 ## Actual zoom interpolates toward this value for smooth animation
-var target_zoom: float = 1.0
+var target_zoom: float = 2.5
 
 ## Cached size of the viewport (in pixels)
 ## Used for edge scroll detection
@@ -82,9 +83,10 @@ func _ready() -> void:
 	# Cache the viewport size (window/screen size)
 	viewport_size = get_viewport_rect().size
 	
-	# Initialize target zoom to current zoom
-	# (zoom.x and zoom.y are always kept in sync)
-	target_zoom = zoom.x
+	# Set starting zoom to 1.0 for debugging — player can zoom out further
+	# Target for final game is 2.5 (Shadow Tactics scale)
+	target_zoom = 1.0
+	zoom = Vector2(1.0, 1.0)
 	
 	# Sync bounds from WorldBounds if use_bounds is true and
 	# bounds haven't been manually overridden in the Inspector

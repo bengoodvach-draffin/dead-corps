@@ -1,8 +1,17 @@
 # Dead Corps — Human Defender System Spec
-**Date:** March 15, 2026
-**Status:** Designed, not yet implemented
-**Target version:** v0.22.0
+**Date:** March 15, 2026  
+**Status:** Implemented (v0.22.0–v0.22.5) — integration testing pending (v0.22.6)  
 **Replaces:** Binary flee trigger, depth-capped propagation chain
+
+**Amendments from original spec (implemented differently):**
+- Ally event radius: 80px → **150px**
+- Tunnel Vision cone: 22.5° → **22.5°**
+- Tunnel Vision locks toward **threat zombie position**, not current facing
+- Morale bar shows only in **IDLE/SENTRY** (hides on FLEEING, GRAPPLED, DEAD)
+- Color tint on morale drain **removed** — bar only
+- Zombie death delay: **0.3s** (was 0.25s)
+- Shot knockback: **8px position tween** over 0.15s (not velocity impulse)
+- Dead human color: **Color(0.8, 0.2, 0.2)** (not 0.7, 0.1, 0.1 as originally spec'd)
 
 ---
 
@@ -124,17 +133,17 @@ Every defender has a `morale` value starting at `morale_max`. Stress events drai
 
 **Ally grappled (flat one-time hit):**
 - Triggers once when a nearby ally transitions to GRAPPLED
-- Radius: 80px
+- Radius: 150px
 - One hit per grapple event
 
 **Ally fleeing (flat one-time hit):**
 - Triggers when a fleeing ally moves through vicinity
 - Requires movement — stationary fleeing unit doesn't trigger
-- Radius: 80px
+- Radius: 150px
 
 **Ally killed (flat one-time hit):**
 - Triggers on nearby ally death (not conversion — death is the traumatic moment)
-- Radius: 80px
+- Radius: 150px
 
 ### 4.4 Key Scenario Validation
 
@@ -176,17 +185,19 @@ IDLE, SENTRY, FLEEING, GRAPPLED, DEAD
 
 *Mechanic:*
 - Duration: 10 seconds
-- Unit rotation locks in the direction of current target at moment of trigger
-- Vision cone narrows from 90° to 45°
+- Rotation locks **toward the zombie that caused the morale-emptying event** (not current facing)
+  - Ally grappled/killed: finds closest zombie to that ally's position
+  - Sighting drain: tracks nearest zombie in drain range
+- Vision cone narrows from 90° to **22.5°**
 - Unit keeps shooting at whatever enters the narrowed cone
-- Zombies approaching from outside the 45° cone are completely undetected
+- Zombies approaching from outside the 22.5° cone are completely undetected
 - Immune to all morale drain events while active
-- After 10 seconds: reverts to SENTRY, rotation unlocks, cone returns to 90°
+- After 10 seconds: reverts to SENTRY, cone returns to 90°, morale resets to 50%
 
 *Tactical implication:*
-- Player must deliberately provoke tunnel vision (e.g. using Costume Zombie to approach safely)
-- Once triggered, flanking zombies can approach freely from outside the cone
-- Creates a sustained 10-second exploitable blind spot
+- Deliberately provoking tunnel vision (e.g. sacrificing a zombie to grapple an ally) opens up the flanks
+- The narrow 22.5° cone creates a dramatic, readable blind spot
+- GI saving a grappled ally is an emergent possibility — if the zombie is in the locked cone, the shot kills it before the human dies
 
 **FREEZE** — Civilian only (deferred — see Section 10)
 - 5-second paralysis before fleeing
@@ -236,7 +247,7 @@ Zombies already have a DEAD state triggered on melee kill. This handles death by
 | Idle circle (all classes) | 100px | 100px (unchanged) |
 | Sentry arc | 180px | 350px |
 | Fleeing arc | 180px | 350px |
-| Tunnel Vision arc | N/A | 45° cone, locked rotation, 10s |
+| Tunnel Vision arc | N/A | 22.5° cone, locked rotation, 10s |
 
 ### 7.2 Dual-Zone Vision Arc (New)
 
@@ -320,14 +331,14 @@ Use the five-class combat table from Section 2.
 - Idle circle: 100px (unchanged)
 - Dual-zone arcs: detection zone (350px) + shooting zone (weapon range)
 - Morale drain activates in shooting zone for armed units, full range for civilians
-- Tunnel Vision: 45° cone, locked rotation, 10s duration
+- Tunnel Vision: 22.5° cone, locked rotation, 10s duration
 
 **Section 4 — Update Human Stats:**
 ```
 Vision (Sentry/Fleeing): 350px arc, 90° (was 180px)
 Vision (Idle): 100px circle (unchanged)
-Vision (Tunnel Vision): 45° cone, locked, 10s
-Morale drain radius: 80px
+Vision (Tunnel Vision): 22.5° cone, locked, 10s
+Morale drain radius: 150px
 ```
 
 ---
@@ -356,11 +367,11 @@ Morale drain radius: 80px
 ```
 Human vision (SENTRY/FLEEING): 350px (was 180px)
 Human vision (IDLE): 100px (unchanged)
-Morale drain radius: 80px
+Morale drain radius: 150px
 Weapon range Militia/Police: 150px
 Weapon range GI/Spec Ops: 250px
 Tunnel Vision duration: 10s
-Tunnel Vision cone: 45°
+Tunnel Vision cone: 22.5°
 Dead zombie color: Color(0.4, 0.0, 0.0)
 Dead human color: Color(0.7, 0.1, 0.1)
 ```
@@ -404,7 +415,7 @@ Validation: 350px cones on all humans. Armed units show inner shooting zone. Civ
 - Sighting drain in `_physics_process()`:
   - Armed: count visible zombies within weapon_range, drain × count × delta
   - Civilian: count visible zombies within full vision range, drain × count × delta
-- Ally event hooks (80px radius):
+- Ally event hooks (150px radius):
   - Ally → GRAPPLED: apply grappled_drain
   - Fleeing ally moves through radius: apply fleeing_drain
   - Ally dies: apply killed_drain
@@ -438,9 +449,9 @@ Validation: Each class kills correct number frontally. Timer pauses on LOS loss.
 - GI/Spec Ops: transition to TUNNEL_VISION when morale reaches 0
 - On entry: lock rotation, narrow cone 90°→45°, start 10s timer
 - Suppress all morale drain events while active
-- Peripheral zombies outside 45° cone undetected
+- Peripheral zombies outside 22.5° cone undetected
 - Timer expires: revert to SENTRY, unlock rotation, restore 90° cone
-- Update VisionRenderer to render 45° cone in TUNNEL_VISION
+- Update VisionRenderer to render 22.5° cone in TUNNEL_VISION
 - Debug: 🔍 [Name] tunnel vision triggered, 🔓 [Name] tunnel vision ended
 
 Validation: Cone visibly narrows. Flanking zombies approach unseen. Reverts after 10s.

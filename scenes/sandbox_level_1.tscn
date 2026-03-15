@@ -174,7 +174,7 @@ alignment_rate = 0.3
 [node name="Human4" parent="TestLevel/Humans" unique_id=497734529 instance=ExtResource("5_gn3b0")]
 position = Vector2(320, -335)
 initial_state = 1
-sentry_vision_range = 250.0
+sentry_vision_range = 350.0
 unit_radius = null
 cohesion_strength = 12.0
 alignment_rate = 0.3
