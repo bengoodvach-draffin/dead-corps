@@ -95,7 +95,7 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human3" parent="TestLevel/Humans" unique_id=1909313656 instance=ExtResource("6_qckbd")]
-position = Vector2(135, -371)
+position = Vector2(126, -389)
 initial_state = 1
 defender_class = 1
 morale_max = 150.0
@@ -104,6 +104,34 @@ fleeing_drain = 40.0
 weapon_range = 150.0
 aim_time = 0.7
 sentry_facing_degrees = 180.0
+flee_vision_range = 100.0
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human8" parent="TestLevel/Humans" unique_id=1346925049 instance=ExtResource("6_qckbd")]
+position = Vector2(256, -418)
+initial_state = 1
+defender_class = 1
+morale_max = 150.0
+sighting_drain = 35.0
+fleeing_drain = 40.0
+weapon_range = 150.0
+aim_time = 0.7
+sentry_facing_degrees = 156.0
+flee_vision_range = 100.0
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human9" parent="TestLevel/Humans" unique_id=576160070 instance=ExtResource("6_qckbd")]
+position = Vector2(139, -433)
+initial_state = 1
+defender_class = 1
+morale_max = 150.0
+sighting_drain = 35.0
+fleeing_drain = 40.0
+weapon_range = 150.0
+aim_time = 0.7
+sentry_facing_degrees = 323.0
 flee_vision_range = 100.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
@@ -122,8 +150,34 @@ flee_vision_range = 100.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
+[node name="Human10" parent="TestLevel/Humans" unique_id=1034819640 instance=ExtResource("6_qckbd")]
+position = Vector2(533.77686, -391.6292)
+initial_state = 1
+defender_class = 2
+morale_max = 200.0
+sighting_drain = 0.0
+fleeing_drain = 40.0
+weapon_range = 150.0
+aim_time = 0.55
+flee_vision_range = 100.0
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human11" parent="TestLevel/Humans" unique_id=1981020956 instance=ExtResource("6_qckbd")]
+position = Vector2(473.66983, -392.68036)
+initial_state = 1
+defender_class = 2
+morale_max = 200.0
+sighting_drain = 0.0
+fleeing_drain = 40.0
+weapon_range = 150.0
+aim_time = 0.55
+flee_vision_range = 100.0
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
 [node name="Human5" parent="TestLevel/Humans" unique_id=1809152776 instance=ExtResource("6_qckbd")]
-position = Vector2(872, 111)
+position = Vector2(958, 187)
 initial_state = 1
 defender_class = 3
 morale_max = 400.0
@@ -132,11 +186,12 @@ grappled_drain = 275.0
 fleeing_drain = 20.0
 weapon_range = 250.0
 aim_time = 0.525
+sentry_facing_degrees = 264.0
 flee_vision_range = 100.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
-[node name="Human6" parent="TestLevel/Humans" unique_id=1346925049 instance=ExtResource("6_qckbd")]
+[node name="Human6" parent="TestLevel/Humans" unique_id=853100717 instance=ExtResource("6_qckbd")]
 position = Vector2(924, 70)
 initial_state = 1
 defender_class = 3
@@ -150,8 +205,8 @@ flee_vision_range = 100.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
-[node name="Human7" parent="TestLevel/Humans" unique_id=1233710055 instance=ExtResource("6_qckbd")]
-position = Vector2(973, 114)
+[node name="Human12" parent="TestLevel/Humans" unique_id=1087255169 instance=ExtResource("6_qckbd")]
+position = Vector2(1321, -330)
 initial_state = 1
 defender_class = 3
 morale_max = 400.0
@@ -160,20 +215,52 @@ grappled_drain = 275.0
 fleeing_drain = 20.0
 weapon_range = 250.0
 aim_time = 0.525
+sentry_facing_degrees = 185.0
 flee_vision_range = 100.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
-[node name="Human12" parent="TestLevel/Humans" unique_id=1227197445 instance=ExtResource("6_qckbd")]
-position = Vector2(1347, -356)
+[node name="Human13" parent="TestLevel/Humans" unique_id=1672202995 instance=ExtResource("6_qckbd")]
+position = Vector2(1218, -410)
 initial_state = 1
-defender_class = 4
-morale_max = 1000.0
+defender_class = 3
+morale_max = 400.0
 sighting_drain = 0.0
-fleeing_drain = 0.0
+grappled_drain = 275.0
+fleeing_drain = 20.0
 weapon_range = 250.0
-aim_time = 0.26
-sentry_facing_degrees = 180.0
+aim_time = 0.525
+sentry_facing_degrees = 21.0
+flee_vision_range = 100.0
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human14" parent="TestLevel/Humans" unique_id=1116798384 instance=ExtResource("6_qckbd")]
+position = Vector2(1354, -374)
+initial_state = 1
+defender_class = 3
+morale_max = 400.0
+sighting_drain = 0.0
+grappled_drain = 275.0
+fleeing_drain = 20.0
+weapon_range = 250.0
+aim_time = 0.525
+sentry_facing_degrees = 10.0
+flee_vision_range = 100.0
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human7" parent="TestLevel/Humans" unique_id=1233710055 instance=ExtResource("6_qckbd")]
+position = Vector2(885, 110)
+initial_state = 1
+defender_class = 3
+morale_max = 400.0
+sighting_drain = 0.0
+grappled_drain = 275.0
+fleeing_drain = 20.0
+weapon_range = 250.0
+aim_time = 0.525
+sentry_facing_degrees = 292.0
 flee_vision_range = 100.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
@@ -208,7 +295,7 @@ position = Vector2(440, 193)
 position = Vector2(546, 188)
 
 [node name="Zombie4" parent="TestLevel/Zombies" unique_id=701295886 instance=ExtResource("5_fklk2")]
-position = Vector2(951, 335)
+position = Vector2(1011, 436)
 
 [node name="Zombie5" parent="TestLevel/Zombies" unique_id=1441651100 instance=ExtResource("5_fklk2")]
 position = Vector2(1316, 106)
@@ -268,10 +355,10 @@ position = Vector2(1350, 202)
 position = Vector2(919, -378)
 
 [node name="Zombie15" parent="TestLevel/Zombies" unique_id=556245343 instance=ExtResource("5_fklk2")]
-position = Vector2(916, 380)
+position = Vector2(918, 458)
 
 [node name="Zombie16" parent="TestLevel/Zombies" unique_id=531649727 instance=ExtResource("5_fklk2")]
-position = Vector2(860, 380)
+position = Vector2(830, 451)
 
 [node name="Zombie17" parent="TestLevel/Zombies" unique_id=78718859 instance=ExtResource("5_fklk2")]
 position = Vector2(951, 420)

@@ -1,7 +1,7 @@
 # Dead Corps - Project Context Document
 
-**Last Updated:** March 15, 2026  
-**Current Version:** v0.22.6  
+**Last Updated:** March 19, 2026  
+**Current Version:** v0.23.0  
 **Purpose:** Complete context for starting fresh Claude conversations
 
 ---
@@ -24,7 +24,7 @@
 
 ---
 
-## 📊 **Current Build Status: v0.22.6**
+## 📊 **Current Build Status: v0.23.0**
 
 ### **What's Implemented & Working:**
 
@@ -128,6 +128,25 @@
 
 ---
 
+✅ **Alert & Gunshot Response System (v0.23.0):**
+- **Detection alert:** when a zombie has been in a human's vision cone for 5 continuous seconds, the human alerts nearby allies within 150px
+- Per-class facing offsets applied based on which side of the alerter each ally is on (right side = positive offset, left side = negative), so formations spread outward not inward
+- Militia: all allies face threat directly (0°)
+- Police: first ally each side ±45°, second ±90°
+- GI/Spec Ops: first ally each side ±105°, second ±165°
+- Civilians: flee response only, no facing assignment
+- Alert cooldown: 30 seconds before re-triggering
+- Patrol resumes 30 seconds after cone clears
+- Facing returns to original after 2 minutes of clear cone
+- Swing arc suppressed while alerted (`_is_alerted` flag)
+- **Gunshot response:** when any human fires, nearby IDLE/SENTRY humans within 150px rotate to face the target after a 0.4s reaction delay
+- Gunshot response has 1-second per-human cooldown to prevent jitter
+- All rotations (alert and gunshot) are smooth at 360°/sec (180° in 0.5s)
+- FLEEING, GRAPPLED, DEAD, TUNNEL_VISION units immune to both alert types
+- Units with active shoot_target ignore detection alert (already engaged)
+
+---
+
 ### **Known Issues & Limitations:**
 
 ⚠️ **Navigation Mesh Baking (Godot 4.6):**
@@ -169,6 +188,8 @@
 - Morale system: continuous sighting drain, ally event hooks (150px radius), flee/tunnel vision response
 - Shooting system: aim timer, tracer line, LOS pause, weapon range gating
 - TUNNEL_VISION: 22.5° locked cone, threat-facing, 10s duration, immune to drain
+- Alert system (v0.23.0): 5s cone timer triggers detection alert, per-class side-aware facing offsets, smooth rotation at 360°/sec
+- Gunshot response (v0.23.0): 0.4s delayed snap to face gunshot target, 1s per-human cooldown
 - Patrol modes: LOOP, PING_PONG
 - Phase C: per-waypoint pause, swing, and facing overrides
 - Formation squad system: leader/follower with 5 shapes
@@ -222,7 +243,7 @@
 |------|-----------|---------|---------|
 | `unit.gd` | `Unit` | `CharacterBody2D` | Base class for all units. Handles movement, combat, health, selection, BOID flocking, and world boundary clamping. Inherited by Zombie and Human. |
 | `zombie.gd` | `Zombie` | `Unit` | Player-controlled zombie units. Handles states (IDLE/MOVING/PURSUING/LEAPING/MELEE/DEAD), vision detection, leap attacks, and human conversion signal. Optional NavigationAgent2D support. |
-| `human.gd` | `Human` | `Unit` | AI-controlled human enemies. Handles states (IDLE/SENTRY/FLEEING/GRAPPLED/DEAD), sentry facing/swing arc, patrol system (LOOP/PING_PONG) with Phase C per-waypoint pause/swing/facing, formation squad system (leader/follower, 5 shapes), depth-capped panic spreading with distance-based delays, and escape zone seeking. Uses @tool for editor visuals. |
+| `human.gd` | `Human` | `Unit` | AI-controlled human enemies. Handles states (IDLE/SENTRY/FLEEING/GRAPPLED/DEAD/TUNNEL_VISION), DefenderClass enum (CIVILIAN/MILITIA/POLICE/GI/SPEC_OPS), morale system, shooting system, dual-zone vision arcs, tunnel vision, alert system (v0.23.0) with per-class side-aware facing offsets and smooth rotation, gunshot response (v0.23.0), patrol system (LOOP/PING_PONG) with Phase C per-waypoint pause/swing/facing, formation squad system (leader/follower, 5 shapes), and escape zone seeking. Uses @tool for editor visuals. |
 | `game_manager.gd` | `GameManager` | `Node` | **Core gameplay coordinator. Do NOT rename or replace.** Tracks all_zombies and all_humans arrays, handles spawning, zombie conversion after incubation, escape counting, win/loss conditions, and game time. Found in scene via group `"game_manager"`. |
 | `selection_manager.gd` | `SelectionManager` | `Node2D` | RTS unit selection. Handles click selection, drag box selection, Shift+click multi-select, and Ctrl+1-9 control group assignment/recall. Found in scene via group `"selection_manager"`. |
 | `camera_controller.gd` | `CameraController` | `Camera2D` | RTS camera. WASD pan, mouse wheel zoom with smoothing, edge scrolling, and configurable bounds. Syncs bounds from WorldBounds autoload on ready. Found in scene via group `"camera"`. |
@@ -463,7 +484,7 @@ Humans further than ~160px from contact: unaffected ✅
 ## 🚀 **Next Steps / Roadmap**
 
 ### **Immediate (Integration Testing + First Validation Slice):**
-- Complete integration testing of v0.22.x human defender system
+- Complete integration testing of v0.22.x–v0.23.0 systems together
 - Tune morale/weapon values (kill counts currently higher than spec)
 - Costume Zombie + Fat Zombie (first special zombie types)
 - A handcrafted test level with Civilian, Militia, Police, GI, Spec Ops and both zombie types
@@ -520,6 +541,7 @@ Humans further than ~160px from contact: unaffected ✅
 
 ## 📦 **Version History (Recent)**
 
+**v0.23.0 (March 19, 2026)** - Alert & gunshot response system
 **v0.22.6 (planned — integration testing)** - Full human defender system validation
 **v0.22.5** - Zombie death visual: dark red color, 0.3s delay, shot knockback tween
 **v0.22.4** - Tunnel Vision state: 22.5° locked cone, threat-facing, 10s, immune to drain
@@ -593,12 +615,13 @@ Ready to [specific task or question]"
 **Waypoint:** Position marker for patrol routes  
 **BOID:** Flocking algorithm (separation, cohesion, alignment)  
 **Grappled:** Human pinned by zombie (being attacked)  
-**Panic Spreading:** Current system — nearby humans flee when ally grappled (being replaced by morale system)  
-**Morale Bar:** Planned v0.22.0 system — continuous drain from stress events, replaces panic spreading  
+**Morale Bar:** Continuous drain from stress events, replaces old panic spreading  
 **Navigation Mesh:** Pathfinding data structure (blue areas in editor)  
 **Phase A/B/C:** Development phases for patrol system  
 **LOOP/PING_PONG:** Patrol modes (circular vs back-and-forth)  
-**Tunnel Vision:** Planned v0.22.0 GI/Spec Ops response — locked rotation, narrowed 45° cone, 10s duration
+**Tunnel Vision:** GI/Spec Ops morale response — 22.5° locked orange cone, threat-facing, 10s  
+**Detection Alert:** Human spots zombie for 5s → nearby allies rotate to cover formation angles  
+**Gunshot Response:** Human fires → nearby allies snap to face the target after 0.4s delay
 
 ---
 
@@ -668,6 +691,22 @@ Debug → Visible Navigation
 - Shot knockback: 8px tween over 0.15s
 - Camera default zoom: 1.0× (debug), target game zoom: 2.5×
 - Window: 1920×1080 windowed
+
+**Alert System (v0.23.0):**
+- Cone timer threshold: 5s (detection alert fires)
+- Alert radius: 150px
+- Alert cooldown: 30s
+- Facing return timer: 2 minutes (after cone clears)
+- Patrol resume timer: 30s (after cone clears)
+- Alert turn speed: 360°/sec (180° in 0.5s)
+- Gunshot broadcast radius: 150px
+- Gunshot reaction delay: 0.4s
+- Gunshot response cooldown: 1s per human
+
+**Alert offsets (magnitude only — sign determined by which side of alerter):**
+- Militia: all 0° (face threat directly)
+- Police: ±45°, ±90°
+- GI/Spec Ops: ±105°, ±165°
 
 **Planned values (tuning pass — post integration testing):**
 - Kill counts per class (currently higher than spec — morale/aim values need tuning)

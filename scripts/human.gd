@@ -334,6 +334,15 @@ var space_state: PhysicsDirectSpaceState2D
 ## For civilians: zombies within full vision range.
 var zombies_in_drain_range_count: int = 0
 
+## Number of zombies visible within full vision range (sentry_vision_range).
+## Updated each detection tick. Drives the cone timer for all classes,
+## including armed units whose drain range is gated at weapon_range.
+var _zombies_in_vision_count: int = 0
+
+## Position of the nearest zombie within full vision range.
+## Used as the threat position for the detection alert broadcast.
+var _nearest_vision_zombie_pos: Vector2 = Vector2.ZERO
+
 ## Position of the nearest zombie currently in drain range.
 ## Updated each detection tick alongside zombies_in_drain_range_count.
 ## Used to set tunnel vision facing direction when morale empties from sighting drain.
@@ -367,7 +376,53 @@ const TUNNEL_VISION_ANGLE: float = 22.5
 ## Duration of tunnel vision state (seconds).
 const TUNNEL_VISION_DURATION: float = 10.0
 
-## The zombie currently being aimed at. Null when not aiming.
+## === ALERT SYSTEM RUNTIME (v0.23.0) ===
+
+## How long a zombie has been continuously in this human's vision cone.
+## Resets to 0 when cone is empty. Alert fires at 5 seconds.
+var _cone_timer: float = 0.0
+
+## Whether the detection alert has already fired for the current detection event.
+## Prevents repeated firing while zombie stays in cone.
+## Resets when cone clears.
+var _alert_fired: bool = false
+
+## Cooldown after alert fires — 30 seconds before it can fire again.
+var _alert_cooldown: float = 0.0
+
+## Counts down after cone clears before human returns to original facing — 2 minutes.
+## Resets if zombie re-enters cone.
+var _facing_return_timer: float = 0.0
+
+## Counts down after cone clears before patrolling human resumes patrol — 30 seconds.
+## Resets if zombie re-enters cone.
+var _patrol_resume_timer: float = 0.0
+
+## Whether this human was patrolling before the alert fired.
+## Used to correctly restore patrol state after _patrol_resume_timer expires.
+var _was_patrolling: bool = false
+
+## Whether this human is currently in an alerted state (facing overridden by alert).
+## Suppresses swing arc so alert facing isn't overwritten each frame.
+var _is_alerted: bool = false
+
+## Cooldown per human to prevent jitter from repeated gunshot broadcasts — 1 second.
+var _gunshot_response_cooldown: float = 0.0
+
+## Target facing direction for smooth rotation toward alert/gunshot events.
+## Each frame, facing_direction lerps toward this at ALERT_TURN_SPEED.
+## Set by _apply_alert_facing() and receive_gunshot_alert().
+## Vector2.ZERO means no active rotation target.
+var _target_facing: Vector2 = Vector2.ZERO
+
+## Pending gunshot alert position — applied after _gunshot_delay_timer expires.
+var _pending_gunshot_pos: Vector2 = Vector2.ZERO
+
+## Countdown before applying a gunshot alert facing — gives a natural reaction delay.
+var _gunshot_delay_timer: float = 0.0
+
+## Turn speed for alert-driven rotation — 360°/sec = 180° in 0.5s.
+const ALERT_TURN_SPEED: float = 360.0
 var shoot_target: Unit = null
 
 ## Countdown timer for aim — fires when it reaches 0.
@@ -711,6 +766,57 @@ func _physics_process(delta: float) -> void:
 		_last_threat_position = _nearest_drain_zombie_pos
 		_drain_morale(sighting_drain * zombies_in_drain_range_count * delta)
 	
+	# === CONE TIMER (v0.23.0) ===
+	# Tracks how long any zombie has been continuously in this human's vision cone.
+	# Drives the detection alert system — alert fires at 5 seconds.
+	_alert_cooldown = max(0.0, _alert_cooldown - delta)
+	_gunshot_response_cooldown = max(0.0, _gunshot_response_cooldown - delta)
+	
+	var zombies_in_cone := _zombies_in_vision_count > 0
+	if zombies_in_cone and current_state != State.TUNNEL_VISION:
+		# Zombie in cone — increment timer, freeze return timers
+		_cone_timer += delta
+		_facing_return_timer = 120.0
+		_patrol_resume_timer = 30.0
+		
+		# Fire detection alert at 5 seconds if not in cooldown
+		if _cone_timer >= 5.0 and not _alert_fired and _alert_cooldown <= 0.0:
+			_alert_fired = true
+			_alert_cooldown = 30.0
+			_was_patrolling = is_patrolling
+			if is_patrolling:
+				is_patrolling = false  # Pause patrol during alert
+			print("🚨 ", name, " alert fired — broadcasting to nearby allies")
+			_is_alerted = true
+			_broadcast_detection_alert(_nearest_vision_zombie_pos)
+	else:
+		# Cone clear — reset cone timer and alert flag, count down return timers
+		if _cone_timer > 0.0:
+			# Cone just cleared — note patrol state before timers start
+			if _cone_timer >= 5.0:
+				# Alert had fired — start return timers
+				_facing_return_timer = max(_facing_return_timer, 120.0)
+				_patrol_resume_timer = max(_patrol_resume_timer, 30.0)
+		_cone_timer = 0.0
+		_alert_fired = false
+		
+		# Count down return timers
+		if _facing_return_timer > 0.0:
+			_facing_return_timer -= delta
+			if _facing_return_timer <= 0.0:
+				print("👁️ ", name, " returning to original facing")
+				facing_direction = degrees_to_vector(sentry_facing_degrees)
+				swing_center_angle = sentry_facing_degrees
+				_is_alerted = false
+		
+		if _patrol_resume_timer > 0.0:
+			_patrol_resume_timer -= delta
+			if _patrol_resume_timer <= 0.0 and _was_patrolling and not is_patrolling:
+				# Resume patrol
+				print("🚶 ", name, " resuming patrol after alert")
+				is_patrolling = true
+				_was_patrolling = false
+	
 	# === TUNNEL VISION TIMER (v0.22.4) ===
 	if current_state == State.TUNNEL_VISION:
 		_tunnel_vision_timer -= delta
@@ -759,10 +865,27 @@ func _physics_process(delta: float) -> void:
 			self.separation_radius = 20.0
 			self.separation_strength = 50.0
 	
+	# === ALERT ROTATION (v0.23.0) ===
+	# Smoothly rotate toward _target_facing when alerted.
+	# Gunshot delay timer fires pending alert after reaction delay.
+	if _gunshot_delay_timer > 0.0:
+		_gunshot_delay_timer -= delta
+		if _gunshot_delay_timer <= 0.0 and _pending_gunshot_pos != Vector2.ZERO:
+			_target_facing = (_pending_gunshot_pos - global_position).normalized()
+			_pending_gunshot_pos = Vector2.ZERO
+	
+	if _target_facing != Vector2.ZERO and _is_alerted:
+		var angle_diff := facing_direction.angle_to(_target_facing)
+		var max_turn := deg_to_rad(ALERT_TURN_SPEED) * delta
+		if abs(angle_diff) <= max_turn:
+			facing_direction = _target_facing
+			_target_facing = Vector2.ZERO  # Reached target — stop rotating
+		else:
+			facing_direction = facing_direction.rotated(sign(angle_diff) * max_turn)
+	
 	# Update sentry swing arc (if applicable)
-	# Only swing when stationary (not actively patrolling), and only for leaders/standalone
-	# Followers face their leader's direction instead
-	if current_state == State.SENTRY and sentry_has_swing and not is_patrolling and patrol_leader.is_empty():
+	# Suppressed during alert — swing would overwrite the alert facing each frame
+	if current_state == State.SENTRY and sentry_has_swing and not is_patrolling and patrol_leader.is_empty() and not _is_alerted:
 		update_swing_arc(delta)
 	
 	# Update facing direction based on movement
@@ -959,7 +1082,9 @@ func check_for_nearby_zombies() -> void:
 	var drain_threshold: float = weapon_range if weapon_range > 0.0 else sentry_vision_range
 	var zombies := get_tree().get_nodes_in_group("zombies")
 	var new_drain_count: int = 0
+	var new_vision_count: int = 0
 	var nearest_drain_dist := INF
+	var nearest_vision_dist := INF
 	
 	for zombie in zombies:
 		if not zombie is Zombie or not is_instance_valid(zombie):
@@ -968,13 +1093,20 @@ func check_for_nearby_zombies() -> void:
 		if z.current_state == Zombie.State.DEAD:
 			continue
 		var dist_to_zombie := position.distance_to(z.position)
-		if dist_to_zombie <= drain_threshold and can_see_unit(z):
+		var visible := can_see_unit(z)
+		if dist_to_zombie <= drain_threshold and visible:
 			new_drain_count += 1
 			if dist_to_zombie < nearest_drain_dist:
 				nearest_drain_dist = dist_to_zombie
 				_nearest_drain_zombie_pos = z.position
+		if dist_to_zombie <= sentry_vision_range and visible:
+			new_vision_count += 1
+			if dist_to_zombie < nearest_vision_dist:
+				nearest_vision_dist = dist_to_zombie
+				_nearest_vision_zombie_pos = z.position
 	
 	zombies_in_drain_range_count = new_drain_count
+	_zombies_in_vision_count = new_vision_count
 	
 	# === FLEE DIRECTION UPDATE ===
 	# If already fleeing, keep updating movement direction toward safety.
@@ -1079,6 +1211,9 @@ func _fire_at(target: Unit) -> void:
 	
 	print("⚡ ", name, " fired at ", target.name, " (", int(position.distance_to(target.position)), "px)")
 	
+	# Broadcast gunshot alert to nearby allies
+	_broadcast_gunshot_alert(target.global_position)
+	
 	# Draw tracer FIRST — before damage — so it's visible even if zombie dies this frame
 	var start_local := Vector2(0.0, 15.0)  # Bottom edge of sprite
 	var target_local := to_local(target.global_position)
@@ -1097,7 +1232,166 @@ func _fire_at(target: Unit) -> void:
 		target.take_damage(50.0)
 
 
-## === MORALE SYSTEM METHODS (v0.22.2) ===
+## === ALERT SYSTEM (v0.23.0) ===
+
+## Facing offsets per defender class, relative to threat direction.
+## Index 0 = the alerting human themselves. Subsequent indices assigned to
+## nearby allies sorted by distance. Degrees are relative to threat direction,
+## not world north. Civilians have no offsets — flee response only.
+## Facing offset magnitudes per defender class.
+## Index 0 = the alerting human (always 0° — faces threat directly).
+## Index 1+ = magnitude assigned to the 1st, 2nd, 3rd... ally on each side.
+## Sign is determined by which side of the alerter the ally is on — right = positive, left = negative.
+## If more allies than entries, last entry is reused.
+const ALERT_OFFSETS: Dictionary = {
+	# All face threat directly — inexperience, tunnel focus
+	DefenderClass.MILITIA:   [0, 0, 0, 0],
+	# Fan out around threat
+	DefenderClass.POLICE:    [0, 45, 90],
+	# Secure perimeter — first ally covers flank, second covers further around
+	DefenderClass.GI:        [0, 105, 165],
+	# Same as GI for now
+	DefenderClass.SPEC_OPS:  [0, 105, 165],
+}
+
+## Radius within which detection alert propagates to nearby allies.
+const ALERT_RADIUS: float = 150.0
+
+## Radius within which gunshot alert propagates to nearby allies.
+const GUNSHOT_ALERT_RADIUS: float = 150.0
+
+
+## Broadcasts a detection alert to nearby allies.
+## Each ally rotates to a class-appropriate facing offset relative to the threat.
+## Civilians are excluded — their flee response cascades through existing morale system.
+## @param threat_pos: World position of the detected zombie
+func _broadcast_detection_alert(threat_pos: Vector2) -> void:
+	if threat_pos == Vector2.ZERO:
+		return
+	
+	print("🚨 ALERT BROADCAST from ", name, " | threat_pos: ", threat_pos, " | my_pos: ", global_position)
+	
+	# Apply offset 0 to self — alerter always faces threat directly
+	_apply_alert_facing(threat_pos, 0.0)
+	
+	var threat_dir := (threat_pos - global_position).normalized()
+	
+	# Find nearby eligible allies
+	var all_humans := get_tree().get_nodes_in_group("humans")
+	var right_allies: Array = []  # Allies to the right of the threat direction
+	var left_allies: Array = []   # Allies to the left of the threat direction
+	
+	for other in all_humans:
+		if other == self or not other is Human:
+			continue
+		var ally := other as Human
+		if not is_instance_valid(ally):
+			continue
+		if ally.current_state in [State.FLEEING, State.GRAPPLED, State.DEAD, State.TUNNEL_VISION]:
+			continue
+		if ally.shoot_target != null:
+			continue
+		if ally.defender_class == DefenderClass.CIVILIAN:
+			continue
+		var dist := global_position.distance_to(ally.global_position)
+		if dist > ALERT_RADIUS:
+			continue
+		
+		# Determine which side of the alerter this ally is on
+		# Cross product of threat_dir and ally_dir: positive = right, negative = left
+		var to_ally := (ally.global_position - global_position).normalized()
+		var cross := threat_dir.x * to_ally.y - threat_dir.y * to_ally.x
+		if cross >= 0.0:
+			right_allies.append({"human": ally, "dist": dist})
+		else:
+			left_allies.append({"human": ally, "dist": dist})
+		print("  📋 ally: ", ally.name, " side: ", ("right" if cross >= 0.0 else "left"), " dist: ", int(dist), "px")
+	
+	right_allies.sort_custom(func(a, b): return a["dist"] < b["dist"])
+	left_allies.sort_custom(func(a, b): return a["dist"] < b["dist"])
+	
+	# Get offset magnitudes for this class (index 1, 2, 3... for right; mirror for left)
+	var offsets: Array = ALERT_OFFSETS.get(defender_class, [])
+	
+	# Assign positive offsets to right allies, negative to left allies
+	# Index into magnitudes: i=0 is first ally on that side → offsets[1], i=1 → offsets[2], etc.
+	for i in right_allies.size():
+		var ally: Human = right_allies[i]["human"]
+		var idx: int = min(i + 1, offsets.size() - 1)
+		var offset_deg: float = abs(float(offsets[idx]))  # Always positive for right
+		ally._receive_detection_alert(threat_pos, offset_deg)
+		print("  📡 ", ally.name, " → right offset +", offset_deg, "°")
+	
+	for i in left_allies.size():
+		var ally: Human = left_allies[i]["human"]
+		var idx: int = min(i + 1, offsets.size() - 1)
+		var offset_deg: float = -abs(float(offsets[idx]))  # Always negative for left
+		ally._receive_detection_alert(threat_pos, offset_deg)
+		print("  📡 ", ally.name, " → left offset ", offset_deg, "°")
+
+
+## Called by an alerting ally to apply a facing offset to this human.
+## @param threat_dir: Normalised direction toward the detected zombie
+## @param offset_index: Index into this human's ALERT_OFFSETS array
+func _receive_detection_alert(threat_pos: Vector2, offset_deg: float) -> void:
+	if current_state in [State.FLEEING, State.GRAPPLED, State.DEAD, State.TUNNEL_VISION]:
+		return
+	if shoot_target != null:
+		return
+	_alert_cooldown = 30.0
+	_was_patrolling = is_patrolling
+	if is_patrolling:
+		is_patrolling = false
+	_facing_return_timer = 120.0
+	_patrol_resume_timer = 30.0
+	_is_alerted = true
+	_apply_alert_facing(threat_pos, offset_deg)
+
+
+## Applies a single facing offset to this human toward a threat position.
+## Calculates threat direction from this unit's own position (not the alerter's).
+## Sets _target_facing for smooth rotation rather than snapping instantly.
+## @param threat_pos: World position of the detected zombie
+## @param offset_index: Index into ALERT_OFFSETS for this class
+func _apply_alert_facing(threat_pos: Vector2, offset_deg: float) -> void:
+	if not ALERT_OFFSETS.has(defender_class) and offset_deg == 0.0:
+		# Civilians — no offset, no rotation
+		return
+	var own_threat_dir := (threat_pos - global_position).normalized()
+	var offset_rad := deg_to_rad(offset_deg)
+	_target_facing = own_threat_dir.rotated(offset_rad)
+	print("  👁️ ", name, " | my_pos: ", global_position.snapped(Vector2(1,1)), " | threat_pos: ", threat_pos.snapped(Vector2(1,1)), " | own_threat_dir: ", own_threat_dir.snapped(Vector2(0.01,0.01)), " | offset: ", offset_deg, "° | target_facing: ", _target_facing.snapped(Vector2(0.01,0.01)))
+
+
+## Broadcasts a gunshot alert to nearby IDLE/SENTRY humans.
+## Each recipient snaps to face the target position (subject to 1s cooldown).
+## @param target_pos: World position of the zombie being shot at
+func _broadcast_gunshot_alert(target_pos: Vector2) -> void:
+	var all_humans := get_tree().get_nodes_in_group("humans")
+	for other in all_humans:
+		if other == self or not other is Human:
+			continue
+		var ally := other as Human
+		if not is_instance_valid(ally):
+			continue
+		if global_position.distance_to(ally.global_position) <= GUNSHOT_ALERT_RADIUS:
+			ally.receive_gunshot_alert(target_pos)
+
+
+## Called by a firing ally to snap this human's facing toward the active target.
+## Has a 1-second per-human cooldown to prevent jitter from rapid fire.
+## @param target_pos: World position of the zombie being shot at
+func receive_gunshot_alert(target_pos: Vector2) -> void:
+	if _gunshot_response_cooldown > 0.0:
+		return
+	if current_state not in [State.IDLE, State.SENTRY]:
+		return
+	# Store pending position — applied after reaction delay
+	_pending_gunshot_pos = target_pos
+	_gunshot_delay_timer = 0.4  # 0.4s reaction delay before turning
+	_gunshot_response_cooldown = 1.0
+	_is_alerted = true
+	print("🔫 ", name, " heard gunshot — reacting in 0.4s")
 
 ## Applies a morale drain, clamps to 0, and checks for response trigger.
 ## @param amount: Amount to subtract from current morale (positive value)
