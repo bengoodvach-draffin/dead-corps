@@ -103,6 +103,13 @@ var is_locked_in_pursuit: bool = false
 ## Once engaged in melee, zombie is committed and won't switch targets
 var is_committed_to_target: bool = false
 
+## Whether this is a special zombie type (FatZombie, CostumeZombie, etc.)
+## When true: disables auto-pursuit, leap trigger, and pursuit lock entirely.
+## Player maintains full control of special zombies at all times.
+## Set to true in _ready() by special zombie subclasses — do NOT redeclare
+## this variable in subclasses (would create a shadowed copy, breaking parent checks).
+var is_special: bool = false
+
 ## Time when zombie entered MELEE state (for vision delay)
 var melee_enter_time: float = 0.0
 
@@ -483,6 +490,10 @@ func has_line_of_sight_to(target: Unit) -> bool:
 ## Activates leap when close to human, deactivates when far or no target
 ## HYBRID: Continuous speed boost + guaranteed pin at 40px
 func update_leap_state() -> void:
+	# Special zombies don't leap
+	if is_special:
+		return
+	
 	# Only leap when attacking a human
 	if attack_target and is_instance_valid(attack_target) and attack_target.is_human():
 		var distance := position.distance_to(attack_target.position)
@@ -535,6 +546,10 @@ func stop_leap() -> void:
 ## Only triggers when zombie has no current attack target
 ## Creates aggressive "mindless predator" behavior
 func check_auto_pursuit() -> void:
+	# Special zombies never auto-pursue — player maintains full control at all times
+	if is_special:
+		return
+	
 	# CRITICAL FIX: Don't check vision or clear target if zombie is in combat
 	# When grappling/in melee, target may be too close to see with vision cone
 	if attack_target and is_instance_valid(attack_target):
@@ -911,6 +926,10 @@ func propagate_pursuit_to_group(target: Unit) -> void:
 		# Only propagate to idle zombies with no current orders
 		# Don't override player move commands or active pursuits
 		if zombie.current_state != State.IDLE:
+			continue
+		
+		# Don't recruit special zombies into pack pursuit — player controls them
+		if zombie.is_special:
 			continue
 		
 		# Don't override zombies that are moving to a player-commanded position

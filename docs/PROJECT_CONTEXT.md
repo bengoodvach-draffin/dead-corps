@@ -1,7 +1,7 @@
 # Dead Corps - Project Context Document
 
 **Last Updated:** March 19, 2026  
-**Current Version:** v0.23.0  
+**Current Version:** v0.24.1  
 **Purpose:** Complete context for starting fresh Claude conversations
 
 ---
@@ -147,7 +147,24 @@
 
 ---
 
-### **Known Issues & Limitations:**
+✅ **Special Zombie Foundation + Fat Zombie (v0.24.0):**
+- `is_special: bool = false` added to `zombie.gd` base class — when true: disables auto-pursuit, leap trigger, and pack recruitment. Player maintains full control of special zombies at all times.
+- **Architecture:** subclasses set `is_special = true` in `_ready()` before `super._ready()`. Never redeclare `is_special` as a variable in subclasses.
+- **Fat Zombie:** extends Zombie, `is_special = true`, cannot attack (`attack_damage = 0`). Gunshot-only death (ignores damage without knockback direction). On gunshot death spawns a `FatZombieCorpse` at its position. Entering escape zone removes cleanly with no corpse.
+- **Fat Zombie Corpse:** `StaticBody2D` on collision layer 1, added to `"buildings"` group — blocks movement and LOS identically to a building. 60×60px dark green rectangle. Built procedurally in `_ready()`.
+- **NavigationObstacle2D deferred:** `avoidance_enabled = false` on zombie NavigationAgent2D means runtime obstacles have no nav effect in this slice. Flagged for a future avoidance pass.
+- **Scoring updated:** special zombies (`FatZombie`, `CostumeZombie`) worth 100pts, regular zombies 25pts.
+
+✅ **Costume Zombie (v0.24.1):**
+- Fully undetectable while `is_costumed == true` — humans skip it in all detection systems: flee detection, morale drain, aim timer acquisition, alert cone timer, and gunshot response
+- Detection suppression uses `zombie.get("is_costumed")` property check — no class name dependency, avoids GDScript load order issues
+- Disguise breaks permanently when the zombie pins a human (target transitions to GRAPPLED state) — not on chase start, not on attack start
+- After break: behaves identically to a regular zombie, all human detection systems apply normally
+- Visual: pink `Color(1.0, 0.4, 0.8)` while costumed, reverts to standard zombie green `Color(0.4, 0.6, 0.3)` on break
+- `is_special = true` — no auto-pursuit, no leap, no pack recruitment
+- **Design note:** human reaction to a costumed zombie pinning a nearby ally may need strengthening — the grappled_drain event fires but the visual surprise of a disguised zombie biting a friend may warrant a larger morale hit or additional response. Flagged for post-validation tuning.
+
+---
 
 ⚠️ **Navigation Mesh Baking (Godot 4.6):**
 - Auto-bake can fail for some setups
@@ -163,6 +180,12 @@
 ⚠️ **Morale/shooting tuning:**
 - Kill counts per class are higher than spec due to aim timer starting at vision range
 - Intentionally left for playtesting tuning — fundamentally working correctly
+
+⚠️ **Fat Zombie Corpse navigation:**
+- `FatZombieCorpse` physically blocks unit movement but zombies won't path around it cleanly
+- Root cause: `avoidance_enabled = false` on zombie NavigationAgent2D — `NavigationObstacle2D` has no effect without it
+- Fix: enable `avoidance_enabled` on zombie NavigationAgent2D and add `NavigationObstacle2D` to `fat_zombie_corpse.gd`
+- Deferred — validate corpse utility first, add proper nav avoidance in a follow-up pass
 
 ---
 
@@ -233,7 +256,7 @@
 ## 🗃️ **Scripts & Files Inventory**
 
 > **Purpose:** Prevent naming conflicts and wasted effort. Before creating any new file, check this list first.
-> **Last Updated:** v0.21.3
+> **Last Updated:** v0.24.1
 
 ---
 
@@ -255,6 +278,9 @@
 | `end_game_overlay.gd` | *(none)* | `CanvasLayer` | Win/loss screen shown when game ends. Displays result message and score breakdown. Hidden by default, shown when GameManager emits `game_won` or `game_lost` signals. |
 | `world_bounds.gd` | *(none, Autoload)* | `Node` | **Added v0.19.5.** Autoload singleton registered as `WorldBounds`. Single source of truth for world bounds (`world_bounds_min`, `world_bounds_max`). Read by unit.gd and camera_controller.gd. Change bounds here and everything updates automatically. |
 | `level_bounds.gd` | *(none)* | `Node2D` | **Added v0.21.3.** @tool Node placed in each level scene. Exports `bounds_min` / `bounds_max` (Vector2). On `_ready()` writes values into WorldBounds autoload so all unit clamping and camera update automatically. Draws orange boundary rectangle in editor and at runtime. Replace the old approach of editing world_bounds.gd directly. |
+| `fat_zombie.gd` | `FatZombie` | `Zombie` | **Added v0.24.0.** Special zombie — utility/sacrifice unit. Sets `is_special = true` (disables auto-pursuit, leap, pack recruitment). Cannot attack (`attack_damage = 0`). Gunshot-only death: ignores damage with no knockback direction. On gunshot death spawns `FatZombieCorpse` at its position. `spawn_corpse_on_death` flag set to `false` by escape_zone.gd to suppress corpse on escape-zone removal. |
+| `fat_zombie_corpse.gd` | `FatZombieCorpse` | `StaticBody2D` | **Added v0.24.0.** Permanent obstacle spawned by FatZombie on gunshot death. Collision layer 1, added to "buildings" group — blocks movement and LOS identically to a building. 60×60px, dark green `Color(0.25, 0.38, 0.25)`. Collision and visual built procedurally in `_ready()`. NavigationObstacle2D omitted pending avoidance_enabled pass. |
+| `costume_zombie.gd` | `CostumeZombie` | `Zombie` | **Added v0.24.1.** Special zombie — fully undetectable while `is_costumed == true`. Humans skip it in flee detection, morale drain, aim acquisition, alert system, and gunshot response. Disguise breaks permanently when it pins a human (target enters GRAPPLED state). After break behaves identically to a regular zombie. Pink `Color(1.0, 0.4, 0.8)` while costumed, reverts to standard green on break. |
 
 ---
 
@@ -269,6 +295,9 @@
 | `debug_overlay.tscn` | Debug HUD overlay. Add to main scene as CanvasLayer. |
 | `end_game_overlay.tscn` | End game screen overlay. Add to main scene as CanvasLayer. |
 | `main.tscn` | Main test level scene. Contains Camera2D, SelectionManager, VisionRenderer, GameManager, Initializer, buildings, escape zones, and overlay UIs. |
+| `fat_zombie.tscn` | Fat Zombie unit scene. Larger collision (radius 18), scaled sprite, light green body. `corpse_scene` export wired to fat_zombie_corpse.tscn. Instance this to place Fat Zombies in a level. |
+| `fat_zombie_corpse.tscn` | Fat Zombie Corpse obstacle scene. StaticBody2D, collision layer 1, buildings group. Spawned at runtime by FatZombie.die() — do not place this manually. |
+| `costume_zombie.tscn` | Costume Zombie unit scene. Standard size (radius 12), pink body. Instance this to place Costume Zombies in a level. |
 
 ---
 
@@ -541,6 +570,8 @@ Humans further than ~160px from contact: unaffected ✅
 
 ## 📦 **Version History (Recent)**
 
+**v0.24.1 (March 19, 2026)** - Costume Zombie
+**v0.24.0 (March 19, 2026)** - Special zombie foundation + Fat Zombie
 **v0.23.0 (March 19, 2026)** - Alert & gunshot response system
 **v0.22.6 (planned — integration testing)** - Full human defender system validation
 **v0.22.5** - Zombie death visual: dark red color, 0.3s delay, shot knockback tween

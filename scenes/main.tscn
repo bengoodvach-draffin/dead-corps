@@ -11,6 +11,7 @@
 [ext_resource type="PackedScene" uid="uid://bmw8qx5r2n8pk" path="res://scenes/building.tscn" id="8_building"]
 [ext_resource type="PackedScene" uid="uid://bvx8qw2m7n5pk" path="res://scenes/escape_zone.tscn" id="9_escape"]
 [ext_resource type="PackedScene" uid="uid://cpxw4y8m7n5pk" path="res://scenes/end_game_overlay.tscn" id="10_endgame"]
+[ext_resource type="PackedScene" path="res://scenes/fat_zombie.tscn" id="12_eb6dy"]
 
 [node name="Main" type="Node2D" unique_id=151308185]
 
@@ -61,3 +62,6 @@ human_scene = ExtResource("5_human")
 [node name="DebugOverlay" parent="." unique_id=468344591 instance=ExtResource("7_debug")]
 
 [node name="EndGameOverlay" parent="." unique_id=2000451810 instance=ExtResource("10_endgame")]
+
+[node name="FatZombie" parent="." unique_id=649166868 instance=ExtResource("12_eb6dy")]
+position = Vector2(-74, -428)

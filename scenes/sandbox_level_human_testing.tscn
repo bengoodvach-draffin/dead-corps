@@ -9,9 +9,11 @@
 [ext_resource type="Script" uid="uid://c5fmdp1r7ticb" path="res://scripts/vision_renderer.gd" id="7_h166s"]
 [ext_resource type="PackedScene" uid="uid://bmw8qx5r2n8pk" path="res://scenes/building.tscn" id="8_14ak8"]
 [ext_resource type="PackedScene" uid="uid://bvx8qw2m7n5pk" path="res://scenes/escape_zone.tscn" id="9_68742"]
+[ext_resource type="PackedScene" path="res://scenes/fat_zombie.tscn" id="10_kk0fn"]
 [ext_resource type="Script" uid="uid://cax0dih7wnxe0" path="res://scripts/selection_manager.gd" id="10_pqy1p"]
 [ext_resource type="PackedScene" uid="uid://di2wxa5t7dmxv" path="res://scenes/debug_overlay.tscn" id="11_mdb3q"]
 [ext_resource type="PackedScene" uid="uid://cpxw4y8m7n5pk" path="res://scenes/end_game_overlay.tscn" id="12_jxsff"]
+[ext_resource type="PackedScene" path="res://scenes/costume_zombie.tscn" id="14_vmpuv"]
 
 [sub_resource type="NavigationPolygon" id="NavigationPolygon_4viah"]
 vertices = PackedVector2Array(669.0625, 493, 324, 493, 324, -491.07813, 674.9297, -493.90625, 1490.9609, -483.04688, 1488.0313, 493, 1128.8828, 493, 1117.1172, -484.9375, 275.96094, -480.07813, 273.03125, 492.90625, -72.02344, 490.07813, -74.96094, -482.90625, -131.96875, -483.04688, -130.00781, 487.14844, -492.03125, 492.84375, -494.96094, -484.9375, 1072, -483.1328, 1072, 487, 725.9531, 487, 721.0469, -487.85938)
@@ -81,7 +83,7 @@ building_height = 1000.0
 [node name="Escape Zones" type="Node" parent="TestLevel" unique_id=1359137202]
 
 [node name="EscapeZone4" parent="TestLevel/Escape Zones" unique_id=1640359472 instance=ExtResource("9_68742")]
-position = Vector2(1352, -443)
+position = Vector2(-176, -459)
 zone_size = Vector2(75, 50)
 
 [node name="Humans" type="Node" parent="TestLevel" unique_id=827267819]
@@ -137,7 +139,7 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human4" parent="TestLevel/Humans" unique_id=79423481 instance=ExtResource("6_qckbd")]
-position = Vector2(503, -360)
+position = Vector2(499, -90)
 initial_state = 1
 defender_class = 2
 morale_max = 200.0
@@ -145,7 +147,6 @@ sighting_drain = 0.0
 fleeing_drain = 40.0
 weapon_range = 150.0
 aim_time = 0.55
-sentry_facing_degrees = 180.0
 flee_vision_range = 100.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
@@ -206,45 +207,42 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human12" parent="TestLevel/Humans" unique_id=1087255169 instance=ExtResource("6_qckbd")]
-position = Vector2(1321, -330)
+position = Vector2(1252, -353)
 initial_state = 1
-defender_class = 3
-morale_max = 400.0
+defender_class = 4
+morale_max = 1000.0
 sighting_drain = 0.0
-grappled_drain = 275.0
-fleeing_drain = 20.0
+fleeing_drain = 0.0
 weapon_range = 250.0
-aim_time = 0.525
+aim_time = 0.26
 sentry_facing_degrees = 185.0
 flee_vision_range = 100.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human13" parent="TestLevel/Humans" unique_id=1672202995 instance=ExtResource("6_qckbd")]
-position = Vector2(1218, -410)
+position = Vector2(1322, -349)
 initial_state = 1
-defender_class = 3
-morale_max = 400.0
+defender_class = 4
+morale_max = 1000.0
 sighting_drain = 0.0
-grappled_drain = 275.0
-fleeing_drain = 20.0
+fleeing_drain = 0.0
 weapon_range = 250.0
-aim_time = 0.525
+aim_time = 0.26
 sentry_facing_degrees = 21.0
 flee_vision_range = 100.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human14" parent="TestLevel/Humans" unique_id=1116798384 instance=ExtResource("6_qckbd")]
-position = Vector2(1354, -374)
+position = Vector2(1391, -358)
 initial_state = 1
-defender_class = 3
-morale_max = 400.0
+defender_class = 4
+morale_max = 1000.0
 sighting_drain = 0.0
-grappled_drain = 275.0
-fleeing_drain = 20.0
+fleeing_drain = 0.0
 weapon_range = 250.0
-aim_time = 0.525
+aim_time = 0.26
 sentry_facing_degrees = 10.0
 flee_vision_range = 100.0
 cohesion_strength = 12.0
@@ -366,6 +364,9 @@ position = Vector2(951, 420)
 [node name="Zombie18" parent="TestLevel/Zombies" unique_id=1226019464 instance=ExtResource("5_fklk2")]
 position = Vector2(895, 420)
 
+[node name="FatZombie" parent="TestLevel/Zombies" unique_id=799599307 instance=ExtResource("10_kk0fn")]
+position = Vector2(-199, 107)
+
 [node name="Units" type="Node2D" parent="." unique_id=1968361044 groups=["units_parent"]]
 
 [node name="SelectionManager" type="Node2D" parent="." unique_id=423906801 groups=["selection_manager"]]
@@ -380,3 +381,6 @@ navigation_polygon = SubResource("NavigationPolygon_4viah")
 
 [node name="EndGameOverlay" parent="." unique_id=2000451810 instance=ExtResource("12_jxsff")]
 visible = false
+
+[node name="CostumeZombie" parent="." unique_id=591810152 instance=ExtResource("14_vmpuv")]
+position = Vector2(432, 80)

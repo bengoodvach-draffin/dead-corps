@@ -85,13 +85,26 @@ func calculate_score(is_loss: bool) -> Dictionary:
 		return result
 	
 	# Get game data
-	var final_zombie_count := game_manager.get_total_zombie_count()  # Includes incubating corpses
-	result.zombie_count = final_zombie_count
 	result.escaped = game_manager.escaped_humans
 	result.game_time = game_manager.game_time
 	
-	# 25 points per zombie that survived (including starting zombies and incubating corpses)
-	result.zombie_score = final_zombie_count * 25
+	# 25 points per regular zombie, 100 points per special zombie
+	# Uses is_special flag on Zombie base class — no subclass name dependency
+	var regular_count := 0
+	var special_count := 0
+	for z in game_manager.get_all_zombies():
+		if z.is_special:
+			special_count += 1
+		else:
+			regular_count += 1
+	# Also count incubating corpses (dead humans converting) as regular zombies
+	var dead_human_count := 0
+	for human in game_manager.get_all_humans():
+		if human.is_dead:
+			dead_human_count += 1
+	regular_count += dead_human_count
+	result.zombie_count = regular_count + special_count
+	result.zombie_score = (regular_count * 25) + (special_count * 100)
 	
 	# Time bonuses
 	var time_minutes: float = result.game_time / 60.0

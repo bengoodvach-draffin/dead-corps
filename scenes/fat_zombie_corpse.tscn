@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://fat_zombie_corpse_scene"]
+
+[ext_resource type="Script" path="res://scripts/fat_zombie_corpse.gd" id="1_corpse"]
+
+[node name="FatZombieCorpse" type="StaticBody2D" groups=["buildings"]]
+collision_layer = 1
+collision_mask = 0
+script = ExtResource("1_corpse")

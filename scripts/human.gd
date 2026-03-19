@@ -1009,6 +1009,10 @@ func find_nearest_visible_zombie() -> Unit:
 		if zombie.is_dead if zombie.has_method("is_dead") else false:
 			continue
 		
+		# Costumed zombies are invisible to all human detection
+		if zombie.get("is_costumed") == true:
+			continue
+		
 		# Check if this zombie is in our vision (cone or circle)
 		if can_see_unit(zombie):
 			var distance := position.distance_to(zombie.position)
@@ -1091,6 +1095,9 @@ func check_for_nearby_zombies() -> void:
 			continue
 		var z := zombie as Zombie
 		if z.current_state == Zombie.State.DEAD:
+			continue
+		# Costumed zombies are invisible to all human detection
+		if z.get("is_costumed") == true:
 			continue
 		var dist_to_zombie := position.distance_to(z.position)
 		var visible := can_see_unit(z)
@@ -1191,6 +1198,9 @@ func _acquire_shoot_target() -> Unit:
 			continue
 		var zombie := z as Zombie
 		if zombie.current_state == Zombie.State.DEAD:
+			continue
+		# Costumed zombies cannot be targeted
+		if zombie.get("is_costumed") == true:
 			continue
 		if not can_see_unit(zombie):  # Uses full vision range + cone + LOS
 			continue

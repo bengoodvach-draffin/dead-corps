@@ -1,0 +1,73 @@
+[gd_scene load_steps=3 format=3 uid="uid://fat_zombie_scene"]
+
+[ext_resource type="Script" path="res://scripts/fat_zombie.gd" id="1_fatzombie"]
+[ext_resource type="PackedScene" path="res://scenes/fat_zombie_corpse.tscn" id="2_corpse"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_fat"]
+radius = 25.0
+
+[node name="FatZombie" type="CharacterBody2D" groups=["zombies", "units"]]
+collision_layer = 2
+collision_mask = 1
+script = ExtResource("1_fatzombie")
+unit_type = 0
+team = 0
+max_health = 50.0
+move_speed = 90.0
+attack_damage = 0.0
+attack_range = 0.0
+attack_cooldown = 1.5
+leap_range = 40.0
+leap_speed_multiplier = 2.0
+corpse_scene = ExtResource("2_corpse")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_fat")
+
+[node name="NavigationAgent2D" type="NavigationAgent2D" parent="."]
+path_desired_distance = 15.0
+target_desired_distance = 20.0
+path_max_distance = 100.0
+avoidance_enabled = false
+radius = 30.0
+debug_enabled = false
+
+[node name="Sprite" type="Sprite2D" parent="."]
+scale = Vector2(1.5, 1.5)
+
+[node name="Body" type="ColorRect" parent="Sprite"]
+offset_left = -13.0
+offset_top = -20.0
+offset_right = 13.0
+offset_bottom = 20.0
+color = Color(0.6, 0.85, 0.6, 1)
+
+[node name="SelectionIndicator" type="Node2D" parent="."]
+visible = false
+
+[node name="SelectionCircle" type="Line2D" parent="SelectionIndicator"]
+points = PackedVector2Array(-22, -22, 22, -22, 22, 22, -22, 22, -22, -22)
+width = 2.0
+default_color = Color(0.2, 0.8, 0.2, 1)
+
+[node name="HealthBar" type="ProgressBar" parent="."]
+visible = false
+offset_left = -20.0
+offset_top = -32.0
+offset_right = 20.0
+offset_bottom = -27.0
+show_percentage = false
+
+[node name="ControlGroupLabel" type="Label" parent="."]
+visible = false
+offset_left = 14.0
+offset_top = -27.0
+offset_right = 29.0
+offset_bottom = -12.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 2
+theme_override_font_sizes/font_size = 14
+text = "1"
+horizontal_alignment = 1
+vertical_alignment = 1

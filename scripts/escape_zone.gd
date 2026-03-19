@@ -102,4 +102,10 @@ func _on_body_entered(body: Node2D) -> void:
 	# Handle zombies dying
 	elif unit.is_zombie():
 		print("  -> Zombie entered escape zone - calling die()!")
+		# If the zombie has a spawn_corpse_on_death flag (Fat Zombie), suppress the corpse
+		# so no permanent obstacle is left behind when it exits via the escape zone.
+		# Using property check avoids a class name dependency on FatZombie.
+		if "spawn_corpse_on_death" in unit:
+			unit.spawn_corpse_on_death = false
+			print("  -> Corpse spawn suppressed for special zombie in escape zone")
 		unit.die()  # Kill the zombie
