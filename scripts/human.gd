@@ -322,6 +322,9 @@ var _base_move_speed: float = 0.0
 ## Reference to selection circle for targeting visual (selection_indicator is inherited from Unit)
 @onready var selection_circle: Line2D = $SelectionIndicator/SelectionCircle
 
+## Audio player for the gun cocking sound — fires when a zombie enters the vision cone
+@onready var _aim_sound: AudioStreamPlayer2D = $AimSoundPlayer
+
 ## Reference to the physics space for raycasting (line-of-sight checks)
 ## Cached for performance
 var space_state: PhysicsDirectSpaceState2D
@@ -1182,6 +1185,7 @@ func _update_shooting(delta: float) -> void:
 		if shoot_target:
 			_aim_timer = aim_time
 			_aim_paused = false
+			_aim_sound.play()
 			print("🎯 ", name, " acquired target: ", shoot_target.name, " (", int(position.distance_to(shoot_target.position)), "px)")
 
 
