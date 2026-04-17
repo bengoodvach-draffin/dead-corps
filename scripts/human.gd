@@ -2494,7 +2494,7 @@ func set_attack_target(_target: Unit) -> void:
 ## Returns false if already has 3 zombies attacking
 ## @return: true if can accept more attackers, false if at max (3)
 func can_accept_attacker() -> bool:
-	return attacker_count < 3
+	return attacker_count < 2
 
 
 ## Increments the attacker count when a zombie targets this human
@@ -2503,8 +2503,8 @@ func add_attacker() -> void:
 	attacker_count += 1
 	update_targeting_visual()  # Show red border when targeted
 	# Debug logging
-	if attacker_count > 3:
-		push_warning("Human has more than 3 attackers! Count: ", attacker_count)
+	if attacker_count > 2:
+		push_warning("Human has more than 2 attackers! Count: ", attacker_count)
 
 
 ## Decrements the attacker count when a zombie stops targeting this human

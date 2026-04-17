@@ -428,13 +428,7 @@ func apply_cohesion_force() -> void:
 	if cohesion_strength <= 0.1:
 		return
 	
-	# Don't apply to player-commanded zombies
-	if is_zombie():
-		var zombie := self as Zombie
-		if zombie.is_player_commanded:
-			return
-	
-	# Don't apply if unit is currently moving (either player command or active pursuit)
+	# Don't apply if unit is currently moving
 	# Only apply gentle drift when truly idle
 	if velocity.length() > 5.0:
 		return

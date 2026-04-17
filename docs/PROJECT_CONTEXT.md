@@ -1,7 +1,7 @@
 # Dead Corps - Project Context Document
 
 **Last Updated:** March 19, 2026  
-**Current Version:** v0.24.1  
+**Current Version:** v0.25.0  
 **Purpose:** Complete context for starting fresh Claude conversations
 
 ---
@@ -165,7 +165,7 @@
 ---
 
 ✅ **Special Zombie Foundation + Fat Zombie (v0.24.0):**
-- `is_special: bool = false` added to `zombie.gd` base class — when true: disables auto-pursuit, leap trigger, and pack recruitment. Player maintains full control of special zombies at all times.
+- `is_special: bool = false` added to `zombie.gd` base class — when true: disables leap, post-kill continuation, and pack recruitment. Player maintains full control of special zombies at all times.
 - **Architecture:** subclasses set `is_special = true` in `_ready()` before `super._ready()`. Never redeclare `is_special` as a variable in subclasses.
 - **Fat Zombie:** extends Zombie, `is_special = true`, cannot attack (`attack_damage = 0`). Gunshot-only death (ignores damage without knockback direction). On gunshot death spawns a `FatZombieCorpse` at its position. Entering escape zone removes cleanly with no corpse.
 - **Fat Zombie Corpse:** `StaticBody2D` on collision layer 1, added to `"buildings"` group — blocks movement and LOS identically to a building. 60×60px dark green rectangle. Built procedurally in `_ready()`.
@@ -178,12 +178,21 @@
 - Disguise breaks permanently when the zombie pins a human (target transitions to GRAPPLED state) — not on chase start, not on attack start
 - After break: behaves identically to a regular zombie, all human detection systems apply normally
 - Visual: pink `Color(1.0, 0.4, 0.8)` while costumed, reverts to standard zombie green `Color(0.4, 0.6, 0.3)` on break
-- `is_special = true` — no auto-pursuit, no leap, no pack recruitment
+- `is_special = true` — no leap, no post-kill continuation, no pack recruitment
 - **Design note:** human reaction to a costumed zombie pinning a nearby ally may need strengthening — the grappled_drain event fires but the visual surprise of a disguised zombie biting a friend may warrant a larger morale hit or additional response. Flagged for post-validation tuning.
 
 ---
 
-⚠️ **Navigation Mesh Baking (Godot 4.6):**
+✅ **Player-Controlled Engagement (v0.25.0):**
+- Zombies no longer auto-pursue. All engagements are explicitly player-initiated via right-click.
+- `can_receive_command() -> bool` on Zombie: returns false when leaping or committed (grappled/in melee). Redirecting a chasing zombie (PURSUING state) is allowed; redirecting a committed zombie is not.
+- **Group engagement resolver** in `selection_manager.gd`: right-clicking a human finds all humans within 150px and distributes selected zombies via greedy bipartite assignment (max 2 per human, nearest zombie to nearest human). Overflow zombies move to the clicked position.
+- **Post-kill continuation**: when a zombie's target dies, it automatically scans for the nearest living human within 250px with clear LOS (no vision arc — LOS only). If found, re-engages without player input. Special zombies skip this.
+- Attacker cap reduced from 3→2 per human across `zombie.gd`, `unit.gd`, and `human.gd`.
+- **Zombie vision arcs removed entirely** from `vision_renderer.gd`. Vision arcs are now human-only visual language. Tab key cycling for zombie vision removed.
+- `is_locked_in_pursuit`, `is_player_commanded`, `check_auto_pursuit()`, `propagate_pursuit_to_group()`, `can_see_unit()`, `is_in_vision_arc()`, and `find_nearest_human_in_range()` all removed from `zombie.gd`.
+
+---
 - Auto-bake can fail for some setups
 - Workaround: Use Groups method (add buildings to "buildings" group)
 - Manual polygon drawing works but tedious
@@ -282,12 +291,12 @@
 | File | Class Name | Extends | Purpose |
 |------|-----------|---------|---------|
 | `unit.gd` | `Unit` | `CharacterBody2D` | Base class for all units. Handles movement, combat, health, selection, BOID flocking, and world boundary clamping. Inherited by Zombie and Human. |
-| `zombie.gd` | `Zombie` | `Unit` | Player-controlled zombie units. Handles states (IDLE/MOVING/PURSUING/LEAPING/MELEE/DEAD), vision detection, leap attacks, and human conversion signal. Optional NavigationAgent2D support. |
+| `zombie.gd` | `Zombie` | `Unit` | Player-controlled zombie units. Handles states (IDLE/MOVING/PURSUING/LEAPING/MELEE/DEAD), leap attacks, and human conversion signal. Optional NavigationAgent2D support. v0.25.0: no auto-pursuit — all engagements are player-initiated via right-click. `can_receive_command()` returns false when leaping or committed (grappled/melee). Post-kill continuation scan: on target death, scans for nearest human within 250px with LOS and re-engages automatically. |
 | `human.gd` | `Human` | `Unit` | AI-controlled human enemies. Handles states (IDLE/SENTRY/FLEEING/GRAPPLED/DEAD/TUNNEL_VISION), DefenderClass enum (CIVILIAN/MILITIA/POLICE/GI/SPEC_OPS), morale system, shooting system, dual-zone vision arcs, tunnel vision, low urgency detection alert (v0.23.0) with per-class side-aware offsets, high urgency alert system (v0.23.1) for ally grappled/killed/gunshot with unified broadcast, patrol system (LOOP/PING_PONG) with Phase C per-waypoint pause/swing/facing, formation squad system (leader/follower, 5 shapes), and escape zone seeking. Uses @tool for editor visuals. |
 | `game_manager.gd` | `GameManager` | `Node` | **Core gameplay coordinator. Do NOT rename or replace.** Tracks all_zombies and all_humans arrays, handles spawning, zombie conversion after incubation, escape counting, win/loss conditions, and game time. Found in scene via group `"game_manager"`. |
 | `selection_manager.gd` | `SelectionManager` | `Node2D` | RTS unit selection. Handles click selection, drag box selection, Shift+click multi-select, and Ctrl+1-9 control group assignment/recall. Found in scene via group `"selection_manager"`. |
 | `camera_controller.gd` | `CameraController` | `Camera2D` | RTS camera. WASD pan, mouse wheel zoom with smoothing, edge scrolling, and configurable bounds. Syncs bounds from WorldBounds autoload on ready. Found in scene via group `"camera"`. |
-| `vision_renderer.gd` | `VisionRenderer` | `Node2D` | Draws all unit vision cones and circles each frame. Handles Tab key cycling between vision modes (none/all/selected only/hidden). Merges vision of nearby grouped units. |
+| `vision_renderer.gd` | `VisionRenderer` | `Node2D` | Draws human vision cones and circles each frame. Merges vision of nearby grouped humans. Zombie vision removed in v0.25.0 — arcs are human-only visual language. |
 | `building.gd` | `Building` | `StaticBody2D` | Static obstacle. Blocks unit movement and line-of-sight. Configurable width/height and color via @export. Uses @tool for real-time editor preview. Added to `"buildings"` group for navigation mesh baking. |
 | `escape_zone.gd` | `EscapeZone` | `Area2D` | Safe zone for humans. Humans entering are counted as escaped; zombies entering are killed. Configurable size and color. Uses @tool for editor preview. References GameManager via group. |
 | `initializer.gd` | *(none)* | `Node` | Scene bootstrap. Waits one frame then calls `game_manager.setup_test_scenario()`. Can be disabled via @export flag. For prototyping only — will be replaced by level loading. |
@@ -295,7 +304,7 @@
 | `end_game_overlay.gd` | *(none)* | `CanvasLayer` | Win/loss screen shown when game ends. Displays result message and score breakdown. Hidden by default, shown when GameManager emits `game_won` or `game_lost` signals. |
 | `world_bounds.gd` | *(none, Autoload)* | `Node` | **Added v0.19.5.** Autoload singleton registered as `WorldBounds`. Single source of truth for world bounds (`world_bounds_min`, `world_bounds_max`). Read by unit.gd and camera_controller.gd. Change bounds here and everything updates automatically. |
 | `level_bounds.gd` | *(none)* | `Node2D` | **Added v0.21.3.** @tool Node placed in each level scene. Exports `bounds_min` / `bounds_max` (Vector2). On `_ready()` writes values into WorldBounds autoload so all unit clamping and camera update automatically. Draws orange boundary rectangle in editor and at runtime. Replace the old approach of editing world_bounds.gd directly. |
-| `fat_zombie.gd` | `FatZombie` | `Zombie` | **Added v0.24.0.** Special zombie — utility/sacrifice unit. Sets `is_special = true` (disables auto-pursuit, leap, pack recruitment). Cannot attack (`attack_damage = 0`). Gunshot-only death: ignores damage with no knockback direction. On gunshot death spawns `FatZombieCorpse` at its position. `spawn_corpse_on_death` flag set to `false` by escape_zone.gd to suppress corpse on escape-zone removal. |
+| `fat_zombie.gd` | `FatZombie` | `Zombie` | **Added v0.24.0.** Special zombie — utility/sacrifice unit. Sets `is_special = true` (disables leap, post-kill continuation, and pack recruitment). Cannot attack (`attack_damage = 0`). Gunshot-only death: ignores damage with no knockback direction. On gunshot death spawns `FatZombieCorpse` at its position. `spawn_corpse_on_death` flag set to `false` by escape_zone.gd to suppress corpse on escape-zone removal. |
 | `fat_zombie_corpse.gd` | `FatZombieCorpse` | `StaticBody2D` | **Added v0.24.0.** Permanent obstacle spawned by FatZombie on gunshot death. Collision layer 1, added to "buildings" group — blocks movement and LOS identically to a building. 60×60px, dark green `Color(0.25, 0.38, 0.25)`. Collision and visual built procedurally in `_ready()`. NavigationObstacle2D omitted pending avoidance_enabled pass. |
 | `costume_zombie.gd` | `CostumeZombie` | `Zombie` | **Added v0.24.1.** Special zombie — fully undetectable while `is_costumed == true`. Humans skip it in flee detection, morale drain, aim acquisition, alert system, and gunshot response. Disguise breaks permanently when it pins a human (target enters GRAPPLED state). After break behaves identically to a regular zombie. Pink `Color(1.0, 0.4, 0.8)` while costumed, reverts to standard green on break. |
 
@@ -588,6 +597,7 @@ Humans further than ~160px from contact: unaffected ✅
 
 ## 📦 **Version History (Recent)**
 
+**v0.25.0 (April 17, 2026)** - Player-controlled engagement redesign
 **v0.24.1 (March 19, 2026)** - Costume Zombie
 **v0.24.0 (March 19, 2026)** - Special zombie foundation + Fat Zombie
 **v0.23.1 (April 17, 2026)** - High urgency alert system: ally grappled/killed facing response, unified broadcast replacing separate gunshot system, 2s shared cooldown, 2s hold timer
@@ -701,11 +711,11 @@ Debug → Visible Navigation
 ## 📞 **Quick Reference**
 
 **Zombie States:**
-- IDLE (circle vision)
-- MOVING (forward arc)
-- PURSUING (forward arc, locked)
-- LEAPING (speed boost)
-- MELEE (attacking)
+- IDLE (awaiting player command)
+- MOVING (player-commanded move, no attack target)
+- PURSUING (chasing player-commanded target — can be redirected)
+- LEAPING (committed — cannot be redirected)
+- MELEE (committed — cannot be redirected)
 
 **Human States:**
 - IDLE (circle vision)

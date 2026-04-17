@@ -91,13 +91,13 @@ zone_size = Vector2(75, 50)
 [node name="Human2" parent="TestLevel/Humans" unique_id=1321911954 instance=ExtResource("6_qckbd")]
 position = Vector2(-302, -358)
 initial_state = 1
-sentry_facing_degrees = 180.0
+sentry_facing_degrees = 38.0
 flee_vision_range = 100.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human3" parent="TestLevel/Humans" unique_id=1909313656 instance=ExtResource("6_qckbd")]
-position = Vector2(126, -389)
+position = Vector2(143, -47)
 initial_state = 1
 defender_class = 1
 morale_max = 150.0
@@ -111,7 +111,7 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human8" parent="TestLevel/Humans" unique_id=1346925049 instance=ExtResource("6_qckbd")]
-position = Vector2(257, -418)
+position = Vector2(197, -91)
 initial_state = 1
 defender_class = 1
 morale_max = 150.0
@@ -125,7 +125,7 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human9" parent="TestLevel/Humans" unique_id=576160070 instance=ExtResource("6_qckbd")]
-position = Vector2(114, -434)
+position = Vector2(36, -120)
 initial_state = 1
 defender_class = 1
 morale_max = 150.0
@@ -152,7 +152,7 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human10" parent="TestLevel/Humans" unique_id=1034819640 instance=ExtResource("6_qckbd")]
-position = Vector2(544, -116)
+position = Vector2(550, -163)
 initial_state = 1
 defender_class = 2
 morale_max = 200.0
@@ -165,7 +165,7 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human11" parent="TestLevel/Humans" unique_id=1981020956 instance=ExtResource("6_qckbd")]
-position = Vector2(449, -116)
+position = Vector2(455, -163)
 initial_state = 1
 defender_class = 2
 morale_max = 200.0
@@ -207,7 +207,7 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human12" parent="TestLevel/Humans" unique_id=1087255169 instance=ExtResource("6_qckbd")]
-position = Vector2(1223, -363)
+position = Vector2(988, -363)
 initial_state = 1
 defender_class = 4
 morale_max = 1000.0
@@ -221,7 +221,7 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human13" parent="TestLevel/Humans" unique_id=1672202995 instance=ExtResource("6_qckbd")]
-position = Vector2(1380, -301)
+position = Vector2(988, -301)
 initial_state = 1
 defender_class = 4
 morale_max = 1000.0
@@ -235,7 +235,7 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human14" parent="TestLevel/Humans" unique_id=1116798384 instance=ExtResource("6_qckbd")]
-position = Vector2(1301, -312)
+position = Vector2(988, -312)
 initial_state = 1
 defender_class = 4
 morale_max = 1000.0
@@ -291,6 +291,12 @@ position = Vector2(440, 193)
 
 [node name="Zombie24" parent="TestLevel/Zombies" unique_id=911431945 instance=ExtResource("5_fklk2")]
 position = Vector2(546, 188)
+
+[node name="Zombie35" parent="TestLevel/Zombies" unique_id=416281916 instance=ExtResource("5_fklk2")]
+position = Vector2(502, 203)
+
+[node name="Zombie36" parent="TestLevel/Zombies" unique_id=1889462175 instance=ExtResource("5_fklk2")]
+position = Vector2(608, 198)
 
 [node name="Zombie4" parent="TestLevel/Zombies" unique_id=701295886 instance=ExtResource("5_fklk2")]
 position = Vector2(1011, 436)
@@ -383,4 +389,4 @@ navigation_polygon = SubResource("NavigationPolygon_4viah")
 visible = false
 
 [node name="CostumeZombie" parent="." unique_id=591810152 instance=ExtResource("14_vmpuv")]
-position = Vector2(432, 80)
+position = Vector2(552, 350)

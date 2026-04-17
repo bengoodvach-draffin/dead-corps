@@ -231,39 +231,97 @@ func handle_command(_screen_pos: Vector2) -> void:
 	var target_unit := get_unit_at_position(world_pos, "humans")
 
 	if target_unit:
-		# Attack command - only idle/controllable zombies can receive new attack orders
-		for unit in selected_units:
-			if is_instance_valid(unit):
-				# Zombies locked in pursuit cannot be commanded
-				if unit is Zombie:
-					var zombie := unit as Zombie
-					# Only command if zombie is not locked in pursuit
-					if not zombie.is_locked_in_pursuit:
-						zombie.set_attack_target(target_unit, true)
-				else:
-					unit.set_attack_target(target_unit)
+		# Attack command — use group engagement resolver (v0.25.0)
+		_resolve_group_engagement(selected_units, target_unit)
 	else:
-		# Move command with formation spreading - only controllable zombies respond
-		var formation_positions := calculate_formation_positions(world_pos, selected_units)
-		
-		# Filter to only command controllable units
-		var controllable_units: Array[Unit] = []
+		# Move command — only non-committed zombies respond
+		var commandable_units: Array[Unit] = []
 		for unit in selected_units:
 			if is_instance_valid(unit):
-				# Zombies locked in pursuit ignore move commands
 				if unit is Zombie:
 					var zombie := unit as Zombie
-					if not zombie.is_locked_in_pursuit:
-						controllable_units.append(unit)
+					if zombie.can_receive_command():
+						commandable_units.append(unit)
 				else:
-					# Humans always respond to commands
-					controllable_units.append(unit)
+					commandable_units.append(unit)
 		
-		# Recalculate formation for only the controllable units
-		if not controllable_units.is_empty():
-			formation_positions = calculate_formation_positions(world_pos, controllable_units)
-			for i in range(controllable_units.size()):
-				controllable_units[i].set_move_target(formation_positions[i])
+		if not commandable_units.is_empty():
+			var formation_positions := calculate_formation_positions(world_pos, commandable_units)
+			for i in range(commandable_units.size()):
+				commandable_units[i].set_move_target(formation_positions[i])
+
+
+## Group engagement resolver (v0.25.0)
+## When the player right-clicks a human, finds all humans within 150px of the click
+## and distributes selected zombies across the group using greedy bipartite assignment.
+## Max 2 zombies per human. Overflow zombies move to the clicked position.
+## @param zombies: Currently selected units
+## @param clicked_human: The human that was right-clicked
+func _resolve_group_engagement(zombies: Array[Unit], clicked_human: Unit) -> void:
+	# Step 1: Find target group — all humans within 150px of clicked human
+	var all_humans := get_tree().get_nodes_in_group("humans")
+	var target_group: Array[Unit] = []
+	for human in all_humans:
+		if not human is Human:
+			continue
+		if (human as Human).is_dead:
+			continue
+		var dist: float = clicked_human.global_position.distance_to(human.global_position)
+		if dist <= 150.0:
+			target_group.append(human)
+	# Safety: ensure clicked human is always included
+	if clicked_human not in target_group:
+		target_group.append(clicked_human)
+	
+	# Step 2: Filter commandable zombies
+	var commandable: Array[Unit] = []
+	for unit in zombies:
+		if not is_instance_valid(unit):
+			continue
+		if unit is Zombie and (unit as Zombie).can_receive_command():
+			commandable.append(unit)
+	
+	if commandable.is_empty():
+		return
+	
+	print("🎯 GROUP ENGAGEMENT: ", commandable.size(), " zombies vs ", target_group.size(), " humans")
+	
+	# Step 3: Build zombie-human distance pairs, sort ascending
+	var pairs: Array = []
+	for zombie in commandable:
+		for human in target_group:
+			pairs.append({
+				"zombie": zombie,
+				"human": human,
+				"dist": zombie.global_position.distance_to(human.global_position)
+			})
+	pairs.sort_custom(func(a, b): return a.dist < b.dist)
+	
+	# Step 4: Greedy bipartite assignment — max 2 zombies per human
+	var assigned: Dictionary = {}      # zombie → human
+	var human_counts: Dictionary = {}  # human → slot count
+	
+	for pair in pairs:
+		if pair.zombie in assigned:
+			continue
+		var count: int = human_counts.get(pair.human, 0)
+		if count >= 2:
+			continue
+		assigned[pair.zombie] = pair.human
+		human_counts[pair.human] = count + 1
+	
+	# Step 5: Issue commands
+	var overflow_count := 0
+	for zombie in commandable:
+		if zombie in assigned:
+			(zombie as Zombie).set_attack_target(assigned[zombie])
+		else:
+			# Overflow: move to clicked human's position (stays with the fight)
+			zombie.set_move_target(clicked_human.global_position)
+			overflow_count += 1
+	
+	if overflow_count > 0:
+		print("  ", overflow_count, " overflow zombies moving to fight position")
 
 func get_unit_at_position(pos: Vector2, group: String) -> Unit:
 	var units := get_tree().get_nodes_in_group(group)
