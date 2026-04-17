@@ -105,13 +105,13 @@ sighting_drain = 35.0
 fleeing_drain = 40.0
 weapon_range = 150.0
 aim_time = 0.7
-sentry_facing_degrees = 180.0
+sentry_facing_degrees = 269.0
 flee_vision_range = 100.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human8" parent="TestLevel/Humans" unique_id=1346925049 instance=ExtResource("6_qckbd")]
-position = Vector2(256, -418)
+position = Vector2(257, -418)
 initial_state = 1
 defender_class = 1
 morale_max = 150.0
@@ -119,13 +119,13 @@ sighting_drain = 35.0
 fleeing_drain = 40.0
 weapon_range = 150.0
 aim_time = 0.7
-sentry_facing_degrees = 156.0
+sentry_facing_degrees = 39.0
 flee_vision_range = 100.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human9" parent="TestLevel/Humans" unique_id=576160070 instance=ExtResource("6_qckbd")]
-position = Vector2(139, -433)
+position = Vector2(114, -434)
 initial_state = 1
 defender_class = 1
 morale_max = 150.0
@@ -152,7 +152,7 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human10" parent="TestLevel/Humans" unique_id=1034819640 instance=ExtResource("6_qckbd")]
-position = Vector2(533.77686, -391.6292)
+position = Vector2(544, -116)
 initial_state = 1
 defender_class = 2
 morale_max = 200.0
@@ -165,7 +165,7 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human11" parent="TestLevel/Humans" unique_id=1981020956 instance=ExtResource("6_qckbd")]
-position = Vector2(473.66983, -392.68036)
+position = Vector2(449, -116)
 initial_state = 1
 defender_class = 2
 morale_max = 200.0
@@ -207,7 +207,7 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human12" parent="TestLevel/Humans" unique_id=1087255169 instance=ExtResource("6_qckbd")]
-position = Vector2(988, -353)
+position = Vector2(1223, -363)
 initial_state = 1
 defender_class = 4
 morale_max = 1000.0
@@ -221,7 +221,7 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human13" parent="TestLevel/Humans" unique_id=1672202995 instance=ExtResource("6_qckbd")]
-position = Vector2(988, -349)
+position = Vector2(1380, -301)
 initial_state = 1
 defender_class = 4
 morale_max = 1000.0
@@ -235,7 +235,7 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human14" parent="TestLevel/Humans" unique_id=1116798384 instance=ExtResource("6_qckbd")]
-position = Vector2(988, -358)
+position = Vector2(1301, -312)
 initial_state = 1
 defender_class = 4
 morale_max = 1000.0
@@ -378,7 +378,6 @@ position = Vector2(1, -2)
 navigation_polygon = SubResource("NavigationPolygon_4viah")
 
 [node name="DebugOverlay" parent="." unique_id=468344591 instance=ExtResource("11_mdb3q")]
-visible = false
 
 [node name="EndGameOverlay" parent="." unique_id=2000451810 instance=ExtResource("12_jxsff")]
 visible = false

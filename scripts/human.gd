@@ -409,20 +409,27 @@ var _was_patrolling: bool = false
 ## Suppresses swing arc so alert facing isn't overwritten each frame.
 var _is_alerted: bool = false
 
-## Cooldown per human to prevent jitter from repeated gunshot broadcasts — 1 second.
-var _gunshot_response_cooldown: float = 0.0
+## === HIGH URGENCY ALERT RUNTIME (v0.23.1) ===
 
-## Target facing direction for smooth rotation toward alert/gunshot events.
-## Each frame, facing_direction lerps toward this at ALERT_TURN_SPEED.
-## Set by _apply_alert_facing() and receive_gunshot_alert().
+## Shared cooldown across all high urgency events (grapple, kill, gunshot) — 2 seconds.
+## Prevents thrashing when multiple events fire in quick succession.
+var _high_urgency_cooldown: float = 0.0
+
+## Pending high urgency event position — applied after 0.4s reaction delay.
+var _high_urgency_pending_pos: Vector2 = Vector2.ZERO
+
+## Countdown before applying high urgency facing — 0.4s reaction delay.
+var _high_urgency_delay_timer: float = 0.0
+
+## Hold timer — after high urgency event, holds alerted facing for 2s before returning.
+## Only returns if no zombies are in the new sightline when it expires.
+var _high_urgency_hold_timer: float = 0.0
+
+## Target facing direction for smooth rotation toward alert events.
+## Each frame, facing_direction rotates toward this at ALERT_TURN_SPEED.
+## Set by _apply_alert_facing() and receive_high_urgency_alert().
 ## Vector2.ZERO means no active rotation target.
 var _target_facing: Vector2 = Vector2.ZERO
-
-## Pending gunshot alert position — applied after _gunshot_delay_timer expires.
-var _pending_gunshot_pos: Vector2 = Vector2.ZERO
-
-## Countdown before applying a gunshot alert facing — gives a natural reaction delay.
-var _gunshot_delay_timer: float = 0.0
 
 ## Turn speed for alert-driven rotation — 360°/sec = 180° in 0.5s.
 const ALERT_TURN_SPEED: float = 360.0
@@ -773,13 +780,31 @@ func _physics_process(delta: float) -> void:
 	# Tracks how long any zombie has been continuously in this human's vision cone.
 	# Drives the detection alert system — alert fires at 5 seconds.
 	_alert_cooldown = max(0.0, _alert_cooldown - delta)
-	_gunshot_response_cooldown = max(0.0, _gunshot_response_cooldown - delta)
+	_high_urgency_cooldown = max(0.0, _high_urgency_cooldown - delta)
+	
+	# === HIGH URGENCY DELAY TIMER (v0.23.1) ===
+	# Applies pending high urgency facing after 0.4s reaction delay.
+	if _high_urgency_delay_timer > 0.0:
+		_high_urgency_delay_timer -= delta
+		if _high_urgency_delay_timer <= 0.0 and _high_urgency_pending_pos != Vector2.ZERO:
+			_target_facing = (_high_urgency_pending_pos - global_position).normalized()
+			_high_urgency_pending_pos = Vector2.ZERO
+	
+	# === HIGH URGENCY HOLD TIMER (v0.23.1) ===
+	# After 2s with no zombies in new sightline, return to original facing.
+	if _high_urgency_hold_timer > 0.0:
+		_high_urgency_hold_timer -= delta
+		if _high_urgency_hold_timer <= 0.0 and _zombies_in_vision_count == 0:
+			print("👁️ ", name, " high urgency hold expired — returning to original facing")
+			facing_direction = degrees_to_vector(sentry_facing_degrees)
+			swing_center_angle = sentry_facing_degrees
+			_is_alerted = false
 	
 	var zombies_in_cone := _zombies_in_vision_count > 0
 	if zombies_in_cone and current_state != State.TUNNEL_VISION:
 		# Zombie in cone — increment timer, freeze return timers
 		_cone_timer += delta
-		_facing_return_timer = 120.0
+		_facing_return_timer = 30.0
 		_patrol_resume_timer = 30.0
 		
 		# Fire detection alert at 5 seconds if not in cooldown
@@ -798,7 +823,7 @@ func _physics_process(delta: float) -> void:
 			# Cone just cleared — note patrol state before timers start
 			if _cone_timer >= 5.0:
 				# Alert had fired — start return timers
-				_facing_return_timer = max(_facing_return_timer, 120.0)
+				_facing_return_timer = max(_facing_return_timer, 30.0)
 				_patrol_resume_timer = max(_patrol_resume_timer, 30.0)
 		_cone_timer = 0.0
 		_alert_fired = false
@@ -870,13 +895,6 @@ func _physics_process(delta: float) -> void:
 	
 	# === ALERT ROTATION (v0.23.0) ===
 	# Smoothly rotate toward _target_facing when alerted.
-	# Gunshot delay timer fires pending alert after reaction delay.
-	if _gunshot_delay_timer > 0.0:
-		_gunshot_delay_timer -= delta
-		if _gunshot_delay_timer <= 0.0 and _pending_gunshot_pos != Vector2.ZERO:
-			_target_facing = (_pending_gunshot_pos - global_position).normalized()
-			_pending_gunshot_pos = Vector2.ZERO
-	
 	if _target_facing != Vector2.ZERO and _is_alerted:
 		var angle_diff := facing_direction.angle_to(_target_facing)
 		var max_turn := deg_to_rad(ALERT_TURN_SPEED) * delta
@@ -1065,12 +1083,12 @@ func check_for_nearby_zombies() -> void:
 		if _last_ally_states.has(ally_id):
 			var last_state = _last_ally_states[ally_id]
 			
-			# Ally just transitioned to GRAPPLED → apply grappled_drain
+			# Ally just transitioned to GRAPPLED → apply grappled_drain + high urgency alert
 			if current_ally_state == State.GRAPPLED and last_state != State.GRAPPLED:
 				print("💛 ", name, " morale hit: ally grappled nearby (", int(dist), "px) — -", grappled_drain)
-				# Point toward the zombie on top of the ally, not the ally themselves
 				_last_threat_position = _find_closest_zombie_to(ally.position)
 				_drain_morale(grappled_drain)
+				_broadcast_high_urgency_alert(ally.position, 75.0)
 			
 			# Ally just transitioned to FLEEING (moving past) → apply fleeing_drain
 			if current_ally_state == State.FLEEING and last_state != State.FLEEING:
@@ -1225,8 +1243,8 @@ func _fire_at(target: Unit) -> void:
 	
 	print("⚡ ", name, " fired at ", target.name, " (", int(position.distance_to(target.position)), "px)")
 	
-	# Broadcast gunshot alert to nearby allies
-	_broadcast_gunshot_alert(target.global_position)
+	# Broadcast high urgency alert to nearby allies — gunshot radius 150px
+	_broadcast_high_urgency_alert(target.global_position, 150.0)
 	
 	# Draw tracer FIRST — before damage — so it's visible even if zombie dies this frame
 	var start_local := Vector2(0.0, 15.0)  # Bottom edge of sprite
@@ -1270,9 +1288,6 @@ const ALERT_OFFSETS: Dictionary = {
 
 ## Radius within which detection alert propagates to nearby allies.
 const ALERT_RADIUS: float = 150.0
-
-## Radius within which gunshot alert propagates to nearby allies.
-const GUNSHOT_ALERT_RADIUS: float = 150.0
 
 
 ## Broadcasts a detection alert to nearby allies.
@@ -1377,10 +1392,15 @@ func _apply_alert_facing(threat_pos: Vector2, offset_deg: float) -> void:
 	print("  👁️ ", name, " | my_pos: ", global_position.snapped(Vector2(1,1)), " | threat_pos: ", threat_pos.snapped(Vector2(1,1)), " | own_threat_dir: ", own_threat_dir.snapped(Vector2(0.01,0.01)), " | offset: ", offset_deg, "° | target_facing: ", _target_facing.snapped(Vector2(0.01,0.01)))
 
 
-## Broadcasts a gunshot alert to nearby IDLE/SENTRY humans.
-## Each recipient snaps to face the target position (subject to 1s cooldown).
-## @param target_pos: World position of the zombie being shot at
-func _broadcast_gunshot_alert(target_pos: Vector2) -> void:
+## === HIGH URGENCY ALERT SYSTEM (v0.23.1) ===
+
+## Broadcasts a high urgency alert to nearby humans within radius.
+## Used for ally grappled (75px), ally killed (75px), and gunshot (150px) events.
+## All classes respond identically — direct facing, no class offsets.
+## Civilians included — FLEEING state check excludes them naturally once running.
+## @param event_pos: World position of the event
+## @param radius: Broadcast radius
+func _broadcast_high_urgency_alert(event_pos: Vector2, radius: float) -> void:
 	var all_humans := get_tree().get_nodes_in_group("humans")
 	for other in all_humans:
 		if other == self or not other is Human:
@@ -1388,24 +1408,27 @@ func _broadcast_gunshot_alert(target_pos: Vector2) -> void:
 		var ally := other as Human
 		if not is_instance_valid(ally):
 			continue
-		if global_position.distance_to(ally.global_position) <= GUNSHOT_ALERT_RADIUS:
-			ally.receive_gunshot_alert(target_pos)
+		if global_position.distance_to(ally.global_position) <= radius:
+			ally.receive_high_urgency_alert(event_pos)
 
 
-## Called by a firing ally to snap this human's facing toward the active target.
-## Has a 1-second per-human cooldown to prevent jitter from rapid fire.
-## @param target_pos: World position of the zombie being shot at
-func receive_gunshot_alert(target_pos: Vector2) -> void:
-	if _gunshot_response_cooldown > 0.0:
+## Called when a nearby high urgency event occurs (grapple, kill, or gunshot).
+## All classes respond identically — direct facing toward event position.
+## 0.4s reaction delay before facing updates. 2s shared cooldown. 2s hold after event.
+## @param event_pos: World position of the event to face
+func receive_high_urgency_alert(event_pos: Vector2) -> void:
+	if _high_urgency_cooldown > 0.0:
 		return
 	if current_state not in [State.IDLE, State.SENTRY]:
 		return
-	# Store pending position — applied after reaction delay
-	_pending_gunshot_pos = target_pos
-	_gunshot_delay_timer = 0.4  # 0.4s reaction delay before turning
-	_gunshot_response_cooldown = 1.0
+	if shoot_target != null:
+		return
+	_high_urgency_pending_pos = event_pos
+	_high_urgency_delay_timer = 0.4
+	_high_urgency_cooldown = 2.0
+	_high_urgency_hold_timer = 2.0
 	_is_alerted = true
-	print("🔫 ", name, " heard gunshot — reacting in 0.4s")
+	print("⚡ ", name, " high urgency alert — reacting in 0.4s")
 
 ## Applies a morale drain, clamps to 0, and checks for response trigger.
 ## @param amount: Amount to subtract from current morale (positive value)
@@ -1510,6 +1533,7 @@ func receive_ally_killed_shock(ally_position: Vector2) -> void:
 	print("💛 ", name, " morale hit: ally killed nearby — -", killed_drain)
 	_last_threat_position = _find_closest_zombie_to(ally_position)
 	_drain_morale(killed_drain)
+	_broadcast_high_urgency_alert(ally_position, 75.0)
 
 
 ## Uses raycasting to detect if buildings are blocking the view
