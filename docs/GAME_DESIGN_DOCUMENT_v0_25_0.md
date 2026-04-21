@@ -1,8 +1,8 @@
 # DEAD CORPS - DESIGN DOCUMENT
 
-**Version:** 5.0 (Advanced Prototype Build)  
-**Last Updated:** March 7, 2026  
-**Status:** Prototype v0.21.2 Complete
+**Version:** 6.0 (Advanced Prototype Build)  
+**Last Updated:** April 21, 2026  
+**Status:** Prototype v0.25.0
 
 ---
 
@@ -149,22 +149,12 @@ Real-time strategy with strong tactical puzzle elements. Similar to:
 **Polish & UI:**
 - ✅ Inspector export groups on Human and Unit (cleaner Inspector layout)
 - ✅ End game screen with score breakdown
-- ✅ Scoring system (25pts per zombie survived + time bonuses)
+- ✅ Scoring system (25pts regular zombie survived, 100pts special zombie survived + time bonuses)
 - ✅ Reset button for rapid iteration
 - ✅ Control group visual indicators
 - ✅ Health bars and selection rings
 
-### 2.2 Not Yet Implemented ❌
-
-- ❌ Special zombie types (11 planned — none implemented yet)
-- ❌ Building interaction system (transformation mechanic)
-- ❌ Multiple level designs
-- ❌ Campaign structure
-- ❌ Environmental hazards (water, fire, spikes)
-- ❌ Sound and music
-- ❌ Final art style
-
-**Human Defender System (v0.22.0–v0.22.5 — implemented, integration testing pending v0.22.6):**
+**Human Defender System (v0.22.0–v0.22.5):**
 - ✅ Five defender classes: Civilian, Militia, Police, GI, Spec Ops
 - ✅ Morale bar replacing binary flee trigger and depth-capped propagation
 - ✅ Shooting system: per-class weapons, aim time, tracer lines
@@ -173,6 +163,36 @@ Real-time strategy with strong tactical puzzle elements. Similar to:
 - ✅ Zombie death visual: dark red, 0.3s delay, shot knockback tween
 - ✅ Vision range: SENTRY/FLEEING arcs 350px
 - ⚠️ Kill count tuning deferred — values higher than spec, needs playtesting
+
+**Alert System (v0.23.0–v0.23.1):**
+- ✅ Low urgency detection alert: 5s cone timer, per-class side-aware offsets, smooth rotation
+- ✅ High urgency unified system: ally grappled (75px), ally killed (75px), gunshot (150px)
+- ✅ All high urgency: direct facing, 0.4s delay, 2s shared cooldown, 2s hold
+
+**Special Zombies (v0.24.0–v0.24.1):**
+- ✅ `is_special` flag on Zombie base class — disables leap, post-kill continuation, pack recruitment
+- ✅ **Fat Zombie:** gunshot-only death, spawns permanent `FatZombieCorpse` obstacle (blocks movement + LOS like a building); no corpse on escape zone exit
+- ✅ **Costume Zombie:** fully undetectable (`is_costumed = true`) across all human detection systems; disguise breaks permanently when zombie pins a human (GRAPPLED state); reverts to full regular zombie behaviour after break
+- ✅ Scoring: special zombies worth 100pts, regular zombies 25pts
+- ⚠️ Edge case: CostumeZombie sets `is_special = false` on disguise break — a broken-disguise Costume Zombie scores 25pts at end of game, not 100pts. Pending design decision on whether this is intended.
+
+**Player-Controlled Engagement (v0.25.0):**
+- ✅ Zombies never auto-pursue — all engagements are player-initiated via right-click
+- ✅ Group engagement resolver: greedy bipartite assignment, max 2 per human, 150px group radius
+- ✅ Post-kill continuation: 250px LOS scan, re-engages nearest available human
+- ✅ Commitment model: PURSUING freely redirectable; LEAPING/MELEE locked until kill
+- ✅ Zombie vision arcs removed — arcs are human-only visual language
+
+### 2.2 Not Yet Implemented ❌
+
+- ❌ Special zombie types (9 remaining — Fat Zombie and Costume Zombie implemented; 9 of 11 still planned)
+- ❌ Building interaction system (transformation mechanic)
+- ❌ Multiple level designs
+- ❌ Campaign structure
+- ❌ Environmental hazards (water, fire, spikes)
+- ❌ Sound and music
+- ❌ Final art style
+- ❌ 3D migration (confirmed architectural direction — see Section 11)
 
 ### 2.3 Version History
 
@@ -207,6 +227,16 @@ Real-time strategy with strong tactical puzzle elements. Similar to:
 - Formation squad patrols with leader/follower system and 5 shapes (v0.21.0)
 - Formation follower polish: ramped catch-up speed, convergence BOID reduction (v0.21.1)
 - Depth-capped, distance-based panic propagation (v0.21.2)
+
+**Human Defender System (v0.22.0-v0.23.1):**
+- Five defender classes with morale bar, shooting system, dual-zone vision arcs (v0.22.0–v0.22.5)
+- Low urgency detection alert: 5s cone timer, per-class side-aware facing offsets (v0.23.0)
+- High urgency unified alert: ally grappled/killed/gunshot, direct facing, 2s cooldown (v0.23.1)
+
+**Special Zombies + Engagement Redesign (v0.24.0-v0.25.0):**
+- Fat Zombie: gunshot-only death, permanent corpse obstacle (v0.24.0)
+- Costume Zombie: full invisibility until pin, permanent disguise break (v0.24.1)
+- Player-controlled engagement: no auto-pursuit, group resolver, post-kill continuation (v0.25.0)
 
 ---
 
@@ -555,9 +585,11 @@ Leader (has waypoints)
 
 **Core Snowball Loop:**
 1. Zombie kills human (health reaches 0)
-2. GameManager spawns new zombie at human's death position
-3. New zombie immediately under player control
-4. No incubation time in current prototype
+2. Human enters DEAD state — 5-second incubation timer begins
+3. After 5 seconds, GameManager spawns new zombie at the human's position
+4. New zombie immediately under player control
+
+**Incubation note:** Dead humans remain on the map for 5 seconds before converting. They are counted as part of the zombie total for scoring and lose condition checks during this period.
 
 **Score Impact:**
 - More zombies alive at end = higher score
@@ -574,7 +606,9 @@ Leader (has waypoints)
 - Shows "YOU LOSE - All your zombies died"
 
 **Scoring:**
-- 25 points per zombie survived (including starting zombies)
+- 25 points per regular zombie survived (including starting zombies)
+- 100 points per special zombie survived (Fat Zombie, Costume Zombie)
+- Note: CostumeZombie sets `is_special = false` on disguise break — a broken-disguise Costume Zombie scores 25pts, not 100pts
 - Time bonuses:
   - ≤1 min: +200
   - ≤2 min: +150
@@ -807,18 +841,19 @@ All special zombies are created by entering specific buildings. Each type provid
 
 ### 5.7 Costume Zombie
 
-**Source:** Costume shop / theater
-**Appearance:** Zombie in silly disguise (sombrero, fake mustache, clown suit)
+**Source:** Costume shop / theater  
+**Appearance:** Zombie in silly disguise (sombrero, fake mustache, clown suit). Pink tint while costumed; reverts to standard zombie green on disguise break.
 
 **Ability:**
-- Defenders don't detect until very close range
-- Can approach much closer before triggering flee/combat
-- Blends in as "human" from distance
+- Fully undetectable while `is_costumed = true` — humans skip this zombie in all detection systems: flee detection, morale drain, aim timer acquisition, alert cone timer, and gunshot response
+- Disguise breaks **permanently** when the zombie pins a human (target enters GRAPPLED state) — not on chase start, not on attack start
+- After break: behaves identically to a regular zombie; all human detection systems apply normally
 
 **Use Case:**
-- Sneak past patrols
-- Reach key targets undetected
-- Position zombies for ambushes
+- Sneak past patrols entirely undetected
+- Reach high-value targets (GI, Spec Ops) without triggering morale drain
+- Set up ambushes — position the zombie before breaking disguise
+- Break disguise deliberately to cause maximum morale shock at close range
 
 ### 5.8 Petrol Zombie
 
@@ -1116,22 +1151,22 @@ Aquarium → Headcrab Zombie (also Scuba Zombie)
 
 ## 9. FUTURE FEATURES
 
-### 9.1 First Validation Slice (Next Priority)
+### 9.1 First Validation Slice ⚠️ PARTIALLY COMPLETE
 
 **Goal:** Validate that the core tactical puzzle loop is actually fun before building more infrastructure.
 
-**Recommended target:**
-- Costume Zombie (reduces detection range — sneak mechanic)
-- Fat Zombie (one-time sacrifice to bridge a gap or create cover)
-- Police Defender (armed, morale threshold — flees at 3:1 ratio)
-- Barricaded GI Defender (never flees, holds a fixed position)
-- One handcrafted level using all four
+**Status:**
+- ✅ Fat Zombie implemented (v0.24.0) — gunshot-only death, permanent corpse obstacle
+- ✅ Costume Zombie implemented (v0.24.1) — full invisibility until pin
+- ✅ Police Defender implemented (v0.22.x) — armed, morale bar, flees when bar empties
+- ✅ GI Defender implemented (v0.22.x) — tunnel vision response, nearly unbreakable
+- ✅ Player-controlled engagement redesigned (v0.25.0)
+- ❌ Handcrafted test level combining all four — still outstanding
+- ❌ Focused play sessions to validate fun — still outstanding
 
-**Why this slice:**
-- Costume + Fat are the simplest special zombies to implement (passive/one-time)
-- Police + GI create meaningful tactical contrast (flee vs hold)
-- A real puzzle requires both sides to be interesting
-- Everything else (building transformation system, campaign, etc.) can wait until fun is confirmed
+**Remaining work:** Build one handcrafted level using Costume Zombie + Fat Zombie against Police + barricaded GI. Run focused play sessions before designing further levels or adding more systems.
+
+**Why this still matters:** Systems exist but haven't been meaningfully playtested together. Fun needs to be validated with a minimal puzzle loop before building more simulation complexity.
 
 ### 9.1a Patrol System Phase C ✅ COMPLETE (v0.20.0)
 
@@ -1232,8 +1267,8 @@ Phase C delivered full per-waypoint customisation:
 - Enemies can shoot incubating zombies (instant death)
 - Players can't control zombie in melee until incubation starts
 
-**Current Status:** Instant conversion on kill.
-**Evaluation:** Incubation adds tension but may slow gameplay. Consider for harder difficulty modes.
+**Current Status:** **Implemented** — 5-second incubation timer (halved from original 10s). Dead humans remain on the map in DEAD state for 5 seconds, then convert. Dead humans are counted as part of the zombie total during incubation for scoring and lose condition checks. Shooting incubating zombies and melee restrictions from the original design are not implemented.
+**Evaluation:** The 5-second delay adds a small conversion delay without dramatically slowing gameplay. Shooting incubating targets could be added as a future defender ability.
 
 ### 10.3 Attack Speed Multipliers
 
@@ -1523,17 +1558,33 @@ Result: Only victim (1 total)
 
 **Replacement (v0.22.0):** The morale bar system makes explicit propagation chains unnecessary. Every unit drains independently based on proximity to events — runaway cascades are naturally prevented by morale_max values rather than a depth cap.
 
+### 11.15 Why Full 3D Migration? (April 2026)
+
+**Decision:** Migrate the entire project to 3D Godot — low-poly geometry, simple 3D character models, rotatable isometric camera.
+
+**Drivers:**
+- **Rooftop traversal** is a genuine planned gameplay mechanic (Headcrab Zombie, snipers, elevated defenders). Faking this in 2D requires separate NavigationRegion2Ds per floor, Z-sort layers, and collision filtering — scaffolding that gets discarded at migration anyway.
+- **Urban density:** Dense buildings with camera freedom to avoid occlusion blind spots can't be cleanly solved in 2D without roof-opacity hacks.
+- **Timing:** Migrating at v0.24.1 while game logic systems (morale, shooting, patrol, formations, state machines) are still portable is lower-cost than migrating later with more 2D-specific systems to rewrite.
+
+**Systems requiring full rewrite:** Camera, vision renderer, all scene files.  
+**Systems needing significant adaptation:** Unit movement, selection, navigation, building logic.  
+**Systems surviving largely intact:** All game logic — state machines, morale, combat, patrol, formations.
+
+**Reference aesthetic:** They Are Billions (horde density, colour palette), 28 Days Later (tone).  
+**Art approach:** AI-generated assets via Midjourney for concepts; Synty-style low-poly for production.
+
 ---
 
 ## 12. OPEN QUESTIONS & DESIGN GAPS
 
 ### 12.1 Art Style
 
-**Gap:** No visual direction decided
-**Impact:** Can't produce final art
-**Options:** Pixelated, cartoonish, gritty, minimalist
-**Action:** Prototype with placeholders, decide after validating gameplay
-**Timeline:** Post-prototype
+**Gap:** 3D migration confirmed; specific art direction to be finalised  
+**Impact:** Can't produce final art until migration is complete  
+**Decision made:** Low-poly 3D geometry, simple 3D character models, rotatable isometric camera. They Are Billions and 28 Days Later as primary aesthetic references. No pixel art.  
+**Action:** Begin migration; develop style guide using Midjourney/Milanote alongside  
+**Timeline:** Post-validation-slice
 
 ### 12.2 Audio Design
 
@@ -1867,5 +1918,5 @@ R - Reset level
 - Move resolved questions out of Section 12
 - Archive old design decisions in change log
 
-**Last Major Update:** v0.21.2 - Phase C complete, formation squad patrols, depth-capped panic propagation
-**Next Planned Update:** First validation slice (Costume Zombie, Fat Zombie, Police, GI defender)
+**Last Major Update:** v0.25.0 — special zombies (Fat + Costume), player-controlled engagement, 3D migration decision
+**Next Planned Update:** First validation slice complete (handcrafted level + play sessions)
