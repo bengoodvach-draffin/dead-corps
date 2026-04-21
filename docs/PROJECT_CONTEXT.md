@@ -1,7 +1,7 @@
 # Dead Corps - Project Context Document
 
 **Last Updated:** April 21, 2026  
-**Current Version:** v0.25.0  
+**Current Version:** v0.25.6  
 **Purpose:** Complete context for starting fresh Claude conversations
 
 ---
@@ -24,7 +24,7 @@
 
 ---
 
-## 📊 **Current Build Status: v0.25.0**
+## 📊 **Current Build Status: v0.25.6**
 
 ### **What's Implemented & Working:**
 
@@ -128,18 +128,15 @@
 
 ---
 
-✅ **Alert System (v0.23.0 - v0.23.1):**
+✅ **Alert System (v0.23.0 - v0.25.5):**
 
-**Low Urgency — Detection Alert (v0.23.0):**
+**Low Urgency — Detection Alert (v0.23.0, updated v0.25.5):**
 - When a zombie has been in a human's vision cone for 5 continuous seconds, the human alerts nearby allies within 150px
-- Per-class facing offsets applied based on which side of the alerter each ally is on (right side = positive offset, left side = negative)
-- Militia: all allies face threat directly (0°)
-- Police: first ally each side ±45°, second ±90°
-- GI/Spec Ops: first ally each side ±105°, second ±165°
+- All classes face the threat directly (0° offset) — v0.25.5. Per-class offsets removed (was causing ping-pong when multiple alerters targeted same ally simultaneously). See `ALERT_OFFSETS` in `human.gd` for original values.
 - Civilians: flee response only, no facing assignment
 - Alert cooldown: 30 seconds before re-triggering
 - Patrol resumes 30 seconds after cone clears
-- Facing returns to original after 30 seconds of clear cone
+- Facing returns to original after 30 seconds of clear cone, using smooth rotation (v0.25.6)
 - Swing arc suppressed while alerted (`_is_alerted` flag)
 
 **High Urgency — Ally Grappled, Ally Killed, Gunshot (v0.23.1):**
@@ -148,7 +145,7 @@
 - Civilians included (FLEEING state check excludes them naturally once running)
 - Reaction delay: 0.4s before facing updates
 - Shared cooldown: 2 seconds across all high urgency types — prevents thrashing
-- Facing hold: 2 seconds after event, then returns to original (if no zombies now in sightline)
+- Facing hold: 2 seconds after event, then returns to original using smooth rotation (v0.25.6)
 - If zombie enters new sightline after pivot — normal targeting takes over naturally
 
 | Event | Radius | Notes |
@@ -160,7 +157,7 @@
 **Shared exclusion rules (all alert types):**
 - `shoot_target != null` → ignore (already engaged)
 - FLEEING, GRAPPLED, DEAD, TUNNEL_VISION → ignore
-- All rotations smooth at 360°/sec (180° in 0.5s)
+- All rotations smooth at 360°/sec (180° in 0.5s), including return-to-original
 
 ---
 
@@ -191,6 +188,39 @@
 - Attacker cap reduced from 3→2 per human across `zombie.gd`, `unit.gd`, and `human.gd`.
 - **Zombie vision arcs removed entirely** from `vision_renderer.gd`. Vision arcs are now human-only visual language. Tab key cycling for zombie vision removed.
 - `is_locked_in_pursuit`, `is_player_commanded`, `check_auto_pursuit()`, `propagate_pursuit_to_group()`, `can_see_unit()`, `is_in_vision_arc()`, and `find_nearest_human_in_range()` all removed from `zombie.gd`.
+
+---
+
+✅ **Vision System Overhaul (v0.25.1):**
+- **Click-to-pin cone system:** left-click any human to show their vision cone; click again to toggle off; click a different human to move the pin. No cones shown by default.
+- Clicking a human does NOT clear zombie selection — click is intercepted before SelectionManager processes it.
+- **V key debug mode:** press V to show all human cones simultaneously (debug/testing only).
+- **Facing lines:** short white line (20px) drawn from every living human's centre in their facing direction, always visible regardless of pin status.
+- **Tunnel vision cone always shown:** any human in TUNNEL_VISION state always renders their cone regardless of pin — required for the player to understand what has happened.
+- Merged/group blob cone logic removed entirely from `vision_renderer.gd`.
+- BOID cohesion force disabled in `unit.gd` (commented out) — was pulling idle units together to create merged blobs; no longer needed.
+
+✅ **Alert Facing Fixes (v0.25.2):**
+- `_pre_alert_facing` captures actual `facing_direction` at the moment the first alert fires. Preserved across chained alerts — subsequent alerts don't overwrite it. Cleared when return rotation completes.
+- Both return-to-facing paths (high urgency hold expiry, detection return timer) now use `_pre_alert_facing` instead of `sentry_facing_degrees`. Fixes incorrect snapping to North (0°) for humans where `sentry_facing_degrees` was left at its default.
+- Detection alert facing return timer fixed: was incorrectly 120s in `_receive_detection_alert`, corrected to 30s.
+- **Shoot target facing:** armed humans in SENTRY state (not patrolling, not formation follower) now smoothly rotate toward their active `shoot_target` while aiming, using the same 360°/sec turn speed as alert rotations. Swing arc suppressed while actively tracking a shoot target.
+- When shoot target dies or leaves range, human returns to `_pre_alert_facing` after a 2s hold.
+
+✅ **Smart Retargeting (v0.25.3):**
+- Armed humans now switch to a closer zombie if one enters weapon range while the current target is outside weapon range.
+- 50% aim time penalty on retarget — punishes leapfrog tactics without making it free to exploit.
+- New `_find_in_range_target()` helper in `human.gd`.
+
+✅ **Detection Alert Direct Facing (v0.25.5):**
+- Per-class facing offsets removed from detection alert system. All classes (Militia, Police, GI, Spec Ops) now face the threat directly (0° offset) on detection alert, matching high urgency behaviour.
+- `ALERT_OFFSETS` dictionary preserved as commented-out reference in `human.gd` with original values noted for potential reimplementation.
+- Fixes ping-pong bug where a human caught between two alerters received contradictory rotation targets.
+- Right/left ally sorting logic removed from `_broadcast_detection_alert`.
+
+✅ **Smooth Return Rotation (v0.25.6):**
+- Return-to-original-facing now uses smooth rotation at 360°/sec instead of instant snap.
+- `_is_returning_to_original` flag signals the rotation block to clear alert state (`_is_alerted`, `_pre_alert_facing`, `swing_center_angle`) when rotation completes, rather than clearing immediately and killing the rotation before it starts.
 
 ---
 - Auto-bake can fail for some setups
@@ -290,13 +320,13 @@
 
 | File | Class Name | Extends | Purpose |
 |------|-----------|---------|---------|
-| `unit.gd` | `Unit` | `CharacterBody2D` | Base class for all units. Handles movement, combat, health, selection, BOID flocking, and world boundary clamping. Inherited by Zombie and Human. Note: contains a `UnitType` enum with legacy HUMAN_SWAT / HUMAN_MILITARY entries that don't correspond to the actual `DefenderClass` system in human.gd — this enum appears unused for the human side and should be audited or removed. |
+| `unit.gd` | `Unit` | `CharacterBody2D` | Base class for all units. Handles movement, combat, health, selection, BOID flocking (separation + alignment), and world boundary clamping. Inherited by Zombie and Human. v0.25.1: cohesion force (`apply_cohesion_force()`) disabled/commented out — was pulling idle units together to form merged vision blobs; no longer needed. Separation force (`apply_separation_force()`) unchanged. Note: contains a `UnitType` enum with legacy HUMAN_SWAT / HUMAN_MILITARY entries that don't correspond to the actual `DefenderClass` system in human.gd — this enum appears unused for the human side and should be audited or removed. |
 | `zombie.gd` | `Zombie` | `Unit` | Player-controlled zombie units. Handles states (IDLE/MOVING/PURSUING/LEAPING/MELEE/DEAD), leap attacks, and human conversion signal. Optional NavigationAgent2D support. v0.25.0: no auto-pursuit — all engagements are player-initiated via right-click. `can_receive_command()` returns false when leaping or committed (grappled/melee). Post-kill continuation scan: on target death, scans for nearest human within 250px with LOS and re-engages automatically. |
-| `human.gd` | `Human` | `Unit` | AI-controlled human enemies. Handles states (IDLE/SENTRY/FLEEING/GRAPPLED/DEAD/TUNNEL_VISION), DefenderClass enum (CIVILIAN/MILITIA/POLICE/GI/SPEC_OPS), morale system, shooting system, dual-zone vision arcs, tunnel vision, low urgency detection alert (v0.23.0) with per-class side-aware offsets, high urgency alert system (v0.23.1) for ally grappled/killed/gunshot with unified broadcast, patrol system (LOOP/PING_PONG) with Phase C per-waypoint pause/swing/facing, formation squad system (leader/follower, 5 shapes), and escape zone seeking. Uses @tool for editor visuals. |
+| `human.gd` | `Human` | `Unit` | AI-controlled human enemies. Handles states (IDLE/SENTRY/FLEEING/GRAPPLED/DEAD/TUNNEL_VISION), DefenderClass enum (CIVILIAN/MILITIA/POLICE/GI/SPEC_OPS), morale system, shooting system, dual-zone vision arcs, tunnel vision, low urgency detection alert (v0.23.0, all classes direct facing v0.25.5), high urgency alert system (v0.23.1), shoot target facing (v0.25.2 — humans smoothly rotate toward active shoot target while aiming), smart retargeting (v0.25.3 — switch to closer in-range target with 50% aim penalty), `_pre_alert_facing` for correct return-to-original facing (v0.25.2), smooth return rotation (v0.25.6), patrol system (LOOP/PING_PONG) with Phase C per-waypoint pause/swing/facing, formation squad system (leader/follower, 5 shapes), and escape zone seeking. Uses @tool for editor visuals. |
 | `game_manager.gd` | `GameManager` | `Node` | **Core gameplay coordinator. Do NOT rename or replace.** Tracks all_zombies and all_humans arrays, handles spawning, zombie conversion after incubation, escape counting, win/loss conditions, and game time. Found in scene via group `"game_manager"`. |
-| `selection_manager.gd` | `SelectionManager` | `Node2D` | RTS unit selection. Handles click selection, drag box selection, Shift+click multi-select, and Ctrl+1-9 control group assignment/recall. Found in scene via group `"selection_manager"`. |
+| `selection_manager.gd` | `SelectionManager` | `Node2D` | RTS unit selection. Handles click selection, drag box selection, Shift+click multi-select, and Ctrl+1-9 control group assignment/recall. v0.25.1: clicking a human preserves zombie selection (human click detected before clear fires). Found in scene via group `"selection_manager"`. |
 | `camera_controller.gd` | `CameraController` | `Camera2D` | RTS camera. WASD pan, mouse wheel zoom with smoothing, edge scrolling, and configurable bounds. Syncs bounds from WorldBounds autoload on ready. Found in scene via group `"camera"`. |
-| `vision_renderer.gd` | `VisionRenderer` | `Node2D` | Draws human vision cones and circles each frame. Merges vision of nearby grouped humans. Zombie vision removed in v0.25.0 — arcs are human-only visual language. |
+| `vision_renderer.gd` | `VisionRenderer` | `Node2D` | Draws human vision cones and facing lines. v0.25.1: click-to-pin system — left-click a human to show their cone, click again to toggle off, click another human to switch. V key shows all cones (debug). White 20px facing lines always drawn for all living humans. Tunnel vision cones always shown regardless of pin. Merged/group blob logic removed. Zombie vision removed in v0.25.0. |
 | `building.gd` | `Building` | `StaticBody2D` | Static obstacle. Blocks unit movement and line-of-sight. Configurable width/height and color via @export. Uses @tool for real-time editor preview. Added to `"buildings"` group for navigation mesh baking. |
 | `escape_zone.gd` | `EscapeZone` | `Area2D` | Safe zone for humans. Humans entering are counted as escaped; zombies entering are killed. Configurable size and color. Uses @tool for editor preview. References GameManager via group. |
 | `initializer.gd` | *(none)* | `Node` | Scene bootstrap. Waits one frame then calls `game_manager.setup_test_scenario()`. Can be disabled via @export flag. For prototyping only — will be replaced by level loading. |
@@ -333,7 +363,7 @@
 
 | File | Purpose |
 |------|---------|
-| `GAME_DESIGN_DOCUMENT_v0_25_0.md` | Full game design doc v6.0. Core gameplay loop, zombie types, level design philosophy, tactical systems. |
+| `GAME_DESIGN_DOCUMENT_v0_25_6.md` | Full game design doc v6.1. Core gameplay loop, zombie types, level design philosophy, tactical systems. |
 | `PROJECT_CONTEXT.md` | This document. Technical state, scripts inventory, known issues. |
 | `PATROL_SYSTEM_ROADMAP.md` | Phase A/B/C roadmap for the sentry/patrol system. Current status and planned features. |
 | `PHASE_A_COMPLETE.md` | Phase A completion notes — sentry degrees and swing arc system (v0.14.0). |
@@ -612,6 +642,12 @@ Humans further than ~160px from contact: unaffected ✅
 
 ## 📦 **Version History (Recent)**
 
+**v0.25.6 (April 21, 2026)** - Smooth return rotation + tunnel vision cone always shown
+**v0.25.5 (April 21, 2026)** - Detection alert direct facing: per-class offsets removed, all classes face threat directly
+**v0.25.4 (April 21, 2026)** - Rotation/alert debug logging; non-essential prints silenced
+**v0.25.3 (April 21, 2026)** - Smart retargeting: switch to closer in-range zombie with 50% aim penalty
+**v0.25.2 (April 21, 2026)** - Alert facing fixes: _pre_alert_facing, 120s→30s timer fix, shoot target tracking, smooth return
+**v0.25.1 (April 21, 2026)** - Vision click system: click-to-pin cone, facing lines, tunnel vision always shown, cohesion disabled
 **v0.25.0 (April 17, 2026)** - Player-controlled engagement redesign
 **v0.24.1 (March 19, 2026)** - Costume Zombie
 **v0.24.0 (March 19, 2026)** - Special zombie foundation + Fat Zombie
@@ -639,7 +675,7 @@ Humans further than ~160px from contact: unaffected ✅
 **v0.15.0** - Escape zone global_position fix
 **v0.14.0** - Phase A: Sentry degrees and swing arcs
 
-⚠️ **Missing changelogs:** CHANGELOG files for v0.22.x, v0.23.x, and v0.25.0 were not committed to the repo.
+⚠️ **Missing changelogs:** CHANGELOG files for v0.22.x, v0.23.x, v0.25.0, and v0.25.1–v0.25.6 were not committed to the repo.
 
 ---
 
@@ -698,7 +734,7 @@ Ready to [specific task or question]"
 **Phase A/B/C:** Development phases for patrol system  
 **LOOP/PING_PONG:** Patrol modes (circular vs back-and-forth)  
 **Tunnel Vision:** GI/Spec Ops morale response — 22.5° locked orange cone, threat-facing, 10s  
-**Detection Alert:** Human spots zombie for 5s → nearby allies rotate to cover formation angles  
+**Detection Alert:** Human spots zombie for 5s → nearby allies all face threat directly (per-class formation offsets removed in v0.25.5)  
 **Gunshot Response:** Human fires → nearby allies snap to face the target after 0.4s delay
 
 ---
@@ -727,6 +763,13 @@ Debug → Visible Navigation
 ---
 
 ## 📞 **Quick Reference**
+
+**Vision Controls (v0.25.1):**
+- Left-click human → pin their vision cone (toggle same human to clear)
+- Left-click different human → move pin
+- V key → show all cones simultaneously (debug mode)
+- Facing lines always shown for all living humans (white 20px line)
+- Tunnel vision cones always shown regardless of pin
 
 **Zombie States:**
 - IDLE (awaiting player command)
@@ -788,10 +831,10 @@ Debug → Visible Navigation
 - Grapple/kill radius: 75px
 - Gunshot radius: 150px
 
-**Alert offsets (low urgency only — magnitude, sign by side of alerter):**
-- Militia: all 0° (face threat directly)
-- Police: ±45°, ±90°
-- GI/Spec Ops: ±105°, ±165°
+**Alert offsets (low urgency):**
+- All classes: 0° (face threat directly) — v0.25.5
+- Per-class offsets removed: were causing ping-pong when multiple alerters sent contradictory targets to shared allies
+- Original values preserved as commented-out `ALERT_OFFSETS` dict in `human.gd`
 
 **Planned values (tuning pass — post integration testing):**
 - Kill counts per class (currently higher than spec — morale/aim values need tuning)

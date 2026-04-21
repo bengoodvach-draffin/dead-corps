@@ -409,6 +409,17 @@ var _was_patrolling: bool = false
 ## Suppresses swing arc so alert facing isn't overwritten each frame.
 var _is_alerted: bool = false
 
+## Set when a return-to-original-facing rotation begins.
+## Tells the rotation block to clear alert state once it completes,
+## rather than snapping instantly. Cleared automatically on rotation complete.
+var _is_returning_to_original: bool = false
+
+## Facing direction captured the moment the FIRST alert fires (before any rotation).
+## Used to return to the correct original direction when all alerts resolve.
+## Only captured when _is_alerted is false — subsequent alerts don't overwrite it.
+## Zeroed out when returning to original facing so fresh captures work correctly.
+var _pre_alert_facing: Vector2 = Vector2.ZERO
+
 ## === HIGH URGENCY ALERT RUNTIME (v0.23.1) ===
 
 ## Shared cooldown across all high urgency events (grapple, kill, gunshot) — 2 seconds.
@@ -508,10 +519,10 @@ func _apply_class_defaults() -> void:
 	# Initialise morale to full bar after defaults applied
 	morale = morale_max
 	
-	print("🪖 ", name, " initialised as ", DefenderClass.keys()[defender_class],
-		" | morale_max: ", morale_max,
-		" | weapon_range: ", weapon_range,
-		" | aim_time: ", aim_time)
+	#print("🪖 ", name, " initialised as ", DefenderClass.keys()[defender_class],
+		#" | morale_max: ", morale_max,
+		#" | weapon_range: ", weapon_range,
+		#" | aim_time: ", aim_time)
 
 
 ## Called when the node enters the scene tree
@@ -559,7 +570,7 @@ func _ready() -> void:
 		current_waypoint_index = 0
 		patrol_direction = 1
 		patrol_move_target = patrol_waypoints[0]
-		print("Patrol initialized for ", name, " with ", patrol_waypoints.size(), " waypoints")
+		#print("Patrol initialized for ", name, " with ", patrol_waypoints.size(), " waypoints")
 	
 	# Call the parent class's _ready() to initialize all base unit functionality
 	super._ready()
@@ -730,7 +741,7 @@ func _physics_process(delta: float) -> void:
 		incubation_timer -= delta
 		if incubation_timer <= 0.0:
 			# Incubation complete - spawn zombie
-			print("DEBUG: Incubation timer reached 0, spawning zombie")
+			#print("DEBUG: Incubation timer reached 0, spawning zombie")
 			spawn_zombie_conversion()
 			queue_free()  # Remove corpse
 		return  # Dead humans don't move or react
@@ -747,8 +758,9 @@ func _physics_process(delta: float) -> void:
 		is_grappled = false  # Sync flag for compatibility
 		# Not currently grappled - check if we should be
 		if is_being_attacked():
+			pass
 			# Just got grappled - transition to grappled state
-			print("Human at ", position, " grappled by zombie!")
+	#			print("Human at ", position, " grappled by zombie!")
 			current_state = State.GRAPPLED
 			is_grappled = true  # Sync flag
 	
@@ -788,6 +800,7 @@ func _physics_process(delta: float) -> void:
 		_high_urgency_delay_timer -= delta
 		if _high_urgency_delay_timer <= 0.0 and _high_urgency_pending_pos != Vector2.ZERO:
 			_target_facing = (_high_urgency_pending_pos - global_position).normalized()
+			print("🔄 [ROTATING] ", name, " → ", snapped(rad_to_deg(_target_facing.angle()) + 90.0, 0.1), "° (high urgency facing applied)")
 			_high_urgency_pending_pos = Vector2.ZERO
 	
 	# === HIGH URGENCY HOLD TIMER (v0.23.1) ===
@@ -795,10 +808,11 @@ func _physics_process(delta: float) -> void:
 	if _high_urgency_hold_timer > 0.0:
 		_high_urgency_hold_timer -= delta
 		if _high_urgency_hold_timer <= 0.0 and _zombies_in_vision_count == 0:
-			print("👁️ ", name, " high urgency hold expired — returning to original facing")
-			facing_direction = degrees_to_vector(sentry_facing_degrees)
-			swing_center_angle = sentry_facing_degrees
-			_is_alerted = false
+			var _ret_dir := _pre_alert_facing if _pre_alert_facing != Vector2.ZERO else degrees_to_vector(sentry_facing_degrees)
+			print("↩️ [HIGH URGENCY] ", name, " returning to ", snapped(rad_to_deg(_ret_dir.angle()) + 90.0, 0.1), "° (was ", snapped(rad_to_deg(facing_direction.angle()) + 90.0, 0.1), "°  pre_alert_captured=", _pre_alert_facing != Vector2.ZERO, ")")
+			_target_facing = _ret_dir
+			_is_returning_to_original = true
+			# _is_alerted stays true — rotation block clears it when rotation completes
 	
 	var zombies_in_cone := _zombies_in_vision_count > 0
 	if zombies_in_cone and current_state != State.TUNNEL_VISION:
@@ -814,7 +828,8 @@ func _physics_process(delta: float) -> void:
 			_was_patrolling = is_patrolling
 			if is_patrolling:
 				is_patrolling = false  # Pause patrol during alert
-			print("🚨 ", name, " alert fired — broadcasting to nearby allies")
+			var _pa_str := "not captured" if _pre_alert_facing == Vector2.ZERO else str(snapped(rad_to_deg(_pre_alert_facing.angle()) + 90.0, 0.1)) + "°"
+			print("🚨 [ALERT FIRED] ", name, " | facing: ", snapped(rad_to_deg(facing_direction.angle()) + 90.0, 0.1), "° | pre_alert_facing: ", _pa_str)
 			_is_alerted = true
 			_broadcast_detection_alert(_nearest_vision_zombie_pos)
 	else:
@@ -832,16 +847,17 @@ func _physics_process(delta: float) -> void:
 		if _facing_return_timer > 0.0:
 			_facing_return_timer -= delta
 			if _facing_return_timer <= 0.0:
-				print("👁️ ", name, " returning to original facing")
-				facing_direction = degrees_to_vector(sentry_facing_degrees)
-				swing_center_angle = sentry_facing_degrees
-				_is_alerted = false
+				var _ret_dir2 := _pre_alert_facing if _pre_alert_facing != Vector2.ZERO else degrees_to_vector(sentry_facing_degrees)
+				print("↩️ [DETECTION RETURN] ", name, " returning to ", snapped(rad_to_deg(_ret_dir2.angle()) + 90.0, 0.1), "° (was ", snapped(rad_to_deg(facing_direction.angle()) + 90.0, 0.1), "°  pre_alert_captured=", _pre_alert_facing != Vector2.ZERO, ")")
+				_target_facing = _ret_dir2
+				_is_returning_to_original = true
+				# _is_alerted stays true — rotation block clears it when rotation completes
 		
 		if _patrol_resume_timer > 0.0:
 			_patrol_resume_timer -= delta
 			if _patrol_resume_timer <= 0.0 and _was_patrolling and not is_patrolling:
 				# Resume patrol
-				print("🚶 ", name, " resuming patrol after alert")
+				print("🚶 [PATROL RESUME] ", name, " | current facing: ", snapped(rad_to_deg(facing_direction.angle()) + 90.0, 0.1), "°")
 				is_patrolling = true
 				_was_patrolling = false
 	
@@ -901,12 +917,37 @@ func _physics_process(delta: float) -> void:
 		if abs(angle_diff) <= max_turn:
 			facing_direction = _target_facing
 			_target_facing = Vector2.ZERO  # Reached target — stop rotating
+			# If this was a return-to-original rotation, clear alert state now
+			if _is_returning_to_original:
+				swing_center_angle = rad_to_deg(facing_direction.angle()) + 90.0
+				_pre_alert_facing = Vector2.ZERO
+				_is_alerted = false
+				_is_returning_to_original = false
 		else:
 			facing_direction = facing_direction.rotated(sign(angle_diff) * max_turn)
 	
+	# === SHOOT TARGET FACING (v0.25.2) ===
+	# While actively aiming, smoothly rotate to centre on the shoot target.
+	# Only in SENTRY state, not patrolling, not a formation follower.
+	# Runs independently of _is_alerted — shoot tracking takes priority over
+	# alert rotation if both are active simultaneously.
+	if shoot_target != null and is_instance_valid(shoot_target) 			and current_state == State.SENTRY 			and not is_patrolling 			and patrol_leader.is_empty():
+		# Capture original facing before shoot tracking begins (first acquisition only).
+		if _pre_alert_facing == Vector2.ZERO:
+			_pre_alert_facing = facing_direction
+			print("🔒 [PRE-ALERT CAPTURED] ", name, " | facing: ", snapped(rad_to_deg(facing_direction.angle()) + 90.0, 0.1), "° (shoot tracking start)")
+		var to_target := (shoot_target.position - position).normalized()
+		var angle_diff := facing_direction.angle_to(to_target)
+		var max_turn := deg_to_rad(ALERT_TURN_SPEED) * delta
+		if abs(angle_diff) > 0.01:
+			if abs(angle_diff) <= max_turn:
+				facing_direction = to_target
+			else:
+				facing_direction = facing_direction.rotated(sign(angle_diff) * max_turn)
+
 	# Update sentry swing arc (if applicable)
-	# Suppressed during alert — swing would overwrite the alert facing each frame
-	if current_state == State.SENTRY and sentry_has_swing and not is_patrolling and patrol_leader.is_empty() and not _is_alerted:
+	# Suppressed during alert or while shoot tracking — swing would overwrite facing each frame
+	if current_state == State.SENTRY and sentry_has_swing and not is_patrolling and patrol_leader.is_empty() and not _is_alerted and shoot_target == null:
 		update_swing_arc(delta)
 	
 	# Update facing direction based on movement
@@ -1085,7 +1126,7 @@ func check_for_nearby_zombies() -> void:
 			
 			# Ally just transitioned to GRAPPLED → apply grappled_drain + high urgency alert
 			if current_ally_state == State.GRAPPLED and last_state != State.GRAPPLED:
-				print("💛 ", name, " morale hit: ally grappled nearby (", int(dist), "px) — -", grappled_drain)
+				#print("💛 ", name, " morale hit: ally grappled nearby (", int(dist), "px) — -", grappled_drain)
 				_last_threat_position = _find_closest_zombie_to(ally.position)
 				_drain_morale(grappled_drain)
 				_broadcast_high_urgency_alert(ally.position, 75.0)
@@ -1093,7 +1134,7 @@ func check_for_nearby_zombies() -> void:
 			# Ally just transitioned to FLEEING (moving past) → apply fleeing_drain
 			if current_ally_state == State.FLEEING and last_state != State.FLEEING:
 				if ally.velocity.length() > 10.0:  # Must be actually moving (fleeing past)
-					print("💛 ", name, " morale hit: ally fleeing past (", int(dist), "px) — -", fleeing_drain)
+					#print("💛 ", name, " morale hit: ally fleeing past (", int(dist), "px) — -", fleeing_drain)
 					_last_threat_position = _find_closest_zombie_to(ally.position)
 					_drain_morale(fleeing_drain)
 	
@@ -1143,7 +1184,7 @@ func check_for_nearby_zombies() -> void:
 		var flee_dir := calculate_flee_direction()
 		if flee_dir == Vector2.ZERO:
 			# Priority system says we're safe — stop fleeing
-			print("Human at ", position, " stopped fleeing - truly safe")
+			#print("Human at ", position, " stopped fleeing - truly safe")
 			last_flee_direction = Vector2.ZERO
 			zombies_in_drain_range_count = 0
 			current_state = State.SENTRY if initial_state == State.SENTRY else State.IDLE
@@ -1167,6 +1208,12 @@ func _update_shooting(delta: float) -> void:
 			shoot_target = null
 			_aim_timer = 0.0
 			_aim_paused = false
+			# Begin return to original facing after short hold.
+			if not _is_alerted:
+				_is_alerted = true
+			_facing_return_timer = max(_facing_return_timer, 2.0)
+			var _ret_str_d := "sentry default" if _pre_alert_facing == Vector2.ZERO else str(snapped(rad_to_deg(_pre_alert_facing.angle()) + 90.0, 0.1)) + "°"
+			print("↩️ [SHOOT TARGET LOST - DEAD] ", name, " | current: ", snapped(rad_to_deg(facing_direction.angle()) + 90.0, 0.1), "° | will return to: ", _ret_str_d, " in 2s")
 			return
 		
 		var in_vision := can_see_unit(shoot_target)  # Full vision cone check
@@ -1175,6 +1222,19 @@ func _update_shooting(delta: float) -> void:
 		if in_vision:
 			# Target visible in cone — run aim timer regardless of weapon range
 			_aim_paused = false
+
+			# === RETARGET CHECK (v0.25.3) ===
+			# If current target is outside weapon range, check whether a closer
+			# zombie has entered weapon range. If so, switch to it with a 50%
+			# aim time penalty — punishes switching without making it free to exploit.
+			# (Leapfrogging zombies across the front still costs the player real time.)
+			if not in_weapon_range and weapon_range > 0.0:
+				var closer := _find_in_range_target()
+				if closer != null and closer != shoot_target:
+					print("🔄 ", name, " retargeting — closer threat in weapon range: ", closer.name)
+					shoot_target = closer
+					_aim_timer = aim_time * 0.5
+
 			_aim_timer -= delta
 			if _aim_timer <= 0.0:
 				if in_weapon_range:
@@ -1191,12 +1251,19 @@ func _update_shooting(delta: float) -> void:
 			# Lost vision entirely (building or left cone) — pause timer
 			if not _aim_paused:
 				_aim_paused = true
-				print("⏸️ ", name, " aim paused — target lost from vision cone")
+				#print("⏸️ ", name, " aim paused — target lost from vision cone")
 			# If target has also left vision range entirely, drop it and reacquire
 			if position.distance_to(shoot_target.position) > sentry_vision_range:
 				shoot_target = _acquire_shoot_target()
 				_aim_timer = aim_time if shoot_target != null else 0.0
 				_aim_paused = false
+				# If no new target acquired, begin return to original facing.
+				if shoot_target == null:
+					if not _is_alerted:
+						_is_alerted = true
+					_facing_return_timer = max(_facing_return_timer, 2.0)
+					var _ret_str_r := "sentry default" if _pre_alert_facing == Vector2.ZERO else str(snapped(rad_to_deg(_pre_alert_facing.angle()) + 90.0, 0.1)) + "°"
+					print("↩️ [SHOOT TARGET LOST - OUT OF RANGE] ", name, " | current: ", snapped(rad_to_deg(facing_direction.angle()) + 90.0, 0.1), "° | will return to: ", _ret_str_r, " in 2s")
 	else:
 		# No target — try to acquire within vision cone
 		shoot_target = _acquire_shoot_target()
@@ -1204,7 +1271,33 @@ func _update_shooting(delta: float) -> void:
 			_aim_timer = aim_time
 			_aim_paused = false
 			_aim_sound.play()
-			print("🎯 ", name, " acquired target: ", shoot_target.name, " (", int(position.distance_to(shoot_target.position)), "px)")
+			#print("🎯 ", name, " acquired target: ", shoot_target.name, " (", int(position.distance_to(shoot_target.position)), "px)")
+
+
+## Finds the closest zombie within weapon range in the vision cone.
+## Used for retarget checks — only returns a target if it's closer than current
+## and within weapon range. Returns null if no qualifying target found.
+func _find_in_range_target() -> Unit:
+	var zombies := get_tree().get_nodes_in_group("zombies")
+	var best: Unit = null
+	var best_dist := INF
+	for z in zombies:
+		if not z is Zombie or not is_instance_valid(z):
+			continue
+		var zombie := z as Zombie
+		if zombie.current_state == Zombie.State.DEAD:
+			continue
+		if zombie.get("is_costumed") == true:
+			continue
+		var dist: float = position.distance_to(zombie.position)
+		if dist > weapon_range:
+			continue
+		if not can_see_unit(zombie):
+			continue
+		if dist < best_dist:
+			best_dist = dist
+			best = zombie
+	return best
 
 
 ## Finds the closest zombie visible in the vision cone (full vision range).
@@ -1241,7 +1334,7 @@ func _fire_at(target: Unit) -> void:
 	if not is_instance_valid(target):
 		return
 	
-	print("⚡ ", name, " fired at ", target.name, " (", int(position.distance_to(target.position)), "px)")
+	#print("⚡ ", name, " fired at ", target.name, " (", int(position.distance_to(target.position)), "px)")
 	
 	# Broadcast high urgency alert to nearby allies — gunshot radius 150px
 	_broadcast_high_urgency_alert(target.global_position, 150.0)
@@ -1271,45 +1364,44 @@ func _fire_at(target: Unit) -> void:
 ## nearby allies sorted by distance. Degrees are relative to threat direction,
 ## not world north. Civilians have no offsets — flee response only.
 ## Facing offset magnitudes per defender class.
-## Index 0 = the alerting human (always 0° — faces threat directly).
-## Index 1+ = magnitude assigned to the 1st, 2nd, 3rd... ally on each side.
-## Sign is determined by which side of the alerter the ally is on — right = positive, left = negative.
-## If more allies than entries, last entry is reused.
-const ALERT_OFFSETS: Dictionary = {
-	# All face threat directly — inexperience, tunnel focus
-	DefenderClass.MILITIA:   [0, 0, 0, 0],
-	# Fan out around threat
-	DefenderClass.POLICE:    [0, 45, 90],
-	# Secure perimeter — first ally covers flank, second covers further around
-	DefenderClass.GI:        [0, 105, 165],
-	# Same as GI for now
-	DefenderClass.SPEC_OPS:  [0, 105, 165],
-}
+## ALERT_OFFSETS (v0.23.0) — per-class formation facing on detection alert.
+## Disabled in v0.25.5: all units now face threat directly (offset 0°) to prevent
+## ping-pong when multiple alerters fire simultaneously at a shared ally.
+## Re-enable by restoring _broadcast_detection_alert right/left side logic
+## and passing offset_deg per class rather than always 0.0.
+##
+## Design intent was:
+##   Militia:   all face threat directly (0°)
+##   Police:    fan out ±45°, ±90°
+##   GI/SpecOps: cover flanks ±105°, ±165°
+##
+#const ALERT_OFFSETS: Dictionary = {
+#	DefenderClass.MILITIA:   [0, 0, 0, 0],
+#	DefenderClass.POLICE:    [0, 45, 90],
+#	DefenderClass.GI:        [0, 105, 165],
+#	DefenderClass.SPEC_OPS:  [0, 105, 165],
+#}
 
 ## Radius within which detection alert propagates to nearby allies.
 const ALERT_RADIUS: float = 150.0
 
 
 ## Broadcasts a detection alert to nearby allies.
-## Each ally rotates to a class-appropriate facing offset relative to the threat.
-## Civilians are excluded — their flee response cascades through existing morale system.
+## All classes now face the threat directly (0° offset) — v0.25.5.
+## Per-class formation offsets removed to prevent ping-pong when multiple
+## alerters fire at a shared ally simultaneously. See ALERT_OFFSETS comment
+## above for the original offset values if reimplementing.
+## Civilians excluded — their flee response cascades through morale system.
 ## @param threat_pos: World position of the detected zombie
 func _broadcast_detection_alert(threat_pos: Vector2) -> void:
 	if threat_pos == Vector2.ZERO:
 		return
-	
-	print("🚨 ALERT BROADCAST from ", name, " | threat_pos: ", threat_pos, " | my_pos: ", global_position)
-	
-	# Apply offset 0 to self — alerter always faces threat directly
-	_apply_alert_facing(threat_pos, 0.0)
-	
-	var threat_dir := (threat_pos - global_position).normalized()
-	
-	# Find nearby eligible allies
+
+	# Alerter faces threat directly
+	_apply_alert_facing(threat_pos)
+
+	# Notify all nearby eligible allies — all face threat directly (no class offsets)
 	var all_humans := get_tree().get_nodes_in_group("humans")
-	var right_allies: Array = []  # Allies to the right of the threat direction
-	var left_allies: Array = []   # Allies to the left of the threat direction
-	
 	for other in all_humans:
 		if other == self or not other is Human:
 			continue
@@ -1322,74 +1414,45 @@ func _broadcast_detection_alert(threat_pos: Vector2) -> void:
 			continue
 		if ally.defender_class == DefenderClass.CIVILIAN:
 			continue
-		var dist := global_position.distance_to(ally.global_position)
-		if dist > ALERT_RADIUS:
+		if global_position.distance_to(ally.global_position) > ALERT_RADIUS:
 			continue
-		
-		# Determine which side of the alerter this ally is on
-		# Cross product of threat_dir and ally_dir: positive = right, negative = left
-		var to_ally := (ally.global_position - global_position).normalized()
-		var cross := threat_dir.x * to_ally.y - threat_dir.y * to_ally.x
-		if cross >= 0.0:
-			right_allies.append({"human": ally, "dist": dist})
-		else:
-			left_allies.append({"human": ally, "dist": dist})
-		print("  📋 ally: ", ally.name, " side: ", ("right" if cross >= 0.0 else "left"), " dist: ", int(dist), "px")
-	
-	right_allies.sort_custom(func(a, b): return a["dist"] < b["dist"])
-	left_allies.sort_custom(func(a, b): return a["dist"] < b["dist"])
-	
-	# Get offset magnitudes for this class (index 1, 2, 3... for right; mirror for left)
-	var offsets: Array = ALERT_OFFSETS.get(defender_class, [])
-	
-	# Assign positive offsets to right allies, negative to left allies
-	# Index into magnitudes: i=0 is first ally on that side → offsets[1], i=1 → offsets[2], etc.
-	for i in right_allies.size():
-		var ally: Human = right_allies[i]["human"]
-		var idx: int = min(i + 1, offsets.size() - 1)
-		var offset_deg: float = abs(float(offsets[idx]))  # Always positive for right
-		ally._receive_detection_alert(threat_pos, offset_deg)
-		print("  📡 ", ally.name, " → right offset +", offset_deg, "°")
-	
-	for i in left_allies.size():
-		var ally: Human = left_allies[i]["human"]
-		var idx: int = min(i + 1, offsets.size() - 1)
-		var offset_deg: float = -abs(float(offsets[idx]))  # Always negative for left
-		ally._receive_detection_alert(threat_pos, offset_deg)
-		print("  📡 ", ally.name, " → left offset ", offset_deg, "°")
+		ally._receive_detection_alert(threat_pos)
 
 
-## Called by an alerting ally to apply a facing offset to this human.
-## @param threat_dir: Normalised direction toward the detected zombie
-## @param offset_index: Index into this human's ALERT_OFFSETS array
-func _receive_detection_alert(threat_pos: Vector2, offset_deg: float) -> void:
+## Called by an alerting ally to face this human toward the detected threat.
+## All classes now face threat directly — offset system removed in v0.25.5.
+## @param threat_pos: World position of the detected zombie
+func _receive_detection_alert(threat_pos: Vector2) -> void:
 	if current_state in [State.FLEEING, State.GRAPPLED, State.DEAD, State.TUNNEL_VISION]:
 		return
 	if shoot_target != null:
 		return
+	# Capture original facing before first alert — preserved across chained alerts.
+	if not _is_alerted:
+		_pre_alert_facing = facing_direction
+		print("🔒 [PRE-ALERT CAPTURED] ", name, " | facing: ", snapped(rad_to_deg(facing_direction.angle()) + 90.0, 0.1), "° (detection alert)")
+	else:
+		print("🔒 [PRE-ALERT PRESERVED] ", name, " | already alerted, keeping: ", snapped(rad_to_deg(_pre_alert_facing.angle()) + 90.0, 0.1), "°")
 	_alert_cooldown = 30.0
 	_was_patrolling = is_patrolling
 	if is_patrolling:
 		is_patrolling = false
-	_facing_return_timer = 120.0
+	_facing_return_timer = 30.0
 	_patrol_resume_timer = 30.0
 	_is_alerted = true
-	_apply_alert_facing(threat_pos, offset_deg)
+	_apply_alert_facing(threat_pos)
 
 
-## Applies a single facing offset to this human toward a threat position.
-## Calculates threat direction from this unit's own position (not the alerter's).
-## Sets _target_facing for smooth rotation rather than snapping instantly.
+## Faces this human toward a threat position using smooth rotation.
+## All classes face directly — offset system removed in v0.25.5.
+## Civilians excluded (no facing response to detection alerts).
 ## @param threat_pos: World position of the detected zombie
-## @param offset_index: Index into ALERT_OFFSETS for this class
-func _apply_alert_facing(threat_pos: Vector2, offset_deg: float) -> void:
-	if not ALERT_OFFSETS.has(defender_class) and offset_deg == 0.0:
-		# Civilians — no offset, no rotation
+func _apply_alert_facing(threat_pos: Vector2) -> void:
+	if defender_class == DefenderClass.CIVILIAN:
 		return
 	var own_threat_dir := (threat_pos - global_position).normalized()
-	var offset_rad := deg_to_rad(offset_deg)
-	_target_facing = own_threat_dir.rotated(offset_rad)
-	print("  👁️ ", name, " | my_pos: ", global_position.snapped(Vector2(1,1)), " | threat_pos: ", threat_pos.snapped(Vector2(1,1)), " | own_threat_dir: ", own_threat_dir.snapped(Vector2(0.01,0.01)), " | offset: ", offset_deg, "° | target_facing: ", _target_facing.snapped(Vector2(0.01,0.01)))
+	_target_facing = own_threat_dir
+	print("🔄 [ROTATING] ", name, " → ", snapped(rad_to_deg(_target_facing.angle()) + 90.0, 0.1), "° (detection alert, direct facing)")
 
 
 ## === HIGH URGENCY ALERT SYSTEM (v0.23.1) ===
@@ -1423,12 +1486,18 @@ func receive_high_urgency_alert(event_pos: Vector2) -> void:
 		return
 	if shoot_target != null:
 		return
+	# Capture original facing before first alert — preserved across chained alerts.
+	if not _is_alerted:
+		_pre_alert_facing = facing_direction
+		print("🔒 [PRE-ALERT CAPTURED] ", name, " | facing: ", snapped(rad_to_deg(facing_direction.angle()) + 90.0, 0.1), "° (high urgency)")
+	else:
+		print("🔒 [PRE-ALERT PRESERVED] ", name, " | already alerted, keeping: ", snapped(rad_to_deg(_pre_alert_facing.angle()) + 90.0, 0.1), "°")
 	_high_urgency_pending_pos = event_pos
 	_high_urgency_delay_timer = 0.4
 	_high_urgency_cooldown = 2.0
 	_high_urgency_hold_timer = 2.0
 	_is_alerted = true
-	print("⚡ ", name, " high urgency alert — reacting in 0.4s")
+	print("⚡ [HIGH URGENCY] ", name, " | event at: ", event_pos.snapped(Vector2(1,1)), " | reacting in 0.4s")
 
 ## Applies a morale drain, clamps to 0, and checks for response trigger.
 ## @param amount: Amount to subtract from current morale (positive value)
@@ -1451,7 +1520,7 @@ func _check_morale() -> void:
 	
 	match defender_class:
 		DefenderClass.CIVILIAN, DefenderClass.MILITIA, DefenderClass.POLICE:
-			print("💀 ", name, " morale empty → FLEEING (", DefenderClass.keys()[defender_class], ")")
+			#print("💀 ", name, " morale empty → FLEEING (", DefenderClass.keys()[defender_class], ")")
 			current_state = State.FLEEING
 			is_patrolling = false
 			# Find nearest visible zombie to flee from; fall back to direction-only if none
@@ -1473,7 +1542,7 @@ func _check_morale() -> void:
 					var away := (position - nearest_zombie.position).normalized()
 					start_fleeing_in_direction(away)
 		DefenderClass.GI, DefenderClass.SPEC_OPS:
-			print("🔍 ", name, " tunnel vision → locked toward threat")
+			#print("🔍 ", name, " tunnel vision → locked toward threat")
 			current_state = State.TUNNEL_VISION
 			is_patrolling = false
 			# Lock toward the event that broke morale — face the threat, not just forward
@@ -1530,7 +1599,7 @@ func _find_closest_zombie_to(point: Vector2) -> Vector2:
 func receive_ally_killed_shock(ally_position: Vector2) -> void:
 	if current_state == State.DEAD or current_state == State.GRAPPLED:
 		return
-	print("💛 ", name, " morale hit: ally killed nearby — -", killed_drain)
+	#print("💛 ", name, " morale hit: ally killed nearby — -", killed_drain)
 	_last_threat_position = _find_closest_zombie_to(ally_position)
 	_drain_morale(killed_drain)
 	_broadcast_high_urgency_alert(ally_position, 75.0)
@@ -1641,20 +1710,15 @@ func load_waypoints_from_children() -> void:
 	# Using natural sort to handle numbers correctly (Waypoint1 < Waypoint2 < Waypoint10)
 	waypoint_nodes.sort_custom(func(a, b): return a.name.naturalnocasecmp_to(b.name) < 0)
 	
-	# Debug: Print sort order
-	print("Waypoint sort order for ", name, ":")
-	for i in range(waypoint_nodes.size()):
-		print("  [", i, "] ", waypoint_nodes[i].name)
-	
 	# Extract global positions
 	patrol_waypoints.clear()
 	for i in range(waypoint_nodes.size()):
 		var waypoint = waypoint_nodes[i]
 		if waypoint is Node2D:
 			patrol_waypoints.append(waypoint.global_position)
-			print("  Loaded waypoint: ", waypoint.name, " at ", waypoint.global_position)
+			#print("  Loaded waypoint: ", waypoint.name, " at ", waypoint.global_position)
 	
-	print("Loaded ", patrol_waypoints.size(), " waypoints from child nodes for ", name)
+	#print("Loaded ", patrol_waypoints.size(), " waypoints from child nodes for ", name)
 
 
 ## Updates the swing arc for sentry behavior
@@ -1720,14 +1784,14 @@ func update_patrol(delta: float) -> void:
 		if patrol_pause_timer <= 0.0:
 			is_patrol_paused = false
 			is_waypoint_swinging = false
-			print("▶️ PATROL RESUMING from waypoint ", current_waypoint_index)
+			#print("▶️ PATROL RESUMING from waypoint ", current_waypoint_index)
 			# Check regroup before advancing
 			if _has_followers() and not all_followers_in_formation():
 				is_waiting_to_regroup = true
 				regroup_timer = formation_regroup_timeout
 				has_target = false
 				velocity = Vector2.ZERO
-				print("⏳ WAITING TO REGROUP after pause at waypoint ", current_waypoint_index)
+				#print("⏳ WAITING TO REGROUP after pause at waypoint ", current_waypoint_index)
 				return
 			# All followers in position (or no followers) - advance now
 			advance_to_next_waypoint()
@@ -1741,9 +1805,11 @@ func update_patrol(delta: float) -> void:
 		regroup_timer -= delta
 		if all_followers_in_formation() or regroup_timer <= 0.0:
 			if regroup_timer <= 0.0:
-				print("⏱️ REGROUP TIMEOUT - advancing without full squad at waypoint ", current_waypoint_index)
+				pass
+				#print("⏱️ REGROUP TIMEOUT - advancing without full squad at waypoint ", current_waypoint_index)
 			else:
-				print("✅ SQUAD REGROUPED - advancing from waypoint ", current_waypoint_index)
+				pass
+				#print("✅ SQUAD REGROUPED - advancing from waypoint ", current_waypoint_index)
 			is_waiting_to_regroup = false
 			advance_to_next_waypoint()
 			if patrol_waypoints.size() > 0:
@@ -1765,7 +1831,7 @@ func update_patrol(delta: float) -> void:
 				swing_center_angle = override_degrees
 				facing_direction = degrees_to_vector(override_degrees)
 				current_swing_offset = 0.0  # Reset swing to center of new facing
-				print("🧭 FACING OVERRIDE at waypoint ", current_waypoint_index, ": ", override_degrees, "°")
+				#print("🧭 FACING OVERRIDE at waypoint ", current_waypoint_index, ": ", override_degrees, "°")
 		
 		# 2. PAUSE: Stop and observe for a duration
 		var pause_duration := 0.0
@@ -1791,11 +1857,12 @@ func update_patrol(delta: float) -> void:
 				current_swing_offset = 0.0
 				swing_direction = 1
 				is_swing_paused = false
-				print("⏸️ PATROL PAUSED at waypoint ", current_waypoint_index,
-						" for ", pause_duration, "s (🔍 swinging)")
+				#print("⏸️ PATROL PAUSED at waypoint ", current_waypoint_index,
+						#" for ", pause_duration, "s (🔍 swinging)")
 			else:
-				print("⏸️ PATROL PAUSED at waypoint ", current_waypoint_index,
-						" for ", pause_duration, "s")
+				pass
+				#print("⏸️ PATROL PAUSED at waypoint ", current_waypoint_index,
+						#" for ", pause_duration, "s")
 			return  # Don't advance until pause completes
 		
 		# 4. REGROUP CHECK (no pause configured)
@@ -1804,7 +1871,7 @@ func update_patrol(delta: float) -> void:
 			regroup_timer = formation_regroup_timeout
 			has_target = false
 			velocity = Vector2.ZERO
-			print("⏳ WAITING TO REGROUP at waypoint ", current_waypoint_index)
+			#print("⏳ WAITING TO REGROUP at waypoint ", current_waypoint_index)
 			return
 		
 		# No pause, no regroup needed - advance immediately
@@ -1948,7 +2015,7 @@ func update_formation_follow(delta: float) -> void:
 		_leader_node = null
 		# Go idle if we were still on patrol duty
 		if current_state == State.SENTRY:
-			print("⚠️ ", name, ": leader gone — going idle")
+			#print("⚠️ ", name, ": leader gone — going idle")
 			current_state = State.IDLE
 			has_target = false
 			velocity = Vector2.ZERO
@@ -2054,7 +2121,8 @@ func is_being_pursued() -> bool:
 			# Check if this zombie is locked onto THIS human
 			if zombie_unit.attack_target == self:
 				if enable_debug_logging:
-					print("  ⚠️ BEING PURSUED by zombie at ", zombie_unit.position)
+					pass
+					#print("  ⚠️ BEING PURSUED by zombie at ", zombie_unit.position)
 				return true
 	return false
 
@@ -2066,13 +2134,15 @@ func is_being_pursued() -> bool:
 ## @return: Normalized direction vector for fleeing
 func calculate_flee_direction() -> Vector2:
 	if enable_debug_logging:
-		print("\n=== CALCULATE_FLEE_DIRECTION ===")
-		print("Human at position: ", position)
-		print("Current state: ", State.keys()[current_state])
+		pass
+		#print("\n=== CALCULATE_FLEE_DIRECTION ===")
+		#print("Human at position: ", position)
+		#print("Current state: ", State.keys()[current_state])
 	
 	var zombies := get_tree().get_nodes_in_group("zombies")
 	if enable_debug_logging:
-		print("Total zombies in scene: ", zombies.size())
+		pass
+		#print("Total zombies in scene: ", zombies.size())
 	
 	var total_threat := Vector2.ZERO
 	var visible_zombie_count := 0
@@ -2081,25 +2151,29 @@ func calculate_flee_direction() -> Vector2:
 	for zombie in zombies:
 		if not zombie is Unit:
 			if enable_debug_logging:
-				print("  Skipping non-Unit zombie")
+				pass
+				#print("  Skipping non-Unit zombie")
 			continue
 		
 		var distance := position.distance_to(zombie.position)
 		if enable_debug_logging:
-			print("  Zombie at ", zombie.position, " - distance: ", distance)
+			pass
+			#print("  Zombie at ", zombie.position, " - distance: ", distance)
 		
 		# Use wider vision range when calculating flee (hyper-aware panic state)
 		# 200px range - momentum system handles continued fleeing after losing sight
 		var max_range: float = 200.0
 		if distance > max_range:
 			if enable_debug_logging:
-				print("    SKIP: Too far (> 200px)")
+				pass
+				#print("    SKIP: Too far (> 200px)")
 			continue
 		
 		# Check if zombie is visible (in vision cone/circle + line of sight)
 		if not can_see_unit(zombie):
 			if enable_debug_logging:
-				print("    SKIP: Not visible (LOS blocked or out of arc)")
+				pass
+				#print("    SKIP: Not visible (LOS blocked or out of arc)")
 			continue
 		
 		visible_zombie_count += 1
@@ -2107,22 +2181,25 @@ func calculate_flee_direction() -> Vector2:
 		# Calculate direction away from this zombie
 		var away_direction: Vector2 = (position - zombie.position).normalized()
 		if enable_debug_logging:
-			print("    ✓ VISIBLE ZOMBIE #", visible_zombie_count)
-			print("      Away direction: ", away_direction)
+			pass
+			#print("    ✓ VISIBLE ZOMBIE #", visible_zombie_count)
+			#print("      Away direction: ", away_direction)
 		
 		# Weight by inverse distance (closer = stronger influence)
 		var weight := 1.0 - (distance / max_range)
 		if enable_debug_logging:
-			print("      Weight: ", weight)
-			print("      Contribution: ", away_direction * weight)
+			pass
+			#print("      Weight: ", weight)
+			#print("      Contribution: ", away_direction * weight)
 		
 		# Add weighted threat
 		total_threat += away_direction * weight
 	
 	if enable_debug_logging:
-		print("Total visible zombies: ", visible_zombie_count)
-		print("Total threat vector (before normalization): ", total_threat)
-		print("Total threat length: ", total_threat.length())
+		pass
+		#print("Total visible zombies: ", visible_zombie_count)
+		#print("Total threat vector (before normalization): ", total_threat)
+		#print("Total threat length: ", total_threat.length())
 	
 	# NOTE: Human separation forces disabled - not needed with current physics
 	# Godot's CharacterBody2D collision handles human-human avoidance naturally
@@ -2163,22 +2240,25 @@ func calculate_flee_direction() -> Vector2:
 	if total_threat.length() > 0.01:
 		# Visible threats detected - flee directly away
 		if enable_debug_logging:
-			print("Visible threats detected!")
-			print("FINAL FLEE DIRECTION: ", total_threat.normalized())
+			pass
+			#print("Visible threats detected!")
+			#print("FINAL FLEE DIRECTION: ", total_threat.normalized())
 		last_threat_time = Time.get_ticks_msec() / 1000.0
 		return total_threat.normalized()
 	else:
 		# No visible threats - use intelligent fallback priority system
 		if enable_debug_logging:
-			print("No visible threats - checking fallback priorities...")
+			pass
+			#print("No visible threats - checking fallback priorities...")
 		
 		# PRIORITY 0.5: Being actively targeted (attacker_count > 0)?
 		# This catches cases where zombies are pursuing but temporarily out of vision
 		if attacker_count > 0:
 			if enable_debug_logging:
-				print("  Priority 0.5: BEING TARGETED (", attacker_count, " attackers)")
-				print("  Continuing in last direction: ", last_flee_direction)
-				print("=================================\n")
+				pass
+				#print("  Priority 0.5: BEING TARGETED (", attacker_count, " attackers)")
+				#print("  Continuing in last direction: ", last_flee_direction)
+				#print("=================================\n")
 			# Continue fleeing in last known direction
 			if last_flee_direction.length() > 0.1:
 				return last_flee_direction
@@ -2189,9 +2269,10 @@ func calculate_flee_direction() -> Vector2:
 		# PRIORITY 1: Being actively pursued by a zombie?
 		if is_being_pursued():
 			if enable_debug_logging:
-				print("  Priority 1: BEING PURSUED - keep fleeing!")
-				print("  Using last flee direction: ", last_flee_direction)
-				print("=================================\n")
+				pass
+				#print("  Priority 1: BEING PURSUED - keep fleeing!")
+				#print("  Using last flee direction: ", last_flee_direction)
+				#print("=================================\n")
 			return last_flee_direction
 		
 		# PRIORITY 2: Escape zone nearby? (fallback when NO visible threats)
@@ -2204,9 +2285,10 @@ func calculate_flee_direction() -> Vector2:
 				if distance_to_zone < 200.0:
 					var to_zone: Vector2 = (escape_zone_fallback.global_position - global_position).normalized()
 					if enable_debug_logging:
-						print("  Priority 2: ESCAPE ZONE FALLBACK (no threats)")
-						print("  Distance to zone: ", distance_to_zone)
-						print("  Heading straight to zone")
+						pass
+						#print("  Priority 2: ESCAPE ZONE FALLBACK (no threats)")
+						#print("  Distance to zone: ", distance_to_zone)
+						#print("  Heading straight to zone")
 					return to_zone
 		
 		# PRIORITY 3: Momentum (continue fleeing if recent threat)
@@ -2214,18 +2296,21 @@ func calculate_flee_direction() -> Vector2:
 			var time_elapsed := (Time.get_ticks_msec() / 1000.0) - last_threat_time
 			if time_elapsed < 5.0:  # 5 second timeout
 				if enable_debug_logging:
-					print("  Priority 3: MOMENTUM (", time_elapsed, "s since last threat)")
-					print("  Continuing in last direction: ", last_flee_direction)
-					print("=================================\n")
+					pass
+					#print("  Priority 3: MOMENTUM (", time_elapsed, "s since last threat)")
+					#print("  Continuing in last direction: ", last_flee_direction)
+					#print("=================================\n")
 				return last_flee_direction
 			else:
 				if enable_debug_logging:
-					print("  TIMEOUT REACHED (", time_elapsed, "s since last threat)")
+					pass
+					#print("  TIMEOUT REACHED (", time_elapsed, "s since last threat)")
 		
 		# PRIORITY 4: Truly safe - stop fleeing
 		if enable_debug_logging:
-			print("  Priority 4: TRULY SAFE - stopping")
-			print("=================================\n")
+			pass
+			#print("  Priority 4: TRULY SAFE - stopping")
+			#print("=================================\n")
 		return Vector2.ZERO
 
 
@@ -2244,9 +2329,9 @@ func start_fleeing(threat: Unit) -> void:
 	if Human.debug_logged_human == null:
 		Human.debug_logged_human = self
 		enable_debug_logging = true
-		print("\n🎯 DEBUG LOGGING ENABLED FOR THIS HUMAN (first to flee)")
-		print("Position: ", position)
-		print("============================================\n")
+		#print("\n🎯 DEBUG LOGGING ENABLED FOR THIS HUMAN (first to flee)")
+		#print("Position: ", position)
+		#print("============================================\n")
 	
 	# IMMEDIATELY stop current movement to prevent moving toward zombie
 	velocity = Vector2.ZERO
@@ -2309,15 +2394,17 @@ func start_fleeing_with_direction(threat: Unit, inherited_direction: Vector2) ->
 ## @param _threat: The zombie to flee from (deprecated - now uses all zombies)
 func update_flee_direction(_threat: Unit) -> void:
 	if enable_debug_logging:
-		print("\n>>> UPDATE_FLEE_DIRECTION called <<<")
-		print("Current position: ", position)
+		pass
+		#print("\n>>> UPDATE_FLEE_DIRECTION called <<<")
+		#print("Current position: ", position)
 	
 	# Recalculate flee direction from ALL nearby zombies
 	var flee_direction := calculate_flee_direction()
 	
 	if enable_debug_logging:
-		print("Flee direction from calculate: ", flee_direction)
-		print("flee_distance: ", flee_distance)
+		pass
+		#print("Flee direction from calculate: ", flee_direction)
+		#print("flee_distance: ", flee_distance)
 	
 	# Apply smart obstacle avoidance (picks angle closest to desired flee direction)
 	flee_direction = avoid_obstacles(flee_direction)
@@ -2325,8 +2412,9 @@ func update_flee_direction(_threat: Unit) -> void:
 	# Calculate proposed flee target
 	var flee_target := position + flee_direction * flee_distance
 	if enable_debug_logging:
-		print("Calculated flee_target: ", flee_target)
-		print("Vector from position to flee_target: ", flee_target - position)
+		pass
+		#print("Calculated flee_target: ", flee_target)
+		#print("Vector from position to flee_target: ", flee_target - position)
 	
 	# NOTE: Danger zone check disabled - weighted threat system handles multiple zombies
 	# If humans flee into ambushes, consider re-enabling with gentler rotation
@@ -2337,8 +2425,8 @@ func update_flee_direction(_threat: Unit) -> void:
 	
 	# Command ourselves to move to that flee point
 	set_move_target(flee_target)
-	print("Called set_move_target with: ", flee_target)
-	print(">>> END UPDATE_FLEE_DIRECTION <<<\n")
+	#print("Called set_move_target with: ", flee_target)
+	#print(">>> END UPDATE_FLEE_DIRECTION <<<\n")
 
 
 ## Starts fleeing in a specific direction (for panic spreading)
@@ -2406,7 +2494,7 @@ func die() -> void:
 	collision_layer = 0  # Remove from all collision layers
 	collision_mask = 0   # Don't collide with anything
 	
-	print("Human died - incubating for ", incubation_duration, " seconds")
+	#print("Human died - incubating for ", incubation_duration, " seconds")
 
 
 ## Spawns a zombie at this human's position after incubation complete
@@ -2416,7 +2504,7 @@ func spawn_zombie_conversion() -> void:
 	var game_manager := get_tree().get_first_node_in_group("game_manager")
 	if game_manager and game_manager.has_method("on_human_converted"):
 		game_manager.on_human_converted(self)
-		print("Human converted to zombie after incubation!")
+		#print("Human converted to zombie after incubation!")
 
 
 ## Checks if any zombie is in melee range (30 pixels)
@@ -2470,12 +2558,13 @@ func take_damage(amount: float) -> void:
 	
 	# Don't change state if already dead (die() was called by super)
 	if current_state == State.DEAD:
-		print("DEBUG: take_damage called on dead human - NOT setting grappled state")
+#			print("DEBUG: take_damage called on dead human - NOT setting grappled state")
 		return
 	
 	# Getting hit means we're grappled by a zombie!
 	if not is_grappled:
-		print("Human at ", position, " grappled by zombie!")
+		pass
+		#print("Human at ", position, " grappled by zombie!")
 	is_grappled = true
 	current_state = State.GRAPPLED
 	grapple_timer = grapple_duration

@@ -207,7 +207,7 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human12" parent="TestLevel/Humans" unique_id=1087255169 instance=ExtResource("6_qckbd")]
-position = Vector2(988, -363)
+position = Vector2(1310, -350)
 initial_state = 1
 defender_class = 4
 morale_max = 1000.0
@@ -215,13 +215,13 @@ sighting_drain = 0.0
 fleeing_drain = 0.0
 weapon_range = 250.0
 aim_time = 0.26
-sentry_facing_degrees = 185.0
+sentry_facing_degrees = 101.0
 flee_vision_range = 100.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human13" parent="TestLevel/Humans" unique_id=1672202995 instance=ExtResource("6_qckbd")]
-position = Vector2(988, -301)
+position = Vector2(1270, -350)
 initial_state = 1
 defender_class = 4
 morale_max = 1000.0
@@ -235,7 +235,7 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human14" parent="TestLevel/Humans" unique_id=1116798384 instance=ExtResource("6_qckbd")]
-position = Vector2(988, -312)
+position = Vector2(1230, -356)
 initial_state = 1
 defender_class = 4
 morale_max = 1000.0
@@ -389,4 +389,4 @@ navigation_polygon = SubResource("NavigationPolygon_4viah")
 visible = false
 
 [node name="CostumeZombie" parent="." unique_id=591810152 instance=ExtResource("14_vmpuv")]
-position = Vector2(552, 350)
+position = Vector2(1182, 97)

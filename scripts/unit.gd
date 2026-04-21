@@ -178,7 +178,9 @@ func _process(delta: float) -> void:
 func _physics_process(delta: float) -> void:
 	# Apply BOID flocking forces
 	apply_separation_force()   # Prevent stacking
-	apply_cohesion_force()     # Pull toward group center
+	# apply_cohesion_force()   # Pull toward group center — disabled v0.25.1
+	#                            (existed to create merged vision blobs; merged cones removed)
+	#                            Re-enable here if horde clustering behaviour is wanted later.
 	apply_alignment_force()    # Align facing with group
 	
 	# Priority 1: If we have a valid attack target, handle combat

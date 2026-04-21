@@ -1,30 +1,49 @@
 extends Node2D
 class_name VisionRenderer
 
-## Renders vision cones and circles for human defender units.
+## Renders vision cones and facing indicators for human defender units.
 ## Zombie vision removed in v0.25.0 — arcs are human-only visual language.
-## Humans: always show SENTRY and TUNNEL_VISION arcs; show IDLE circle when
-## a zombie is within 200px (early warning); FLEEING arcs suppressed (reduces clutter).
+##
+## v0.25.1 — Click-to-pin cone system:
+##   - No cones shown by default.
+##   - Left-click a human to pin their cone. Click again to toggle off.
+##     Clicking a different human moves the pin to them.
+##   - Clicking a pinned human does NOT clear zombie selection — the click
+##     is intercepted before SelectionManager sees it (VisionRenderer sits
+##     above SelectionManager in the scene tree).
+##   - Press V to show ALL human cones simultaneously (debug mode).
+##   - Facing lines always drawn for every living human.
+##
+## Merged/group cone logic removed entirely in v0.25.1.
+## Cohesion force disabled in unit.gd — blobs no longer form.
 
-## Proximity threshold for showing human idle vision (in pixels)
-const HUMAN_IDLE_PROXIMITY_THRESHOLD := 200.0
-
-## Colors
-const HUMAN_IDLE_COLOR := Color(0.3, 0.5, 1.0, 0.15)
-const HUMAN_SENTRY_COLOR := Color(0.5, 0.5, 1.0, 0.2)
-const HUMAN_FLEEING_COLOR := Color(1.0, 0.3, 0.3, 0.2)
-
-## Dual-zone arc colors (armed humans only)
+# === COLORS ===
+const HUMAN_IDLE_COLOR           := Color(0.3, 0.5, 1.0, 0.15)
+const HUMAN_SENTRY_COLOR         := Color(0.5, 0.5, 1.0, 0.2)
+const HUMAN_FLEEING_COLOR        := Color(1.0, 0.3, 0.3, 0.2)
 const HUMAN_DETECTION_ZONE_COLOR := Color(0.5, 0.5, 1.0, 0.10)
 const HUMAN_SHOOTING_ZONE_COLOR  := Color(0.5, 0.8, 1.0, 0.35)
 const HUMAN_FLEE_DETECTION_COLOR := Color(1.0, 0.3, 0.3, 0.10)
 const HUMAN_FLEE_SHOOTING_COLOR  := Color(1.0, 0.5, 0.3, 0.35)
 
-const LINE_WIDTH := 2.0
-const MERGED_LINE_WIDTH := 3.5
+const LINE_WIDTH         := 2.0
+const FACING_LINE_LENGTH := 20.0
+const FACING_LINE_COLOR  := Color(1.0, 1.0, 1.0, 0.9)
 
-const GROUP_PROXIMITY_THRESHOLD := 80.0
-const MIN_GROUP_SIZE := 4
+## Radius in pixels within which a click registers as hitting a human.
+const HUMAN_CLICK_RADIUS := 15.0
+
+# === STATE ===
+
+## The human whose cone is currently pinned (null = no cone shown).
+var pinned_human: Node2D = null
+
+## When true, all human cones are shown simultaneously (debug mode, toggle with V).
+var show_all_cones: bool = false
+
+## Tracks whether the mouse-down landed on a human, so we can intercept
+## the matching mouse-up and avoid letting SelectionManager process it.
+var _human_press_detected: bool = false
 
 
 func _ready() -> void:
@@ -35,274 +54,138 @@ func _process(_delta: float) -> void:
 	queue_redraw()
 
 
-func _draw() -> void:
-	var humans := get_tree().get_nodes_in_group("humans")
-	var human_groups := detect_groups(humans)
-	draw_vision_groups(human_groups)
+func _input(event: InputEvent) -> void:
+	# --- Left mouse button: pin cone on human click ---
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		var world_pos := get_global_mouse_position()
+		var clicked_human := _get_human_at_position(world_pos)
 
-
-## Detects groups of humans in the same state within proximity threshold
-func detect_groups(units: Array) -> Array:
-	var groups := []
-	var processed := {}
-	
-	for unit in units:
-		if not unit is Unit or unit in processed:
-			continue
-		
-		var unit_state = get_unit_state(unit)
-		if unit_state < 0:
-			continue
-		
-		var group_members := [unit]
-		processed[unit] = true
-		
-		for other in units:
-			if other == unit or not other is Unit or other in processed:
-				continue
-			var other_state = get_unit_state(other)
-			if other_state != unit_state:
-				continue
-			var distance: float = unit.position.distance_to(other.position)
-			if distance <= GROUP_PROXIMITY_THRESHOLD:
-				group_members.append(other)
-				processed[other] = true
-		
-		var center := Vector2.ZERO
-		for member in group_members:
-			center += member.position
-		center /= group_members.size()
-		
-		groups.append({
-			"units": group_members,
-			"state": unit_state,
-			"center": center
-		})
-	
-	return groups
-
-
-## Gets human state for grouping. Returns -1 if unit has no displayable vision.
-func get_unit_state(unit: Unit) -> int:
-	if unit is Human:
-		var human := unit as Human
-		match human.current_state:
-			Human.State.IDLE:
-				return 0
-			Human.State.SENTRY:
-				return 1
-			Human.State.FLEEING:
-				return 2
-			Human.State.TUNNEL_VISION:
-				return 3
-			_:
-				return -1
-	return -1
-
-
-## Whether a human's vision should be displayed
-func should_show_vision(unit: Unit) -> bool:
-	if not unit is Human:
-		return false
-	var human := unit as Human
-	
-	if human.current_state == Human.State.SENTRY:
-		return true
-	if human.current_state == Human.State.TUNNEL_VISION:
-		return true
-	if human.current_state == Human.State.IDLE:
-		var nearest_zombie_distance := get_nearest_zombie_distance(human.position)
-		return nearest_zombie_distance <= HUMAN_IDLE_PROXIMITY_THRESHOLD
-	
-	return false
-
-
-func get_nearest_zombie_distance(from_pos: Vector2) -> float:
-	var zombies := get_tree().get_nodes_in_group("zombies")
-	var min_distance := INF
-	for zombie in zombies:
-		if zombie is Zombie:
-			var distance: float = from_pos.distance_to(zombie.position)
-			if distance < min_distance:
-				min_distance = distance
-	return min_distance
-
-
-func draw_vision_groups(groups: Array) -> void:
-	for group in groups:
-		var units: Array = group.units
-		var group_state: int = group.state
-		var center: Vector2 = group.center
-		
-		# For idle groups of 4+: show merged if any member should be visible
-		if units.size() >= MIN_GROUP_SIZE and group_state == 0:
-			var any_visible := false
-			for unit in units:
-				if should_show_vision(unit):
-					any_visible = true
-					break
-			if any_visible:
-				draw_merged_vision(units, group_state, center)
-			continue
-		
-		# Standard visibility filtering
-		var visible_units: Array = []
-		for unit in units:
-			if should_show_vision(unit):
-				visible_units.append(unit)
-		
-		if visible_units.is_empty():
-			continue
-		
-		if visible_units.size() >= MIN_GROUP_SIZE:
-			draw_merged_vision(visible_units, group_state, center)
+		if event.pressed:
+			# Record whether press landed on a human.
+			# If so, consume it immediately so SelectionManager never sees it
+			# and zombie selection is preserved.
+			_human_press_detected = clicked_human != null
+			if _human_press_detected:
+				get_viewport().set_input_as_handled()
 		else:
-			for unit in visible_units:
-				draw_human_vision(unit)
+			# Mouse released — if press was on a human, resolve the pin.
+			if _human_press_detected:
+				get_viewport().set_input_as_handled()
+				_human_press_detected = false
+				if clicked_human != null:
+					if clicked_human == pinned_human:
+						# Same human clicked again — toggle off.
+						pinned_human = null
+						print("👁️ Vision cone cleared")
+					else:
+						pinned_human = clicked_human
+						print("👁️ Vision cone pinned to: ", clicked_human.name)
+
+	# --- V key: toggle debug mode (all cones) ---
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_V:
+			show_all_cones = not show_all_cones
+			print("👁️ Vision debug: ", "ALL cones visible" if show_all_cones else "single-cone mode")
 
 
-func draw_merged_vision(units: Array, group_state: int, center: Vector2) -> void:
-	var color: Color
-	var is_circle_state := false
-	
-	match group_state:
-		0:  # IDLE
-			color = HUMAN_IDLE_COLOR
-			is_circle_state = true
-		1:  # SENTRY
-			color = HUMAN_SENTRY_COLOR
-		2:  # FLEEING
-			color = HUMAN_FLEEING_COLOR
-	
-	if is_circle_state:
-		draw_merged_circle(units, center, color)
-	else:
-		draw_merged_arc(units, center, color)
-	
-	draw_count_badge(center, units.size(), color)
+func _draw() -> void:
+	var humans: Array = get_tree().get_nodes_in_group("humans")
 
+	# Guard pinned_human against death between frames.
+	if pinned_human != null:
+		if not is_instance_valid(pinned_human):
+			pinned_human = null
+		elif (pinned_human as Human).is_dead:
+			pinned_human = null
 
-func draw_merged_circle(units: Array, center: Vector2, color: Color) -> void:
-	var max_distance := 0.0
-	for unit in units:
-		if unit is Unit:
-			var distance := center.distance_to(unit.position)
-			if distance > max_distance:
-				max_distance = distance
-	
-	var radius := max_distance + 110.0
-	var space_state := get_world_2d().direct_space_state
-	var segments := 64
-	var edge_points := PackedVector2Array()
-	
-	for i in range(segments + 1):
-		var angle := (float(i) / segments) * TAU
-		var direction := Vector2(cos(angle), sin(angle))
-		var target_point := center + direction * radius
-		var query := PhysicsRayQueryParameters2D.create(center, target_point)
-		query.collision_mask = 1
-		query.exclude = []
-		var result := space_state.intersect_ray(query)
-		edge_points.append(target_point if result.is_empty() else result.position)
-	
-	for i in range(edge_points.size() - 1):
-		var triangle := PackedVector2Array([center, edge_points[i], edge_points[i + 1]])
-		draw_colored_polygon(triangle, color)
-	
-	if edge_points.size() > 1:
-		draw_polyline(edge_points, color.lightened(0.3), MERGED_LINE_WIDTH)
+	# Always draw facing lines for every living human.
+	for unit in humans:
+		if unit is Human:
+			_draw_facing_line(unit as Human)
 
-
-func draw_merged_arc(units: Array, center: Vector2, color: Color) -> void:
-	var avg_facing := Vector2.ZERO
-	var valid_count := 0
-	var vision_range := 350.0
-	var vision_angle := 90.0
-	
-	for unit in units:
+	# Draw cone(s).
+	# Tunnel vision cones always shown — the narrow orange arc is the only
+	# visual signal to the player that a GI/Spec Ops has entered tunnel vision.
+	for unit in humans:
 		if unit is Human:
 			var human := unit as Human
-			if human.facing_direction.length() > 0.1:
-				avg_facing += human.facing_direction
-				valid_count += 1
-			if human.current_state == Human.State.FLEEING:
-				vision_range = human.flee_vision_range
-				vision_angle = 90.0
-	
-	if valid_count == 0:
-		avg_facing = Vector2.RIGHT
-	else:
-		avg_facing = (avg_facing / valid_count).normalized()
-	
-	var leftmost_angle := 0.0
-	var rightmost_angle := 0.0
-	for unit in units:
-		if unit is Unit:
-			var to_unit: Vector2 = (unit.position - center).normalized()
-			var angle_diff: float = avg_facing.angle_to(to_unit)
-			if angle_diff < leftmost_angle:
-				leftmost_angle = angle_diff
-			if angle_diff > rightmost_angle:
-				rightmost_angle = angle_diff
-	
-	var arc_span: float = max(abs(rightmost_angle - leftmost_angle) * 2.0, deg_to_rad(90.0))
-	arc_span = min(arc_span, deg_to_rad(vision_angle))
-	
-	draw_vision_arc_merged(center, avg_facing, vision_range, rad_to_deg(arc_span), color)
+			if human.current_state == Human.State.TUNNEL_VISION:
+				draw_human_vision(human)
+
+	if show_all_cones:
+		# Debug mode: individual cone per human, no merging.
+		for unit in humans:
+			if unit is Human:
+				var human := unit as Human
+				if human.current_state != Human.State.TUNNEL_VISION:
+					draw_human_vision(human)
+	elif pinned_human != null:
+		# Only draw pinned cone if not already drawn as tunnel vision above
+		if (pinned_human as Human).current_state != Human.State.TUNNEL_VISION:
+			draw_human_vision(pinned_human as Human)
 
 
-func draw_vision_arc_merged(pos: Vector2, direction: Vector2, range: float, angle_degrees: float, color: Color) -> void:
-	var half_angle := deg_to_rad(angle_degrees / 2.0)
-	var start_angle := direction.angle() - half_angle
-	var end_angle := direction.angle() + half_angle
-	var space_state := get_world_2d().direct_space_state
-	var segments := 36
-	var edge_points := PackedVector2Array()
-	
-	for i in range(segments + 1):
-		var t := float(i) / segments
-		var angle: float = lerp(start_angle, end_angle, t)
-		var direction_at_angle := Vector2(cos(angle), sin(angle))
-		var target_point := pos + direction_at_angle * range
-		var query := PhysicsRayQueryParameters2D.create(pos, target_point)
-		query.collision_mask = 1
-		query.exclude = []
-		var result := space_state.intersect_ray(query)
-		edge_points.append(target_point if result.is_empty() else result.position)
-	
-	for i in range(edge_points.size() - 1):
-		var triangle := PackedVector2Array([pos, edge_points[i], edge_points[i + 1]])
-		draw_colored_polygon(triangle, color)
-	
-	if edge_points.size() > 1:
-		draw_polyline(edge_points, color.lightened(0.3), MERGED_LINE_WIDTH)
-	
-	var dir_target := pos + direction * range
-	var query := PhysicsRayQueryParameters2D.create(pos, dir_target)
-	query.collision_mask = 1
-	query.exclude = []
-	var result := space_state.intersect_ray(query)
-	var dir_end: Vector2 = dir_target if result.is_empty() else result.position
-	draw_line(pos, dir_end, color.lightened(0.5), MERGED_LINE_WIDTH)
+# === INTERNAL HELPERS ===
+
+## Returns the nearest living Human within HUMAN_CLICK_RADIUS of world_pos,
+## or null if none found.
+func _get_human_at_position(world_pos: Vector2) -> Human:
+	var humans: Array = get_tree().get_nodes_in_group("humans")
+	var closest: Human = null
+	var min_dist := HUMAN_CLICK_RADIUS
+
+	for unit in humans:
+		if not unit is Human:
+			continue
+		var human := unit as Human
+		if human.is_dead:
+			continue
+		var dist: float = world_pos.distance_to(human.position)
+		if dist < min_dist:
+			min_dist = dist
+			closest = human
+
+	return closest
 
 
-func draw_count_badge(center: Vector2, count: int, color: Color) -> void:
-	var badge_radius := 15.0
-	draw_circle(center, badge_radius, Color(0, 0, 0, 0.6))
-	draw_arc(center, badge_radius, 0, TAU, 32, color.lightened(0.5), 2.0)
-
-
-func draw_human_vision(human: Human) -> void:
-	if human.current_state == Human.State.DEAD or human.current_state == Human.State.GRAPPLED:
+## Draws a short white line from the human's centre in their facing direction.
+## Skips DEAD and GRAPPLED states. Uses tunnel vision locked direction when active.
+func _draw_facing_line(human: Human) -> void:
+	if human.is_dead:
 		return
-	
-	var pos := human.position
-	var is_armed: bool = human.weapon_range > 0.0
-	
+	if human.current_state == Human.State.GRAPPLED:
+		return
+
+	var direction: Vector2
+	if human.current_state == Human.State.TUNNEL_VISION:
+		direction = human._tunnel_vision_locked_direction
+	else:
+		direction = human.facing_direction
+
+	if direction.length() < 0.1:
+		return
+
+	var start := human.position
+	var end   := human.position + direction.normalized() * FACING_LINE_LENGTH
+	draw_line(start, end, FACING_LINE_COLOR, LINE_WIDTH)
+
+
+# === CONE DRAWING ===
+
+## Draws the appropriate vision shape for a human based on their current state.
+func draw_human_vision(human: Human) -> void:
+	if human.current_state == Human.State.DEAD:
+		return
+	if human.current_state == Human.State.GRAPPLED:
+		return
+
+	var pos      := human.position
+	var is_armed := human.weapon_range > 0.0
+
 	match human.current_state:
 		Human.State.IDLE:
 			draw_vision_circle(pos, human.idle_vision_radius, HUMAN_IDLE_COLOR)
-		
+
 		Human.State.SENTRY:
 			if is_armed:
 				draw_vision_arc_dual_zone(
@@ -312,9 +195,10 @@ func draw_human_vision(human: Human) -> void:
 					HUMAN_DETECTION_ZONE_COLOR, HUMAN_SHOOTING_ZONE_COLOR
 				)
 			else:
-				draw_vision_arc(pos, human.facing_direction, human.sentry_vision_range,
+				draw_vision_arc(pos, human.facing_direction,
+								human.sentry_vision_range,
 								human.sentry_vision_angle, HUMAN_SENTRY_COLOR)
-		
+
 		Human.State.FLEEING:
 			if is_armed:
 				draw_vision_arc_dual_zone(
@@ -324,9 +208,10 @@ func draw_human_vision(human: Human) -> void:
 					HUMAN_FLEE_DETECTION_COLOR, HUMAN_FLEE_SHOOTING_COLOR
 				)
 			else:
-				draw_vision_arc(pos, human.facing_direction, human.flee_vision_range,
+				draw_vision_arc(pos, human.facing_direction,
+								human.flee_vision_range,
 								human.flee_vision_angle, HUMAN_FLEEING_COLOR)
-		
+
 		Human.State.TUNNEL_VISION:
 			var tv_outer := Color(1.0, 0.5, 0.1, 0.12)
 			var tv_inner := Color(1.0, 0.6, 0.1, 0.45)
@@ -339,7 +224,8 @@ func draw_human_vision(human: Human) -> void:
 				)
 			else:
 				draw_vision_arc(pos, human._tunnel_vision_locked_direction,
-								human.sentry_vision_range, human.TUNNEL_VISION_ANGLE, tv_outer)
+								human.sentry_vision_range,
+								human.TUNNEL_VISION_ANGLE, tv_outer)
 
 
 func draw_vision_arc_dual_zone(
@@ -352,51 +238,52 @@ func draw_vision_arc_dual_zone(
 	inner_color: Color
 ) -> void:
 	draw_vision_arc(pos, direction, detection_range, angle_degrees, outer_color)
-	draw_vision_arc(pos, direction, shooting_range, angle_degrees, inner_color)
+	draw_vision_arc(pos, direction, shooting_range,  angle_degrees, inner_color)
 
 
 func draw_vision_arc(pos: Vector2, direction: Vector2, range: float, angle_degrees: float, color: Color) -> void:
-	var half_angle := deg_to_rad(angle_degrees / 2.0)
+	var half_angle  := deg_to_rad(angle_degrees / 2.0)
 	var start_angle := direction.angle() - half_angle
-	var end_angle := direction.angle() + half_angle
+	var end_angle   := direction.angle() + half_angle
 	var space_state := get_world_2d().direct_space_state
-	var segments := 36
+	var segments    := 36
 	var edge_points := PackedVector2Array()
-	
+
 	for i in range(segments + 1):
-		var t := float(i) / segments
-		var angle: float = lerp(start_angle, end_angle, t)
-		var direction_at_angle := Vector2(cos(angle), sin(angle))
-		var target_point := pos + direction_at_angle * range
+		var t            := float(i) / segments
+		var angle: float  = lerp(start_angle, end_angle, t)
+		var dir_at_angle := Vector2(cos(angle), sin(angle))
+		var target_point := pos + dir_at_angle * range
 		var query := PhysicsRayQueryParameters2D.create(pos, target_point)
 		query.collision_mask = 1
 		query.exclude = []
 		var result := space_state.intersect_ray(query)
 		edge_points.append(target_point if result.is_empty() else result.position)
-	
+
 	for i in range(edge_points.size() - 1):
 		var triangle := PackedVector2Array([pos, edge_points[i], edge_points[i + 1]])
 		draw_colored_polygon(triangle, color)
-	
+
 	if edge_points.size() > 1:
 		draw_polyline(edge_points, color.lightened(0.3), LINE_WIDTH)
-	
+
+	# Centre direction line.
 	var dir_target := pos + direction * range
-	var query := PhysicsRayQueryParameters2D.create(pos, dir_target)
-	query.collision_mask = 1
-	query.exclude = []
-	var result := space_state.intersect_ray(query)
-	var dir_end: Vector2 = dir_target if result.is_empty() else result.position
+	var query2 := PhysicsRayQueryParameters2D.create(pos, dir_target)
+	query2.collision_mask = 1
+	query2.exclude = []
+	var result2 := space_state.intersect_ray(query2)
+	var dir_end: Vector2 = dir_target if result2.is_empty() else result2.position
 	draw_line(pos, dir_end, color.lightened(0.5), LINE_WIDTH)
 
 
 func draw_vision_circle(pos: Vector2, radius: float, color: Color) -> void:
 	var space_state := get_world_2d().direct_space_state
-	var segments := 64
+	var segments    := 64
 	var edge_points := PackedVector2Array()
-	
+
 	for i in range(segments + 1):
-		var angle := (float(i) / segments) * TAU
+		var angle     := (float(i) / segments) * TAU
 		var direction := Vector2(cos(angle), sin(angle))
 		var target_point := pos + direction * radius
 		var query := PhysicsRayQueryParameters2D.create(pos, target_point)
@@ -404,10 +291,10 @@ func draw_vision_circle(pos: Vector2, radius: float, color: Color) -> void:
 		query.exclude = []
 		var result := space_state.intersect_ray(query)
 		edge_points.append(target_point if result.is_empty() else result.position)
-	
+
 	for i in range(edge_points.size() - 1):
 		var triangle := PackedVector2Array([pos, edge_points[i], edge_points[i + 1]])
 		draw_colored_polygon(triangle, color)
-	
+
 	if edge_points.size() > 1:
 		draw_polyline(edge_points, color.lightened(0.3), LINE_WIDTH)

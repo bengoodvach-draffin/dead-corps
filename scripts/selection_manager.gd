@@ -153,9 +153,26 @@ func start_selection(_screen_pos: Vector2) -> void:
 	box_current_pos = box_start_pos
 	is_box_selecting = true
 	
-	# If not holding shift, clear current selection
-	if not Input.is_key_pressed(KEY_SHIFT):
+	# If not holding shift, clear current selection —
+	# UNLESS clicking on a human (cone inspection via VisionRenderer).
+	# Clicking a human should pin/toggle their vision cone without
+	# disturbing the current zombie selection.
+	if not Input.is_key_pressed(KEY_SHIFT) and not _is_human_at_position(box_start_pos):
 		clear_selection()
+
+
+## Returns true if a living human is within 15px of world_pos.
+## Mirrors the hit radius used in VisionRenderer._get_human_at_position().
+func _is_human_at_position(world_pos: Vector2) -> bool:
+	var humans := get_tree().get_nodes_in_group("humans")
+	for unit in humans:
+		if not unit is Human:
+			continue
+		if (unit as Human).is_dead:
+			continue
+		if world_pos.distance_to(unit.position) <= 15.0:
+			return true
+	return false
 
 func update_selection_box(_screen_pos: Vector2) -> void:
 	box_current_pos = get_global_mouse_position()
