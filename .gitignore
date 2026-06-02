@@ -1,3 +1,7 @@
+# OS-generated metadata (macOS Finder / Windows Explorer)
+.DS_Store
+Thumbs.db
+
 # Godot 4+ specific ignores
 .godot/
 .nomedia
