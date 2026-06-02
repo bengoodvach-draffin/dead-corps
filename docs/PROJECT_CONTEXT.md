@@ -1,903 +1,104 @@
-# Dead Corps - Project Context Document
+# Dead Corps — Project Context
 
-**Last Updated:** April 21, 2026  
-**Current Version:** v0.25.6  
-**Purpose:** Complete context for starting fresh Claude conversations
+**Current version:** v0.25.6 · **Engine:** Godot 4.6 / GDScript · **Location:** Amsterdam, NL
 
----
-
-## 🎮 **Project Overview**
-
-**Dead Corps** is a tactical puzzle game where players command zombie hordes through levels. It's a creative career transition project from software development into game development, reviving a 15-year-old concept with a unique twist on the zombie genre.
-
-**Core Gameplay:**
-- Players control zombies (not defend against them)
-- RTS-style unit control with tactical puzzle mechanics
-- Similar to Commandos or Shadow Tactics
-- Eleven distinct zombie types with specialized abilities
-- Sandbox-style levels with environmental challenges
-
-**Development Philosophy:**
-- Portfolio project and creative exploration (not commercial)
-- Learning opportunity for game development
-- Community-generated content through level editor (planned)
+Technical state, per-script purpose table, known issues, and quick-reference values. For design intent, zombie/defender specs, and the decision log, see `GAME_DESIGN_DOCUMENT.md`. For working rules, see the root `CLAUDE.md`. For the full feature history, see `archive/` changelogs and GDD §2.
 
 ---
 
-## 📊 **Current Build Status: v0.25.6**
+## Current state (high level)
 
-### **What's Implemented & Working:**
+The prototype has core RTS control, combat/conversion, vision, navigation, a full patrol system (manual + visual waypoints, Phase C per-waypoint behaviour, formation squads), five human defender classes with a morale bar and shooting, a low/high-urgency alert system, a click-to-pin vision-cone system, player-controlled engagement (no auto-pursuit), and two special zombies (Fat, Costume). Not yet built: building transformation, the other 9 special zombies, multiple levels, campaign, audio (in progress), final art, and the confirmed 3D migration.
 
-✅ **Core Systems (v0.1.0 - v0.12.0):**
-- Basic zombie and human units (2D isometric)
-- Unit selection and command system
-- Formation-based movement (BOID flocking)
-- Vision systems (circular and arc-based)
-- Combat and grappling mechanics
-- Zombie conversion on kill
-- Escape zones for humans
-- Camera controls
-
-✅ **Phase A: Sentry System (v0.14.0):**
-- Degree-based sentry facing (0° = North, 90° = East, etc.)
-- Visual arrow in editor showing facing direction
-- Swing arc system for sentries
-  - Smooth sin/cos oscillation
-  - Configurable range, speed, pause duration
-  - Visual arc indicator in editor (green)
-
-✅ **Panic Spreading (v0.16.0 - v0.17.0):**
-- 40px panic radius (immediate neighbors only)
-- Triggers only on GRAPPLED state (not being chased)
-- Realistic panic waves through sentry groups
-- Fixed global_position calculations for escape zones
-- Line-of-sight requirement for escape zone selection
-
-✅ **Zombie Navigation (v0.17.0 - v0.17.3):**
-- Optional NavigationAgent2D support
-- Pathfinding around obstacles
-- Smooth corner navigation
-- Falls back to direct movement if not configured
-- Works for both combat and normal movement
-- Agent radius: 30px for wide clearance
-
-✅ **Patrol System Phase B1 (v0.18.0):**
-- Manual waypoint patrol (typed coordinates)
-- LOOP mode (circular: 0→1→2→3→0)
-- PING_PONG mode (back-and-forth: 0→1→2→3→2→1→0)
-- Visual waypoint path in editor (yellow dots/lines)
-- Configurable patrol speed
-- Stops patrolling when zombie detected
-
-✅ **Patrol System Phase B2 (v0.19.0 - v0.19.4):**
-- Visual waypoint placement via child Node2D nodes
-- Natural string sorting (handles Waypoint1-10+ correctly)
-- Drag-and-drop waypoint positioning
-- Backwards compatible with manual waypoints
-- Swing disabled while patrolling (clean movement)
-- Faces movement direction while walking
-
-✅ **Patrol System Phase C (v0.20.0):**
-- Per-waypoint pause durations (`patrol_pause_durations: Array[float]`)
-- Per-waypoint swing during pause (`patrol_waypoint_swing: Array[bool]`)
-- Per-waypoint facing overrides (`patrol_waypoint_facing: Array[float]`, -1.0 = no override)
-- Swing during pause works even if `sentry_has_swing` is globally false
-- Fully backwards compatible — empty arrays = behaviour identical to v0.19.5
-
-✅ **Formation Squad Patrols (v0.21.0):**
-- Leader-follower pattern: one human leads, others hold a NodePath reference to leader
-- Five formation shapes: LINE_ABREAST, COLUMN, WEDGE, ECHELON, DIAMOND
-- Configurable spacing (`formation_spacing`) and regroup timeout (`formation_regroup_timeout`)
-- Leader waits at each waypoint (with timeout) for followers to regroup before advancing
-- Followers go IDLE if leader dies (with `is_instance_valid` guard)
-- Fully backwards compatible — empty `patrol_leader` = standalone sentry behaviour unchanged
-
-✅ **Vision System Fixes (v0.18.0):**
-- Zombies show forward arc when moving (not idle circle)
-- Proper state detection for right-click movement
-
-✅ **World Bounds System (v0.19.5):**
-- WorldBounds autoload singleton — single source of truth for level size
-- Units and camera both read from WorldBounds automatically
-- Change `world_bounds_min` / `world_bounds_max` in world_bounds.gd to resize level
-- Default bounds: ±1000 (expanded from old hardcoded ±500)
+GDD §2 has the authoritative implemented/not-implemented breakdown.
 
 ---
 
-✅ **Human Defender System (v0.22.0 - v0.22.5):**
-- Five defender classes: Civilian, Militia, Police, GI, Spec Ops — set via `defender_class` Inspector export
-- `DefenderClass` enum with per-class morale and weapon defaults auto-applied in `_ready()`
-- Morale bar system replacing binary flee trigger and `propagate_flee_to_group()` cascade
-- Dual-zone vision arcs: outer detection zone (350px) + inner shooting zone (weapon range)
-- Shooting system: aim timer starts on target acquisition in vision cone, fires on entering weapon range
-- Tracer line on firing (bright yellow, 0.1s fade) from bottom-center of sprite
-- TUNNEL_VISION state for GI/Spec Ops: 22.5° locked orange cone, 10s, locks toward threat zombie
-- Morale recovers to 50% on flee recovery and tunnel vision expiry
-- Zombie death visual: dark red Color(0.4, 0.0, 0.0), 0.3s delay, shot knockback tween (8px)
-- Navigation debug logging silenced in zombie.gd
-- Camera default zoom 1.0×, max zoom 2.5×, windowed 1920×1080
-- Vision range increased: SENTRY/FLEEING arcs 180px → 350px
+## Scripts (`scripts/`)
 
-**Key spec amendments made during implementation:**
-- Ally event radius changed from 80px → 150px (more realistic spread)
-- Tunnel vision cone narrowed from 45° → 22.5° (tighter, more dramatic)
-- Tunnel vision locks toward threat zombie position (not current facing)
-- Morale bar shows only in IDLE/SENTRY states (hides on FLEEING, GRAPPLED, DEAD)
-- No color tint on morale drain — bar only
-- `propagate_flee_to_group()` and `panic_propagation_depth` deprecated (commented out, not deleted)
-
----
-
-✅ **Alert System (v0.23.0 - v0.25.5):**
-
-**Low Urgency — Detection Alert (v0.23.0, updated v0.25.5):**
-- When a zombie has been in a human's vision cone for 5 continuous seconds, the human alerts nearby allies within 150px
-- All classes face the threat directly (0° offset) — v0.25.5. Per-class offsets removed (was causing ping-pong when multiple alerters targeted same ally simultaneously). See `ALERT_OFFSETS` in `human.gd` for original values.
-- Civilians: flee response only, no facing assignment
-- Alert cooldown: 30 seconds before re-triggering
-- Patrol resumes 30 seconds after cone clears
-- Facing returns to original after 30 seconds of clear cone, using smooth rotation (v0.25.6)
-- Swing arc suppressed while alerted (`_is_alerted` flag)
-
-**High Urgency — Ally Grappled, Ally Killed, Gunshot (v0.23.1):**
-- All three events use unified `_broadcast_high_urgency_alert(event_pos, radius)` system
-- All classes respond identically — direct facing toward event, no class-based offsets
-- Civilians included (FLEEING state check excludes them naturally once running)
-- Reaction delay: 0.4s before facing updates
-- Shared cooldown: 2 seconds across all high urgency types — prevents thrashing
-- Facing hold: 2 seconds after event, then returns to original using smooth rotation (v0.25.6)
-- If zombie enters new sightline after pivot — normal targeting takes over naturally
-
-| Event | Radius | Notes |
-|-------|--------|-------|
-| Ally grappled | 75px | Fires alongside existing morale drain |
-| Ally killed | 75px | Fires alongside existing morale drain |
-| Gunshot | 150px | Replaces old separate gunshot system |
-
-**Shared exclusion rules (all alert types):**
-- `shoot_target != null` → ignore (already engaged)
-- FLEEING, GRAPPLED, DEAD, TUNNEL_VISION → ignore
-- All rotations smooth at 360°/sec (180° in 0.5s), including return-to-original
+| File | Class / role | Notes |
+|------|--------------|-------|
+| `unit.gd` | `Unit` : `CharacterBody2D` | Base for all units. Movement, combat, health, selection, BOID separation + alignment, world-bound clamping. Cohesion force disabled (commented out, v0.25.1). Contains a legacy `UnitType` enum (HUMAN_SWAT/HUMAN_MILITARY) that does **not** map to `DefenderClass` — appears unused, audit/remove. |
+| `zombie.gd` | `Zombie` : `Unit` | States IDLE/MOVING/PURSUING/LEAPING/MELEE/DEAD. No auto-pursuit (v0.25.0). `can_receive_command()` false while leaping/committed. Post-kill 250px LOS continuation scan. `take_damage(amount, knockback_direction)` override with death knockback tween. `is_special` base flag disables leap/continuation/recruitment. |
+| `human.gd` | `Human` : `Unit` | States IDLE/SENTRY/FLEEING/GRAPPLED/DEAD/TUNNEL_VISION (FREEZE, MELEE_CHARGE designed but deferred). `DefenderClass` enum, morale system, shooting (aim timer, tracer, LOS pause, weapon-range gating), dual-zone vision arcs, tunnel vision, alert system (low + high urgency), shoot-target facing, smart retargeting, `_pre_alert_facing`, smooth return rotation, patrol (LOOP/PING_PONG + Phase C), formation squads, escape-zone seeking. `@tool` for editor visuals. `propagate_flee_to_group()` deprecated (commented out). |
+| `game_manager.gd` | `GameManager` : `Node` | **Core coordinator — do NOT rename/replace.** Tracks `all_zombies`/`all_humans`, spawning, conversion after 5s incubation, escape counting, win/loss, game time. Found via group `"game_manager"`. |
+| `selection_manager.gd` | `SelectionManager` : `Node2D` | Click/box/Shift/Ctrl selection, Ctrl+1-9 control groups. Clicking a human preserves zombie selection (v0.25.1). Group `"selection_manager"`. |
+| `camera_controller.gd` | `CameraController` : `Camera2D` | WASD pan, wheel zoom, edge scroll, bounds synced from `WorldBounds` on ready. Group `"camera"`. |
+| `vision_renderer.gd` | `VisionRenderer` : `Node2D` | Human vision cones + facing lines. Click-to-pin cone, V key shows all, white 20px facing lines always drawn, tunnel-vision cones always shown. Merged-blob logic removed; zombie vision removed (v0.25.0). |
+| `building.gd` | `Building` : `StaticBody2D` | Blocks movement + LOS. `@tool` preview. In `"buildings"` group for nav baking. |
+| `escape_zone.gd` | `EscapeZone` : `Area2D` | Humans entering = escaped; zombies entering die. Sets Fat Zombie `spawn_corpse_on_death = false` to suppress corpse on escape. `@tool`. |
+| `world_bounds.gd` | autoload `WorldBounds` : `Node` | Single source of truth for world bounds. Read by unit + camera. |
+| `level_bounds.gd` | `@tool` : `Node2D` | Placed per level; writes `bounds_min`/`bounds_max` into `WorldBounds` on ready. Draws orange boundary. Use this instead of editing `world_bounds.gd`. |
+| `fat_zombie.gd` | `FatZombie` : `Zombie` | `is_special = true`, `attack_damage = 0`. Gunshot-only death → spawns `FatZombieCorpse`. |
+| `fat_zombie_corpse.gd` | `FatZombieCorpse` : `StaticBody2D` | Permanent obstacle, layer 1, `"buildings"` group. 60×60 procedural. `NavigationObstacle2D` omitted (see known issues). |
+| `costume_zombie.gd` | `CostumeZombie` : `Zombie` | Undetectable while `is_costumed == true` (humans skip it in all detection systems via `zombie.get("is_costumed")`). Disguise breaks permanently on pinning a human (GRAPPLED), then behaves as a regular zombie. Pink → green on break. **Scoring edge case:** `_break_disguise()` sets `is_special = false`, so a broken-disguise Costume Zombie scores 25pts not 100 — undecided. |
+| `initializer.gd` | bootstrap | Calls `game_manager.setup_test_scenario()` after one frame. Uncheck **Enabled** to hand-build levels. |
+| `debug_overlay.gd` / `end_game_overlay.gd` | HUD / win-loss screen | Live counts + reset; score breakdown on `game_won`/`game_lost`. |
 
 ---
 
-✅ **Special Zombie Foundation + Fat Zombie (v0.24.0):**
-- `is_special: bool = false` added to `zombie.gd` base class — when true: disables leap, post-kill continuation, and pack recruitment. Player maintains full control of special zombies at all times.
-- **Architecture:** subclasses set `is_special = true` in `_ready()` before `super._ready()`. Never redeclare `is_special` as a variable in subclasses.
-- **Fat Zombie:** extends Zombie, `is_special = true`, cannot attack (`attack_damage = 0`). Gunshot-only death (ignores damage without knockback direction). On gunshot death spawns a `FatZombieCorpse` at its position. Entering escape zone removes cleanly with no corpse.
-- **Fat Zombie Corpse:** `StaticBody2D` on collision layer 1, added to `"buildings"` group — blocks movement and LOS identically to a building. 60×60px dark green rectangle. Built procedurally in `_ready()`.
-- **NavigationObstacle2D deferred:** `avoidance_enabled = false` on zombie NavigationAgent2D means runtime obstacles have no nav effect in this slice. Flagged for a future avoidance pass.
-- **Scoring updated:** special zombies (`FatZombie`, `CostumeZombie`) worth 100pts, regular zombies 25pts.
+## Scenes (`scenes/`)
 
-✅ **Costume Zombie (v0.24.1):**
-- Fully undetectable while `is_costumed == true` — humans skip it in all detection systems: flee detection, morale drain, aim timer acquisition, alert cone timer, and gunshot response
-- Detection suppression uses `zombie.get("is_costumed")` property check — no class name dependency, avoids GDScript load order issues
-- Disguise breaks permanently when the zombie pins a human (target transitions to GRAPPLED state) — not on chase start, not on attack start
-- After break: behaves identically to a regular zombie, all human detection systems apply normally
-- Visual: pink `Color(1.0, 0.4, 0.8)` while costumed, reverts to standard zombie green `Color(0.4, 0.6, 0.3)` on break
-- `is_special = true` — no leap, no post-kill continuation, no pack recruitment
-- **Design note:** human reaction to a costumed zombie pinning a nearby ally may need strengthening — the grappled_drain event fires but the visual surprise of a disguised zombie biting a friend may warrant a larger morale hit or additional response. Flagged for post-validation tuning.
+Units: `zombie.tscn` (NavigationAgent2D r30, CollisionShape2D r12), `human.tscn` (add `Waypoint1`, `Waypoint2`… child Node2Ds for patrol), `fat_zombie.tscn` (r18, `corpse_scene` wired), `fat_zombie_corpse.tscn` (spawned at runtime — don't place manually), `costume_zombie.tscn` (pink).
+Props: `building.tscn`, `escape_zone.tscn`.
+Levels: `main.tscn` (camera, managers, renderer, GameManager, Initializer, overlays), `test_level_1.tscn`, `sandbox_level_1.tscn`, `sandbox_level_human_testing.tscn`.
+UI: `debug_overlay.tscn`, `end_game_overlay.tscn`.
 
 ---
 
-✅ **Player-Controlled Engagement (v0.25.0):**
-- Zombies no longer auto-pursue. All engagements are explicitly player-initiated via right-click.
-- `can_receive_command() -> bool` on Zombie: returns false when leaping or committed (grappled/in melee). Redirecting a chasing zombie (PURSUING state) is allowed; redirecting a committed zombie is not.
-- **Group engagement resolver** in `selection_manager.gd`: right-clicking a human finds all humans within 150px and distributes selected zombies via greedy bipartite assignment (max 2 per human, nearest zombie to nearest human). Overflow zombies move to the clicked position.
-- **Post-kill continuation**: when a zombie's target dies, it automatically scans for the nearest living human within 250px with clear LOS (no vision arc — LOS only). If found, re-engages without player input. Special zombies skip this.
-- Attacker cap reduced from 3→2 per human across `zombie.gd`, `unit.gd`, and `human.gd`.
-- **Zombie vision arcs removed entirely** from `vision_renderer.gd`. Vision arcs are now human-only visual language. Tab key cycling for zombie vision removed.
-- `is_locked_in_pursuit`, `is_player_commanded`, `check_auto_pursuit()`, `propagate_pursuit_to_group()`, `can_see_unit()`, `is_in_vision_arc()`, and `find_nearest_human_in_range()` all removed from `zombie.gd`.
+## Known issues
+
+- **Fat Zombie corpse navigation:** `FatZombieCorpse` blocks movement physically, but zombies don't path around it cleanly because `avoidance_enabled = false` on the zombie `NavigationAgent2D` — `NavigationObstacle2D` has no effect without it. Fix = enable avoidance + add `NavigationObstacle2D` to `fat_zombie_corpse.gd`. Deferred to a future avoidance pass.
+- **Morale / shooting tuning:** per-class kill counts run higher than spec because the aim timer starts at vision range. Fundamentally working; left for playtest tuning.
+- **Costume Zombie scoring:** broken-disguise = 25pts (it sets `is_special = false`). Pending design decision on whether that's intended.
+- **Costume Zombie reaction strength:** the grappled-drain event fires when a costumed zombie bites an ally, but the visual surprise may warrant a larger morale hit / extra response. Flagged for post-validation tuning.
+- **Patrol resume:** by design, a sentry that detects a zombie stops patrolling permanently and does not resume. Re-evaluate in playtesting.
+- **Navigation baking:** auto-bake can fail; use the "Groups" method, ensure StaticBody2D on buildings, and matching nav layers (both Layer 1).
+- **README.md is stale** (v0.12.4) — needs a refresh in a separate pass.
+- **3D_MIGRATION_ANALYSIS.md** was created in a March 2026 session but never committed — needs re-creating.
 
 ---
 
-✅ **Vision System Overhaul (v0.25.1):**
-- **Click-to-pin cone system:** left-click any human to show their vision cone; click again to toggle off; click a different human to move the pin. No cones shown by default.
-- Clicking a human does NOT clear zombie selection — click is intercepted before SelectionManager processes it.
-- **V key debug mode:** press V to show all human cones simultaneously (debug/testing only).
-- **Facing lines:** short white line (20px) drawn from every living human's centre in their facing direction, always visible regardless of pin status.
-- **Tunnel vision cone always shown:** any human in TUNNEL_VISION state always renders their cone regardless of pin — required for the player to understand what has happened.
-- Merged/group blob cone logic removed entirely from `vision_renderer.gd`.
-- BOID cohesion force disabled in `unit.gd` (commented out) — was pulling idle units together to create merged blobs; no longer needed.
+## Key technical decisions
 
-✅ **Alert Facing Fixes (v0.25.2):**
-- `_pre_alert_facing` captures actual `facing_direction` at the moment the first alert fires. Preserved across chained alerts — subsequent alerts don't overwrite it. Cleared when return rotation completes.
-- Both return-to-facing paths (high urgency hold expiry, detection return timer) now use `_pre_alert_facing` instead of `sentry_facing_degrees`. Fixes incorrect snapping to North (0°) for humans where `sentry_facing_degrees` was left at its default.
-- Detection alert facing return timer fixed: was incorrectly 120s in `_receive_detection_alert`, corrected to 30s.
-- **Shoot target facing:** armed humans in SENTRY state (not patrolling, not formation follower) now smoothly rotate toward their active `shoot_target` while aiming, using the same 360°/sec turn speed as alert rotations. Swing arc suppressed while actively tracking a shoot target.
-- When shoot target dies or leaves range, human returns to `_pre_alert_facing` after a 2s hold.
-
-✅ **Smart Retargeting (v0.25.3):**
-- Armed humans now switch to a closer zombie if one enters weapon range while the current target is outside weapon range.
-- 50% aim time penalty on retarget — punishes leapfrog tactics without making it free to exploit.
-- New `_find_in_range_target()` helper in `human.gd`.
-
-✅ **Detection Alert Direct Facing (v0.25.5):**
-- Per-class facing offsets removed from detection alert system. All classes (Militia, Police, GI, Spec Ops) now face the threat directly (0° offset) on detection alert, matching high urgency behaviour.
-- `ALERT_OFFSETS` dictionary preserved as commented-out reference in `human.gd` with original values noted for potential reimplementation.
-- Fixes ping-pong bug where a human caught between two alerters received contradictory rotation targets.
-- Right/left ally sorting logic removed from `_broadcast_detection_alert`.
-
-✅ **Smooth Return Rotation (v0.25.6):**
-- Return-to-original-facing now uses smooth rotation at 360°/sec instead of instant snap.
-- `_is_returning_to_original` flag signals the rotation block to clear alert state (`_is_alerted`, `_pre_alert_facing`, `swing_center_angle`) when rotation completes, rather than clearing immediately and killing the rotation before it starts.
-
----
-- Auto-bake can fail for some setups
-- Workaround: Use Groups method (add buildings to "buildings" group)
-- Manual polygon drawing works but tedious
-- Navigation layers must match (Region and Agent both on Layer 1)
-
-⚠️ **Patrol Resume After Threat:**
-- Patrol stops permanently when a zombie is detected (by design for now)
-- Sentries do not resume their route after the threat passes
-- Evaluate during playtesting whether auto-resume is needed
-
-⚠️ **Morale/shooting tuning:**
-- Kill counts per class are higher than spec due to aim timer starting at vision range
-- Intentionally left for playtesting tuning — fundamentally working correctly
-
-⚠️ **Fat Zombie Corpse navigation:**
-- `FatZombieCorpse` physically blocks unit movement but zombies won't path around it cleanly
-- Root cause: `avoidance_enabled = false` on zombie NavigationAgent2D — `NavigationObstacle2D` has no effect without it
-- Fix: enable `avoidance_enabled` on zombie NavigationAgent2D and add `NavigationObstacle2D` to `fat_zombie_corpse.gd`
-- Deferred — validate corpse utility first, add proper nav avoidance in a follow-up pass
+- **Degrees for sentry facing** (0°=N, 90°=E, 180°=S, 270°=W); converted to Vector2 internally. Designer-friendly.
+- **Always `global_position`** for calculations (nested-scene safety).
+- **BOID flocking** for spacing instead of physics collision; separation/alignment only (cohesion disabled).
+- **Vision is state-dependent** (idle circle vs moving/sentry arc) with LOS raycasting. Zombie vision arcs removed in v0.25.0 — arcs are human-only visual language.
+- **Navigation is optional/opt-in** per level; falls back to direct movement.
+- **Conversion/incubation:** dead humans stay on map in DEAD state 5s, counted in the zombie total for scoring + lose checks, then convert.
+- **3D migration** is the confirmed architectural direction (low-poly, simple 3D characters, rotatable isometric camera) — driven by rooftop traversal and urban occlusion. Game logic survives; camera/vision renderer/scenes get rewritten.
 
 ---
 
-## 🗂️ **File Structure**
+## Quick-reference values
 
-### **Key Scripts:**
+**Units:** zombie/human radius 12px · zombie speed 105 (leap 210 at 40px) · human speed 90 · patrol speed 50 · nav agent radius 30px · formation spacing 40px · regroup timeout 10s · grapple proximity 50px (70px during leap) · incubation 5s.
 
-**scripts/zombie.gd:**
-- Zombie unit class (extends Unit)
-- States: IDLE, MOVING, PURSUING, LEAPING, MELEE, DEAD
-- Vision: Circular (idle) or Arc (moving/pursuing)
-- Navigation support via optional NavigationAgent2D
-- Leap attack mechanics
-- Conversion signal when killing humans
-- `take_damage(amount, knockback_direction)` override — optional knockback tween on death
-- Death: dark red color, 0.3s delay, movement stops immediately on DEAD state
+**Vision:** human IDLE 100px circle · SENTRY/FLEEING 350px arc 90° · TUNNEL_VISION 350px arc 22.5° threat-facing 10s. Dual-zone inner ranges: Militia/Police 150px, GI/Spec Ops 250px, Civilian single-zone.
 
-**scripts/human.gd:**
-- Human unit class (extends Unit)
-- States: IDLE, SENTRY, FLEEING, GRAPPLED, DEAD, TUNNEL_VISION
-- FREEZE and MELEE_CHARGE states designed but deferred
-- `DefenderClass` enum: CIVILIAN, MILITIA, POLICE, GI, SPEC_OPS
-- Morale system: continuous sighting drain, ally event hooks (150px radius), flee/tunnel vision response
-- Shooting system: aim timer, tracer line, LOS pause, weapon range gating
-- TUNNEL_VISION: 22.5° locked cone, threat-facing, 10s duration, immune to drain
-- Alert system (v0.23.0–v0.23.1): low urgency detection alert (5s cone, class-based offsets), high urgency unified system (ally grappled 75px, ally killed 75px, gunshot 150px — all direct facing, 0.4s delay, 2s cooldown, 2s hold)
-- Gunshot response (v0.23.0): replaced in v0.23.1 by unified high urgency system
-- Patrol modes: LOOP, PING_PONG
-- Phase C: per-waypoint pause, swing, and facing overrides
-- Formation squad system: leader/follower with 5 shapes
-- `propagate_flee_to_group()` deprecated (commented out)
-- Sentry features: degrees, swing arcs, visual editor
-- Escape zone seeking with line-of-sight
-- Waypoint loading from child nodes
+**Scoring:** regular zombie 25pts, special 100pts (but broken-disguise Costume reverts to 25). Time bonus ≤1m +200, ≤2m +150, ≤3m +100, ≤4m +50.
 
-**scripts/unit.gd:**
-- Base class for all units
-- Movement and combat systems
-- Health and damage
-- BOID flocking (separation, cohesion, alignment)
-- Team system (ZOMBIES vs HUMANS)
+**Weapons:** Civilian unarmed · Militia shotgun 150px 0.7s · Police pistol 150px 0.55s · GI rifle 250px 0.525s · Spec Ops rifle 250px 0.26s. One-shot kills (50 dmg). No shooting while fleeing.
 
-**scripts/vision_renderer.gd:**
-- Draws vision arcs/circles
-- Handles all unit vision visualization
-
----
-
-### **Scene Files:**
-
-**scenes/zombie.tscn:**
-- Zombie unit scene
-- Includes NavigationAgent2D child (radius: 30.0)
-- CollisionShape2D (radius: 12.0)
-- Visual sprite
-
-**scenes/human.tscn:**
-- Human unit scene
-- Similar structure to zombie
-
-**scenes/test_level_1.tscn:**
-- Main test level
-- Should include NavigationRegion2D
-- Buildings on collision layer 1
-
----
-
-## 🗃️ **Scripts & Files Inventory**
-
-> **Purpose:** Prevent naming conflicts and wasted effort. Before creating any new file, check this list first.
-> **Last Updated:** v0.25.0
-
----
-
-### **GDScript Files (`scripts/`)**
-
-| File | Class Name | Extends | Purpose |
-|------|-----------|---------|---------|
-| `unit.gd` | `Unit` | `CharacterBody2D` | Base class for all units. Handles movement, combat, health, selection, BOID flocking (separation + alignment), and world boundary clamping. Inherited by Zombie and Human. v0.25.1: cohesion force (`apply_cohesion_force()`) disabled/commented out — was pulling idle units together to form merged vision blobs; no longer needed. Separation force (`apply_separation_force()`) unchanged. Note: contains a `UnitType` enum with legacy HUMAN_SWAT / HUMAN_MILITARY entries that don't correspond to the actual `DefenderClass` system in human.gd — this enum appears unused for the human side and should be audited or removed. |
-| `zombie.gd` | `Zombie` | `Unit` | Player-controlled zombie units. Handles states (IDLE/MOVING/PURSUING/LEAPING/MELEE/DEAD), leap attacks, and human conversion signal. Optional NavigationAgent2D support. v0.25.0: no auto-pursuit — all engagements are player-initiated via right-click. `can_receive_command()` returns false when leaping or committed (grappled/melee). Post-kill continuation scan: on target death, scans for nearest human within 250px with LOS and re-engages automatically. |
-| `human.gd` | `Human` | `Unit` | AI-controlled human enemies. Handles states (IDLE/SENTRY/FLEEING/GRAPPLED/DEAD/TUNNEL_VISION), DefenderClass enum (CIVILIAN/MILITIA/POLICE/GI/SPEC_OPS), morale system, shooting system, dual-zone vision arcs, tunnel vision, low urgency detection alert (v0.23.0, all classes direct facing v0.25.5), high urgency alert system (v0.23.1), shoot target facing (v0.25.2 — humans smoothly rotate toward active shoot target while aiming), smart retargeting (v0.25.3 — switch to closer in-range target with 50% aim penalty), `_pre_alert_facing` for correct return-to-original facing (v0.25.2), smooth return rotation (v0.25.6), patrol system (LOOP/PING_PONG) with Phase C per-waypoint pause/swing/facing, formation squad system (leader/follower, 5 shapes), and escape zone seeking. Uses @tool for editor visuals. |
-| `game_manager.gd` | `GameManager` | `Node` | **Core gameplay coordinator. Do NOT rename or replace.** Tracks all_zombies and all_humans arrays, handles spawning, zombie conversion after incubation, escape counting, win/loss conditions, and game time. Found in scene via group `"game_manager"`. |
-| `selection_manager.gd` | `SelectionManager` | `Node2D` | RTS unit selection. Handles click selection, drag box selection, Shift+click multi-select, and Ctrl+1-9 control group assignment/recall. v0.25.1: clicking a human preserves zombie selection (human click detected before clear fires). Found in scene via group `"selection_manager"`. |
-| `camera_controller.gd` | `CameraController` | `Camera2D` | RTS camera. WASD pan, mouse wheel zoom with smoothing, edge scrolling, and configurable bounds. Syncs bounds from WorldBounds autoload on ready. Found in scene via group `"camera"`. |
-| `vision_renderer.gd` | `VisionRenderer` | `Node2D` | Draws human vision cones and facing lines. v0.25.1: click-to-pin system — left-click a human to show their cone, click again to toggle off, click another human to switch. V key shows all cones (debug). White 20px facing lines always drawn for all living humans. Tunnel vision cones always shown regardless of pin. Merged/group blob logic removed. Zombie vision removed in v0.25.0. |
-| `building.gd` | `Building` | `StaticBody2D` | Static obstacle. Blocks unit movement and line-of-sight. Configurable width/height and color via @export. Uses @tool for real-time editor preview. Added to `"buildings"` group for navigation mesh baking. |
-| `escape_zone.gd` | `EscapeZone` | `Area2D` | Safe zone for humans. Humans entering are counted as escaped; zombies entering are killed. Configurable size and color. Uses @tool for editor preview. References GameManager via group. |
-| `initializer.gd` | *(none)* | `Node` | Scene bootstrap. Waits one frame then calls `game_manager.setup_test_scenario()`. Can be disabled via @export flag. For prototyping only — will be replaced by level loading. |
-| `debug_overlay.gd` | *(none)* | `CanvasLayer` | In-game HUD showing live zombie/human/escaped counts, selected unit count, control group assignments, and a reset button. References GameManager and SelectionManager via groups. |
-| `end_game_overlay.gd` | *(none)* | `CanvasLayer` | Win/loss screen shown when game ends. Displays result message and score breakdown. Hidden by default, shown when GameManager emits `game_won` or `game_lost` signals. |
-| `world_bounds.gd` | *(none, Autoload)* | `Node` | **Added v0.19.5.** Autoload singleton registered as `WorldBounds`. Single source of truth for world bounds (`world_bounds_min`, `world_bounds_max`). Read by unit.gd and camera_controller.gd. Change bounds here and everything updates automatically. |
-| `level_bounds.gd` | *(none)* | `Node2D` | **Added v0.21.3.** @tool Node placed in each level scene. Exports `bounds_min` / `bounds_max` (Vector2). On `_ready()` writes values into WorldBounds autoload so all unit clamping and camera update automatically. Draws orange boundary rectangle in editor and at runtime. Replace the old approach of editing world_bounds.gd directly. |
-| `fat_zombie.gd` | `FatZombie` | `Zombie` | **Added v0.24.0.** Special zombie — utility/sacrifice unit. Sets `is_special = true` (disables leap, post-kill continuation, and pack recruitment). Cannot attack (`attack_damage = 0`). Gunshot-only death: ignores damage with no knockback direction. On gunshot death spawns `FatZombieCorpse` at its position. `spawn_corpse_on_death` flag set to `false` by escape_zone.gd to suppress corpse on escape-zone removal. |
-| `fat_zombie_corpse.gd` | `FatZombieCorpse` | `StaticBody2D` | **Added v0.24.0.** Permanent obstacle spawned by FatZombie on gunshot death. Collision layer 1, added to "buildings" group — blocks movement and LOS identically to a building. 60×60px, dark green `Color(0.25, 0.38, 0.25)`. Collision and visual built procedurally in `_ready()`. NavigationObstacle2D omitted pending avoidance_enabled pass. |
-| `costume_zombie.gd` | `CostumeZombie` | `Zombie` | **Added v0.24.1.** Special zombie — fully undetectable while `is_costumed == true`. Humans skip it in flee detection, morale drain, aim acquisition, alert system, and gunshot response. Disguise breaks permanently when it pins a human (target enters GRAPPLED state). After break behaves identically to a regular zombie. Pink `Color(1.0, 0.4, 0.8)` while costumed, reverts to standard green on break. ⚠️ **Scoring edge case:** `_break_disguise()` sets `is_special = false`, so a broken-disguise Costume Zombie scores 25pts at end of game (not 100pts). Pending design decision on whether this is intended. |
-
----
-
-### **Scene Files (`docs/` — stored alongside docs)**
-
-| File | Purpose |
-|------|---------|
-| `zombie.tscn` | Zombie unit scene. Includes NavigationAgent2D (radius 30), CollisionShape2D (radius 12), Sprite2D. |
-| `human.tscn` | Human unit scene. Mirrors zombie structure. Add Waypoint1, Waypoint2... child Node2D nodes here for patrol routes. |
-| `building.tscn` | Reusable building obstacle. Drag into levels and resize via CollisionShape2D orange handles. |
-| `escape_zone.tscn` | Escape zone scene. Place at level exit points. |
-| `debug_overlay.tscn` | Debug HUD overlay. Add to main scene as CanvasLayer. |
-| `end_game_overlay.tscn` | End game screen overlay. Add to main scene as CanvasLayer. |
-| `main.tscn` | Main test level scene. Contains Camera2D, SelectionManager, VisionRenderer, GameManager, Initializer, buildings, escape zones, and overlay UIs. |
-| `fat_zombie.tscn` | Fat Zombie unit scene. Larger collision (radius 18), scaled sprite, light green body. `corpse_scene` export wired to fat_zombie_corpse.tscn. Instance this to place Fat Zombies in a level. |
-| `fat_zombie_corpse.tscn` | Fat Zombie Corpse obstacle scene. StaticBody2D, collision layer 1, buildings group. Spawned at runtime by FatZombie.die() — do not place this manually. |
-| `costume_zombie.tscn` | Costume Zombie unit scene. Standard size (radius 12), pink body. Instance this to place Costume Zombies in a level. |
-| `sandbox_level_1.tscn` | Sandbox test level — general gameplay testing. |
-| `sandbox_level_human_testing.tscn` | Sandbox level focused on human defender system testing. |
-
----
-
-### **Documentation Files (`docs/`)**
-
-| File | Purpose |
-|------|---------|
-| `GAME_DESIGN_DOCUMENT_v0_25_6.md` | Full game design doc v6.1. Core gameplay loop, zombie types, level design philosophy, tactical systems. |
-| `PROJECT_CONTEXT.md` | This document. Technical state, scripts inventory, known issues. |
-| `PATROL_SYSTEM_ROADMAP.md` | Phase A/B/C roadmap for the sentry/patrol system. Current status and planned features. |
-| `PHASE_A_COMPLETE.md` | Phase A completion notes — sentry degrees and swing arc system (v0.14.0). |
-| `PATROL_QUICKSTART_PHASE_B1.md` | How to use the manual waypoint patrol system (Phase B1, v0.18.0). |
-| `PATROL_PHASE_B2_VISUAL_WAYPOINTS.md` | How to use drag-and-drop visual waypoints via child Node2D (Phase B2, v0.19.0). |
-| `NAVIGATION_SETUP_GUIDE.md` | How to set up NavigationRegion2D and bake a nav mesh for zombie pathfinding (v0.17.0). |
-| `NAVIGATION_FINAL_SETUP.md` | Final configuration steps for navigation — layers, groups, agent radius (v0.17.3). |
-| `NAVIGATION_TROUBLESHOOTING.md` | Common nav mesh issues and fixes. Covers Groups method, layer mismatches, manual polygon approach. |
-| `DEBUG_LOGGING_GUIDE.md` | Reference for debug print statements in the codebase (v0.12.6). |
-| `EXPORT_GUIDE.md` | How to export the game with a specific level as the main scene. |
-| `2.5D_CONVERSION_PLAN.md` | Superseded — plan for 2.5D was explored but full 3D migration was confirmed instead. Historical reference only. |
-| `HUMAN_DEFENDER_SYSTEM_SPEC.md` | Full design spec for human defender classes, morale values, and weapon stats (v0.22.0). |
-| `BASELINE_SUMMARY.md` | Snapshot of v0.9.0 state. Historical reference only. |
-| `BASELINE_SUMMARY_v0.12.4.md` | Snapshot of v0.12.4 stable baseline. Historical reference only. |
-| `CHANGELOG_v0.9.1.md` through `CHANGELOG_v0.24.1.md` | Per-version change logs. Note: v0.22.x, v0.23.x, and v0.25.0 changelogs are missing from the repo. |
-| `3D_MIGRATION_ANALYSIS.md` | ⚠️ **Missing from repo** — created during March 2026 art direction session, not committed. Covered system rewrite scope for 3D migration. Needs to be re-created or committed. |
-
-
----
-
-## 🎯 **Key Systems Explained**
-
-### **1. Navigation System (Optional)**
-
-**How It Works:**
-- NavigationAgent2D on zombies (optional)
-- NavigationRegion2D in level with baked mesh
-- If agent exists: use pathfinding
-- If not: use direct movement
-
-**Setup:**
-1. Add NavigationRegion2D to level
-2. Configure: Source Geometry Mode = "Groups"
-3. Add buildings to "buildings" group
-4. Set Agent Radius: 30.0
-5. Bake NavigationPolygon
-6. NavigationAgent2D already on zombie.tscn
-
-**Common Issues:**
-- Layers must match (both on Layer 1)
-- Buildings need StaticBody2D with collision shapes
-- Groups method most reliable in Godot 4.6
-
----
-
-### **2. Patrol System**
-
-**Two Methods:**
-
-**Manual (Phase B1):**
-```gdscript
-// In Inspector:
-Patrol Waypoints: [(100,100), (200,100), (200,200)]
-```
-
-**Visual (Phase B2 - Recommended):**
-```
-Human (Sentry)
-├─ Waypoint1 (Node2D) ← Drag to position
-├─ Waypoint2 (Node2D)
-└─ Waypoint3 (Node2D)
-```
-
-**Naming Rules:**
-- Must be exactly "Waypoint1", "Waypoint2", etc.
-- Capital W, no underscores/spaces
-- Numbers determine order (natural sort)
-
-**Patrol Modes:**
-- **LOOP:** Circular patrol (0→1→2→3→0)
-- **PING_PONG:** Back-and-forth (0→1→2→3→2→1→0)
-
-**Phase C — Per-Waypoint Behaviour:**
-- `patrol_pause_durations: Array[float]` — seconds to pause at each waypoint (0.0 = no pause)
-- `patrol_waypoint_swing: Array[bool]` — whether to swing the vision cone during the pause
-- `patrol_waypoint_facing: Array[float]` — facing override on arrival (-1.0 = no override, 0–360°)
-- Swing during pause works even if `sentry_has_swing` is globally false
-
-**Example Phase C setup:**
-```
-patrol_pause_durations  = [0.0, 3.0, 0.0, 2.0]
-patrol_waypoint_swing   = [false, true, false, false]
-patrol_waypoint_facing  = [-1.0, -1.0, -1.0, 90.0]
-→ Waypoint 1: walk through
-→ Waypoint 2: pause 3s, swing vision cone
-→ Waypoint 3: walk through
-→ Waypoint 4: pause 2s, face East (90°)
-```
-
-**Formation Squads (v0.21.0):**
-```
-Leader (Human — has waypoints)
-├─ Follower A  patrol_leader = Leader, formation_slot = 1
-├─ Follower B  patrol_leader = Leader, formation_slot = 2
-└─ Follower C  patrol_leader = Leader, formation_slot = 3
-```
-- Leader patrols normally; waits at each waypoint for followers to regroup
-- Formation shapes: LINE_ABREAST, COLUMN, WEDGE, ECHELON, DIAMOND
-- Followers go IDLE if leader dies
-- Followers use ramped catch-up speed when out of position
-
----
-
-### **3. Sentry System**
-
-**Configuration:**
-```gdscript
-@export var sentry_facing_degrees: float = 0.0  // 0=North, 90=East
-@export var sentry_has_swing: bool = false
-@export var sentry_swing_range: float = 45.0    // ±45° sweep
-@export var sentry_swing_speed: float = 30.0    // deg/sec
-@export var sentry_swing_pause: float = 0.5     // pause at extremes
-```
-
-**Visual Indicators (Editor):**
-- Cyan arrow: facing direction
-- Green arc: swing range (if enabled)
-- Yellow path: patrol waypoints (if patrol enabled)
-
-**Swing Behavior:**
-- Only active when stationary (not patrolling)
-- Smooth sin/cos oscillation
-- Pauses at extremes
-- Speed modulation (faster in middle, slower at edges)
-
----
-
-### **4. Panic / Morale System**
-
-**Current implementation (to be replaced in v0.22.0):**
-```gdscript
-// Check nearby humans (40px radius)
-if ally.current_state == GRAPPLED:
-    panic()  // Only when actually pinned!
-```
-
-**Planned morale system (v0.22.0):**
-- Every defender has a morale bar (morale_max varies by class)
-- Stress events drain it: sighting (within weapon range for armed units), ally grappled, ally fleeing, ally killed
-- Bar reaches 0 → primary response (flee or tunnel vision depending on class)
-- Replaces propagate_flee_to_group() and panic_propagation_depth entirely
-- See HUMAN_DEFENDER_SYSTEM_SPEC.md for full design and drain values
-
-**Propagation Chain (current, v0.21.2 — being deprecated):**
-- `panic_propagation_depth` export (default: 2) controls how many hops panic spreads
-- Depth 0 = only direct detector flees
-- Depth 1 = detector + immediate neighbours
-- Depth 2 = two rings outward (default — recommended)
-- Delay per ally is distance-based: ally 80px away = 0.4s delay, 5px away = ~0.025s
-
-**Example (default depth 2, 80px propagation radius):**
-```
-Depth 0: Human A sees zombie → flees + propagates
-Depth 1: B, C, D (within 80px of A) flee + propagate
-Depth 2: E, F, G (within 80px of B/C/D) flee — CHAIN STOPS
-Humans further than ~160px from contact: unaffected ✅
-```
-
-**Console debug output:**
-- `PANIC MOB (depth 0): 4 humans fleeing together!`
-- `🛑 PANIC CHAIN stopped at depth 2 for Human5`
-
----
-
-## 🛠️ **Development Environment**
-
-**Engine:** Godot 4.6 (latest version)  
-**Platform:** 2D (isometric perspective)  
-**Language:** GDScript  
-**Location:** Amsterdam, North Holland, NL  
-
-**Tools Used:**
-- Claude.ai for development assistance
-- Claude Code (occasionally)
-- Git for version control (recommended)
-
----
-
-## 📝 **Important Design Decisions**
-
-### **Degrees vs Vectors:**
-- Use degrees for sentry facing (more intuitive for designers)
-- 0° = North/Up, 90° = East/Right, 180° = South, 270° = West
-- Internally converts to Vector2 for calculations
-
-### **Global vs Local Positions:**
-- Always use `global_position` for calculations
-- Avoids bugs with nested scene hierarchies
-- Particularly important for escape zones
-
-### **Formation-Based Movement:**
-- BOID flocking prevents unit clumping
-- Separation, cohesion, alignment forces
-- Different strengths for different states (idle vs fleeing)
-
-### **Vision System:**
-- State-dependent (circle for idle, arc for moving)
-- Line-of-sight raycasting to detect obstacles
-- Group vision sharing for sentries
-- Zombie vision arcs removed (v0.25.0) — arcs are human-only visual language
-
-### **Optional Navigation:**
-- Not required — direct movement works
-- Opt-in per level via NavigationAgent2D
-- Backwards compatible
-
-### **Conversion / Incubation:**
-- Dead humans remain on map in DEAD state for 5 seconds before converting
-- Counted as part of zombie total during incubation (for scoring + lose condition)
-- `on_human_converted()` called by human.gd after incubation_timer expires
-
-### **3D Migration:**
-- Confirmed architectural direction — full 3D Godot (low-poly geometry, simple 3D characters, rotatable isometric camera)
-- Driven by rooftop traversal as a gameplay mechanic and urban density/occlusion requirements
-- `3D_MIGRATION_ANALYSIS.md` created during March 2026 art direction session — ⚠️ not committed to repo, needs re-creating
-
----
-
-## 🚀 **Next Steps / Roadmap**
-
-### **Immediate (First Validation Slice):**
-- Build one handcrafted test level: Costume Zombie + Fat Zombie vs Police + barricaded GI
-- Run focused play sessions to validate the core tactical puzzle loop is fun
-- Tune morale/weapon values (kill counts currently higher than spec — needs playtesting data)
-- Decide on CostumeZombie scoring edge case (broken-disguise = 25pts or 100pts?)
-
-### **Near-Term:**
-- 3D migration (confirmed architectural direction — see 3D_MIGRATION_ANALYSIS.md, which needs to be re-created/committed)
-- Building transformation system (zombies enter buildings to change type)
-- Remaining 9 special zombie types
-- More handcrafted levels
-
-### **Long-Term:**
-- Community level sharing
-- Campaign mode
-- Advanced puzzle mechanics
-
----
-
-## 🐛 **Debugging Tips**
-
-### **Navigation Not Working:**
-```
-1. Check console: "✓ HAS NavigationAgent2D" or "✗ NO"
-2. Verify navigation layers match (both Layer 1)
-3. Check buildings in "buildings" group
-4. Verify StaticBody2D on buildings
-5. Enable nav debug: nav_agent.debug_enabled = true
-```
-
-### **Patrol Not Working:**
-```
-1. Check: Patrol Enabled = ON
-2. Verify waypoint names (Waypoint1, Waypoint2...)
-3. Check console: "Loaded X waypoints"
-4. Initial State must be SENTRY
-```
-
-### **Panic Not Spreading:**
-```
-1. Check spacing: <80px for propagation to work (propagation_radius = 80px)
-2. Verify state: Must be GRAPPLED (not just chased)
-3. Check panic_propagation_depth — default 2, set higher to test wider spread
-4. Console: "PANIC MOB (depth X)" confirms chain is firing
-5. Console: "🛑 PANIC CHAIN stopped at depth X" shows where it was cut off
-```
-
-### **Swing Arc Erratic:**
-```
-1. Should be disabled while patrolling (v0.19.4)
-2. Only swings when stationary
-3. Check: is_patrolling should be false for swing
-```
-
----
-
-## 📦 **Version History (Recent)**
-
-**v0.25.6 (April 21, 2026)** - Smooth return rotation + tunnel vision cone always shown
-**v0.25.5 (April 21, 2026)** - Detection alert direct facing: per-class offsets removed, all classes face threat directly
-**v0.25.4 (April 21, 2026)** - Rotation/alert debug logging; non-essential prints silenced
-**v0.25.3 (April 21, 2026)** - Smart retargeting: switch to closer in-range zombie with 50% aim penalty
-**v0.25.2 (April 21, 2026)** - Alert facing fixes: _pre_alert_facing, 120s→30s timer fix, shoot target tracking, smooth return
-**v0.25.1 (April 21, 2026)** - Vision click system: click-to-pin cone, facing lines, tunnel vision always shown, cohesion disabled
-**v0.25.0 (April 17, 2026)** - Player-controlled engagement redesign
-**v0.24.1 (March 19, 2026)** - Costume Zombie
-**v0.24.0 (March 19, 2026)** - Special zombie foundation + Fat Zombie
-**v0.23.1 (March 19, 2026)** - High urgency alert system: ally grappled/killed facing response, unified broadcast replacing separate gunshot system, 2s shared cooldown, 2s hold timer
-**v0.23.0 (March 19, 2026)** - Low urgency detection alert: 5s cone timer, per-class side-aware offsets, smooth rotation, gunshot response
-**v0.22.5** - Zombie death visual: dark red color, 0.3s delay, shot knockback tween
-**v0.22.4** - Tunnel Vision state: 22.5° locked cone, threat-facing, 10s, immune to drain
-**v0.22.3** - Shooting system: aim timer, tracer line, LOS pause, weapon range gating
-**v0.22.2** - Morale bar: sighting drain, ally event hooks, flee/tunnel vision response
-**v0.22.1** - Vision range 350px, dual-zone arcs, camera zoom 1.0×/2.5× max
-**v0.22.0** - Defender class scaffolding: DefenderClass enum, morale/weapon exports
-**v0.21.3** - Bug fixes: flee fallback dead code, level_bounds.gd, boundary edge clamping, false stuck detection, formation bounds hardcode, patrol speed persisting into flee
-**v0.21.2** - Depth-capped, distance-based panic propagation
-**v0.21.1** - Formation follower polish: ramped catch-up speed, reduced separation while converging
-**v0.21.0** - Formation squad patrols — leader/follower system with 5 formation shapes and regroup waiting
-**v0.20.0** - Phase C patrol: per-waypoint pause durations, swing, and facing overrides
-**v0.19.5** - WorldBounds autoload singleton — centralised world bounds for units and camera
-**v0.19.4** - Removed visual waypoint markers (caused gameplay visibility issues)
-**v0.19.2** - Fixed waypoint order, swing during patrol
-**v0.19.0** - Phase B2: Visual waypoint placement
-**v0.18.0** - Phase B1: Basic patrol system
-**v0.17.3** - Navigation system complete
-**v0.17.0** - Panic spreading fixes
-**v0.16.0** - Panic spreading initial implementation
-**v0.15.0** - Escape zone global_position fix
-**v0.14.0** - Phase A: Sentry degrees and swing arcs
-
-⚠️ **Missing changelogs:** CHANGELOG files for v0.22.x, v0.23.x, v0.25.0, and v0.25.1–v0.25.6 were not committed to the repo.
-
----
-
-## 📚 **Documentation Files**
-
-**Available in /docs:**
-- GAME_DESIGN_DOCUMENT_v0_25_0.md
-- HUMAN_DEFENDER_SYSTEM_SPEC.md
-- PATROL_PHASE_B2_VISUAL_WAYPOINTS.md
-- PATROL_QUICKSTART_PHASE_B1.md
-- PATROL_SYSTEM_ROADMAP.md
-- NAVIGATION_SETUP_GUIDE.md
-- NAVIGATION_TROUBLESHOOTING.md
-- NAVIGATION_FINAL_SETUP.md
-- PHASE_A_COMPLETE.md
-- CHANGELOG_v0.9.1.md through CHANGELOG_v0.24.1.md (v0.22.x, v0.23.x, v0.25.0 missing)
-- ⚠️ 3D_MIGRATION_ANALYSIS.md — not in repo, needs re-creating/committing
-
----
-
-## 🎯 **Starting a New Chat**
-
-**Required Context (add all three to Project Knowledge):**
-- `PROJECT_CONTEXT.md` — technical state, scripts inventory, known issues
-- `CLAUDE_INSTRUCTIONS.md` — rules for working with Claude
-- `GAME_DESIGN_DOCUMENT.md` — design intent, zombie types, level design rules
-
-If using Project Knowledge these load automatically.
-If starting a fresh project or new Claude account, attach all three manually.
-
-**What to say:**
-"I'm working on Dead Corps v0.21.2.
-Ready to [specific task or question]"
-
-**Claude will have:**
-- Full technical context from PROJECT_CONTEXT.md
-- Design intent from the GDD
-- Workflow rules to follow
-- Scripts inventory to prevent naming conflicts
-
-**What Claude Won't Have Without Prompting:**
-- Exact code from previous sessions (paste if needed)
-- Specific bug details from old conversations
-- Your current level/scene setup details
-
----
-
-## 💡 **Key Terminology**
-
-**Sentry:** Human guard with directional vision and optional swing arc  
-**Waypoint:** Position marker for patrol routes  
-**BOID:** Flocking algorithm (separation, cohesion, alignment)  
-**Grappled:** Human pinned by zombie (being attacked)  
-**Morale Bar:** Continuous drain from stress events, replaces old panic spreading  
-**Navigation Mesh:** Pathfinding data structure (blue areas in editor)  
-**Phase A/B/C:** Development phases for patrol system  
-**LOOP/PING_PONG:** Patrol modes (circular vs back-and-forth)  
-**Tunnel Vision:** GI/Spec Ops morale response — 22.5° locked orange cone, threat-facing, 10s  
-**Detection Alert:** Human spots zombie for 5s → nearby allies all face threat directly (per-class formation offsets removed in v0.25.5)  
-**Gunshot Response:** Human fires → nearby allies snap to face the target after 0.4s delay
-
----
-
-## 🔧 **Common Commands**
-
-**Test Navigation:**
-```
-Debug → Visible Collision Shapes
-Debug → Visible Navigation
-```
-
-**Check Zombie Has Navigation:**
-```gdscript
-// Console output on game start:
-"✓ HAS NavigationAgent2D"
-```
-
-**Check Patrol Loaded:**
-```gdscript
-// Console output:
-"Loaded 4 waypoints from child nodes for Human1"
-"Patrol initialized for Human1 with 4 waypoints"
-```
-
----
-
-## 📞 **Quick Reference**
-
-**Vision Controls (v0.25.1):**
-- Left-click human → pin their vision cone (toggle same human to clear)
-- Left-click different human → move pin
-- V key → show all cones simultaneously (debug mode)
-- Facing lines always shown for all living humans (white 20px line)
-- Tunnel vision cones always shown regardless of pin
-
-**Zombie States:**
-- IDLE (awaiting player command)
-- MOVING (player-commanded move, no attack target)
-- PURSUING (chasing player-commanded target — can be redirected)
-- LEAPING (committed — cannot be redirected)
-- MELEE (committed — cannot be redirected)
-
-**Human States:**
-- IDLE (circle vision)
-- SENTRY (arc vision, stationary or patrol)
-- FLEEING (forward arc, running)
-- GRAPPLED (no vision, pinned)
-- DEAD (incubating zombie)
-- TUNNEL_VISION (GI/Spec Ops — 22.5° locked orange cone, 10s, threat-facing)
-- FREEZE (designed, deferred — Civilian only)
-- MELEE_CHARGE (designed, deferred — Militia only)
-
-**Collision Layers:**
-- Layer 1: Buildings/Obstacles
-- Layer 2: Zombies
-- Layer 3: Humans (implied from team system)
-
-**Default Values:**
-- Zombie radius: 12px
-- Human radius: 12px
-- Morale event radius: 150px (ally grappled/fleeing/killed hooks)
-- Navigation agent radius: 30px
-- Patrol speed: 50 px/sec
-- Swing range: 45°
-- Swing speed: 30°/sec
-- Formation spacing: 40px
-- Formation regroup timeout: 10s
-- Human vision (SENTRY/FLEEING): 350px arc, 90°
-- Human vision (IDLE): 100px circle
-- Tunnel Vision cone: 22.5°, duration: 10s
-- Morale recovery on flee/tunnel vision end: 50% of morale_max
-- Dead zombie color: Color(0.4, 0.0, 0.0)
-- Dead human color: Color(0.8, 0.2, 0.2)
-- Shot knockback: 8px tween over 0.15s
-- Camera default zoom: 1.0× (debug), target game zoom: 2.5×
-- Window: 1920×1080 windowed
-- Scoring: regular zombie 25pts, special zombie 100pts (but CostumeZombie reverts to 25pts after disguise break)
-
-**Alert System (v0.23.0–v0.23.1):**
-
-*Low Urgency — Detection Alert:*
-- Cone timer threshold: 5s
-- Alert radius: 150px
-- Alert cooldown: 30s
-- Facing return timer: 30s (after cone clears)
-- Patrol resume timer: 30s (after cone clears)
-- Alert turn speed: 360°/sec (180° in 0.5s)
-
-*High Urgency — Ally Grappled / Ally Killed / Gunshot:*
-- Reaction delay: 0.4s
-- Shared cooldown: 2s (all high urgency types)
-- Facing hold: 2s (returns to original if no zombies in new sightline)
-- Grapple/kill radius: 75px
-- Gunshot radius: 150px
-
-**Alert offsets (low urgency):**
-- All classes: 0° (face threat directly) — v0.25.5
-- Per-class offsets removed: were causing ping-pong when multiple alerters sent contradictory targets to shared allies
-- Original values preserved as commented-out `ALERT_OFFSETS` dict in `human.gd`
-
-**Planned values (tuning pass — post integration testing):**
-- Kill counts per class (currently higher than spec — morale/aim values need tuning)
-
-**Weapon Stats:**
-- Civilian: unarmed
-- Militia: shotgun, 150px range, 0.7s aim time
-- Police: pistol, 150px range, 0.55s aim time
-- GI: assault rifle, 250px range, 0.525s aim time
-- Spec Ops: assault rifle, 250px range, 0.26s aim time
-
-**Morale Stats:**
+**Morale:**
 
 | Unit | Max | Sighting/sec | Grappled | Fleeing | Killed |
-|------|-----|-------------|----------|---------|--------|
+|------|-----|--------------|----------|---------|--------|
 | Civilian | 65 | 30 | 100 | 50 | 150 |
 | Militia | 150 | 35 | 100 | 40 | 150 |
 | Police | 200 | 0 | 100 | 40 | 150 |
 | GI | 400 | 0 | 275 | 20 | 150 |
 | Spec Ops | 1000 | 0 | 100 | 0 | 150 |
 
----
+Sighting drains within weapon range for armed units; Civilians drain across full 350px vision. Morale recovers to 50% on flee end / tunnel-vision expiry. Primary response at empty: Civilian/Militia/Police flee; GI/Spec Ops tunnel vision.
 
-## ⚙️ **Technical Notes**
+**Alerts:** Low urgency (detection) — 5s cone threshold, 150px radius, 30s cooldown, 30s facing return, all classes face threat directly (per-class offsets removed v0.25.5; preserved as commented `ALERT_OFFSETS`). High urgency (ally grappled/killed 75px, gunshot 150px) — 0.4s delay, 2s shared cooldown, 2s hold, direct facing, Civilians included. All rotations smooth at 360°/sec. Excluded: units with a shoot_target, or in FLEEING/GRAPPLED/DEAD/TUNNEL_VISION.
 
-**Engine Quirks (Godot 4.6):**
-- Navigation baking changed significantly from 4.2
-- Use "Groups" method for most reliable baking
-- `Engine.is_editor_hint()` critical for @tool scripts
-- `naturalnocasecmp_to()` for proper number sorting
-
-**Performance:**
-- Detection checks every 0.2s (not every frame)
-- Vision raycasts cached and optimized
-- BOID forces computed per unit per frame
-
-**Code Style:**
-- Type hints used: `var distance: float`
-- Explicit nullability: `var target: Node2D = null`
-- Comments explain "why" not "what"
-- Functions document parameters and return values
+**Collision layers:** 1 buildings (movement + LOS + nav), 2 zombies, 3 humans (no unit-unit collision; BOID only).
 
 ---
 
-## 🎨 **Asset Notes**
+## Terminology
 
-**Current Visuals:**
-- Simple colored rectangles (placeholders)
-- Zombies: Green-ish (Color 0.4, 0.6, 0.3)
-- Humans: [default CharacterBody2D]
-- Buildings: StaticBody2D with collision shapes
-- All 2D isometric perspective
-
-**Planned:**
-- Proper sprite artwork
-- Animations
-- Particle effects
-- UI polish
-
----
-
-**END OF CONTEXT DOCUMENT**
-
-*This document should be updated after major changes or new feature implementations.*
-*Store in Google Drive for easy access across conversations.*
-*Filename suggestion: `DeadCorps_Context_v0.25.0.md`*
+**Sentry** guard with directional vision/swing · **Waypoint** patrol marker · **BOID** flocking · **Grappled** human pinned · **Morale bar** continuous stress drain (replaced old panic spreading) · **Tunnel Vision** GI/Spec Ops 22.5° locked threat-facing cone · **Detection Alert** 5s sighting → allies face threat · **LOOP/PING_PONG** patrol modes · **Phase A/B/C** patrol dev phases.
