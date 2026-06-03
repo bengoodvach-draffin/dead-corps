@@ -14,17 +14,19 @@
 [ext_resource type="PackedScene" uid="uid://cpxw4y8m7n5pk" path="res://scenes/end_game_overlay.tscn" id="11_o0lgx"]
 
 [sub_resource type="NavigationPolygon" id="NavigationPolygon_vdb5j"]
-vertices = PackedVector2Array(232, -222, 323, -206, -404.84375, -206, 32, -222, -324, -225, -124, -225, -431.09375, -206.09375, 149, -52, 149, 126, 117, 54, 117, -46, 321, -103.1875, 321, 263, 299, 228, 299, -52, 223.5, 263, 149, 228, -433, 54, 4, 126, -37, 124, -28.703125, -106, -433, -46, -427, -106, 323, -420.10938, 232, -402, -478.96094, -421, 134.88281, -421, 32, -402, -124, -405, 4, 226, -37, 224, -437, 124, 323.17188, 366, 323.85156, 473.65625, 226, 472.3203, 226, 425, 222, 366, 219.92969, 425, 219.60938, 421.79688, -324, -405, 149, 226, 131.88281, 265, -478.03125, 265, -152.21094, 425, -476, 425, -476, 370.95313, 124.24219, 369.96094, 129, 367, 223.4375, 266, 222, 266, 124.46094, 367, 129, 304.59375, -437, 224, -427, -109.9375)
-polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3), PackedInt32Array(4, 5, 3, 2, 6), PackedInt32Array(7, 8, 9, 10), PackedInt32Array(11, 12, 13, 14), PackedInt32Array(13, 12, 15, 16), PackedInt32Array(17, 9, 8, 18, 19), PackedInt32Array(20, 11, 14, 7), PackedInt32Array(20, 7, 10, 21, 22), PackedInt32Array(23, 1, 0, 24), PackedInt32Array(25, 26, 23, 24, 27, 28), PackedInt32Array(18, 29, 30, 19), PackedInt32Array(17, 19, 31), PackedInt32Array(32, 33, 34, 35), PackedInt32Array(36, 32, 35, 37, 38), PackedInt32Array(27, 3, 5, 28), PackedInt32Array(25, 28, 39), PackedInt32Array(29, 40, 16, 41, 42), PackedInt32Array(43, 44, 45, 46, 38), PackedInt32Array(36, 38, 46, 47), PackedInt32Array(15, 48, 49, 16), PackedInt32Array(46, 50, 47), PackedInt32Array(16, 49, 36, 47, 51, 41), PackedInt32Array(30, 29, 42, 52), PackedInt32Array(52, 42, 25, 31), PackedInt32Array(17, 31, 25, 21), PackedInt32Array(53, 22, 21, 25, 6), PackedInt32Array(6, 25, 39, 4)])
-outlines = Array[PackedVector2Array]([PackedVector2Array(348, 499, 202, 497, 197, 447, -501, 453, -501, 346, 101, 345, 105, 290, -503, 290, -504, -449, 348, -445, 348, -180, -405, -181, -403, -134, 346, -128, 346, 288, 248, 288, 247, 338, 348, 339, 349, 497), PackedVector2Array(208, -382, 211, -243, 55, -243, 55, -382), PackedVector2Array(277, 205, 32, 198, 34, 152, 176, 152, 169, -26, 277, -27), PackedVector2Array(-63, 201, -412, 199, -411, 146, -60, 150), PackedVector2Array(89, 33, -409, 31, -411, -22, 96, -20), PackedVector2Array(-150, -252, -302, -254, -304, -383, -154, -380)])
+vertices = PackedVector2Array(1249.8516, 477, 429.96875, 477, 429.02344, -471.04688, 1244.1406, -472.9375, 232, -222, 323, -206, -404.84375, -206, 32, -222, -324, -225, -124, -225, -431.09375, -206.09375, 149, -52, 149, 126, 117, 54, 117, -46, 321, -103.1875, 321, 263, 299, 228, 299, -52, 223.5, 263, 149, 228, -433, 54, 4, 126, -37, 124, -28.703125, -106, -433, -46, -427, -106, 323, -420.10938, 232, -402, -478.96094, -421, 134.88281, -421, 32, -402, -124, -405, 4, 226, -37, 224, -437, 124, 323.17188, 366, 323.85156, 473.65625, 226, 472.3203, 226, 425, 222, 366, 219.92969, 425, 219.60938, 421.79688, -324, -405, 149, 226, 131.88281, 265, -478.03125, 265, -152.21094, 425, -476, 425, -476, 370.95313, 124.24219, 369.96094, 129, 367, 223.4375, 266, 222, 266, 124.46094, 367, 129, 304.59375, -437, 224, -427, -109.9375)
+polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3), PackedInt32Array(4, 5, 6, 7), PackedInt32Array(8, 9, 7, 6, 10), PackedInt32Array(11, 12, 13, 14), PackedInt32Array(15, 16, 17, 18), PackedInt32Array(17, 16, 19, 20), PackedInt32Array(21, 13, 12, 22, 23), PackedInt32Array(24, 15, 18, 11), PackedInt32Array(24, 11, 14, 25, 26), PackedInt32Array(27, 5, 4, 28), PackedInt32Array(29, 30, 27, 28, 31, 32), PackedInt32Array(22, 33, 34, 23), PackedInt32Array(21, 23, 35), PackedInt32Array(36, 37, 38, 39), PackedInt32Array(40, 36, 39, 41, 42), PackedInt32Array(31, 7, 9, 32), PackedInt32Array(29, 32, 43), PackedInt32Array(33, 44, 20, 45, 46), PackedInt32Array(47, 48, 49, 50, 42), PackedInt32Array(40, 42, 50, 51), PackedInt32Array(19, 52, 53, 20), PackedInt32Array(50, 54, 51), PackedInt32Array(20, 53, 40, 51, 55, 45), PackedInt32Array(34, 33, 46, 56), PackedInt32Array(56, 46, 29, 35), PackedInt32Array(21, 35, 29, 25), PackedInt32Array(57, 26, 25, 29, 10), PackedInt32Array(10, 29, 43, 8)])
+outlines = Array[PackedVector2Array]([PackedVector2Array(348, 499, 202, 497, 197, 447, -501, 453, -501, 346, 101, 345, 105, 290, -503, 290, -504, -449, 348, -445, 348, -180, -405, -181, -403, -134, 346, -128, 346, 288, 248, 288, 247, 338, 348, 339, 349, 497), PackedVector2Array(208, -382, 211, -243, 55, -243, 55, -382), PackedVector2Array(277, 205, 32, 198, 34, 152, 176, 152, 169, -26, 277, -27), PackedVector2Array(-63, 201, -412, 199, -411, 146, -60, 150), PackedVector2Array(89, 33, -409, 31, -411, -22, 96, -20), PackedVector2Array(-150, -252, -302, -254, -304, -383, -154, -380), PackedVector2Array(404, -496, 1269, -498, 1275, 502, 405, 502)])
 source_geometry_mode = 1
 source_geometry_group_name = &"buildings"
 cell_size = 10.0
 agent_radius = 25.0
 
 [node name="Main" type="Node2D" unique_id=151308185]
+position = Vector2(0, 1)
 
 [node name="Camera" type="Camera2D" parent="." unique_id=585395039 groups=["camera"]]
+position = Vector2(500, 0)
 script = ExtResource("2_vdb5j")
 bounds_max = Vector2(1000, 500)
 
@@ -138,6 +140,7 @@ zone_size = Vector2(75, 50)
 [node name="Human" parent="TestLevel/Humans" unique_id=1843245617 instance=ExtResource("9_xkd54")]
 position = Vector2(-76, 425)
 initial_state = 1
+defender_class = 2
 sentry_has_swing = true
 patrol_enabled = true
 patrol_mode = 1
@@ -155,6 +158,9 @@ position = Vector2(-314, -2)
 
 [node name="Human2" parent="TestLevel/Humans" unique_id=557416383 instance=ExtResource("9_xkd54")]
 position = Vector2(-201, 252)
+initial_state = 1
+defender_class = 2
+sentry_facing_degrees = 90.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
@@ -162,6 +168,7 @@ alignment_rate = 0.3
 position = Vector2(-16, 169)
 velocity = Vector2(49.999966, -0.0579082)
 initial_state = 1
+defender_class = 2
 sentry_facing_degrees = 175.0
 patrol_enabled = true
 patrol_mode = 1
@@ -172,13 +179,14 @@ alignment_rate = 0.3
 [node name="Human4" parent="TestLevel/Humans" unique_id=2001236998 instance=ExtResource("9_xkd54")]
 position = Vector2(320, -335)
 initial_state = 1
-sentry_vision_range = 350.0
+defender_class = 2
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human5" parent="TestLevel/Humans" unique_id=1458857839 instance=ExtResource("9_xkd54")]
 position = Vector2(-100.70562, -315.61365)
 initial_state = 1
+defender_class = 2
 idle_vision_radius = 75.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
@@ -186,6 +194,7 @@ alignment_rate = 0.3
 [node name="Human7" parent="TestLevel/Humans" unique_id=80923271 instance=ExtResource("9_xkd54")]
 position = Vector2(-44.87938, -313.41873)
 initial_state = 1
+defender_class = 2
 idle_vision_radius = 75.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
@@ -193,6 +202,7 @@ alignment_rate = 0.3
 [node name="Human8" parent="TestLevel/Humans" unique_id=1605973347 instance=ExtResource("9_xkd54")]
 position = Vector2(-104.94977, -285.9155)
 initial_state = 1
+defender_class = 2
 idle_vision_radius = 75.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
@@ -200,6 +210,7 @@ alignment_rate = 0.3
 [node name="Human6" parent="TestLevel/Humans" unique_id=380796805 instance=ExtResource("9_xkd54")]
 position = Vector2(-72.3628, -325.44623)
 initial_state = 1
+defender_class = 2
 idle_vision_radius = 75.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
@@ -207,6 +218,7 @@ alignment_rate = 0.3
 [node name="Human9" parent="TestLevel/Humans" unique_id=789827049 instance=ExtResource("9_xkd54")]
 position = Vector2(988, -201)
 initial_state = 1
+defender_class = 2
 sentry_has_swing = true
 sentry_swing_range = 74.0
 sentry_swing_pause = 0.1
@@ -217,6 +229,7 @@ alignment_rate = 0.3
 [node name="Human10" parent="TestLevel/Humans" unique_id=573677926 instance=ExtResource("9_xkd54")]
 position = Vector2(622, -339)
 initial_state = 1
+defender_class = 2
 sentry_facing_degrees = 182.0
 sentry_has_swing = true
 sentry_swing_range = 74.0
@@ -232,6 +245,7 @@ alignment_rate = 0.3
 [node name="Human11" parent="TestLevel/Humans" unique_id=1190820206 instance=ExtResource("9_xkd54")]
 position = Vector2(988, -381)
 initial_state = 1
+defender_class = 2
 sentry_has_swing = true
 sentry_swing_range = 74.0
 sentry_swing_pause = 0.1
@@ -243,6 +257,7 @@ alignment_rate = 0.3
 [node name="Human12" parent="TestLevel/Humans" unique_id=505802504 instance=ExtResource("9_xkd54")]
 position = Vector2(988, -296)
 initial_state = 1
+defender_class = 2
 sentry_has_swing = true
 sentry_swing_range = 74.0
 sentry_swing_pause = 0.1
@@ -285,8 +300,3 @@ navigation_polygon = SubResource("NavigationPolygon_vdb5j")
 
 [node name="EndGameOverlay" parent="." unique_id=2000451810 instance=ExtResource("11_o0lgx")]
 visible = false
-
-[node name="Building13" parent="." unique_id=391058070 instance=ExtResource("3_n3hb3")]
-position = Vector2(497, 128)
-building_width = 20.0
-building_height = 1000.0
