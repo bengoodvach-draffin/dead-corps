@@ -393,12 +393,14 @@ var _alert_fired: bool = false
 ## Cooldown after alert fires — 30 seconds before it can fire again.
 var _alert_cooldown: float = 0.0
 
-## Counts down after cone clears before human returns to original facing — 2 minutes.
-## Resets if zombie re-enters cone.
+## Counts down after the target leaves the cone before a human returns to its
+## original facing. Set per loss reason: ~2s after a kill, 15s after an escape.
+## Resets (re-pinned to full) while a zombie remains engaged in the cone.
 var _facing_return_timer: float = 0.0
 
-## Counts down after cone clears before patrolling human resumes patrol — 30 seconds.
-## Resets if zombie re-enters cone.
+## Counts down after the target leaves the cone before a patrolling human resumes
+## patrol. Set per loss reason: ~2s after a kill, 15s after an escape.
+## Resets (re-pinned to full) while a zombie remains engaged in the cone.
 var _patrol_resume_timer: float = 0.0
 
 ## Whether this human was patrolling before the alert fired.
@@ -816,30 +818,35 @@ func _physics_process(delta: float) -> void:
 	
 	var zombies_in_cone := _zombies_in_vision_count > 0
 	if zombies_in_cone and current_state != State.TUNNEL_VISION:
-		# Zombie in cone — increment timer, freeze return timers
+		# Zombie in cone — increment cone timer. Keep the return/resume cooldowns
+		# "full" only while genuinely engaged: armed units while actively aiming
+		# (shoot_target set), unarmed units whenever a zombie is in the cone. Once
+		# the target is gone the cooldown counts down from whatever the loss set it
+		# to — a short kill reset or the full escape cooldown — and the lagging cone
+		# count (0.3s detection interval) can't re-pin it back to full.
 		_cone_timer += delta
-		_facing_return_timer = 30.0
-		_patrol_resume_timer = 30.0
-		
+		if shoot_target != null or weapon_range == 0.0:
+			_facing_return_timer = 15.0
+			_patrol_resume_timer = 15.0
+
 		# Fire detection alert at 5 seconds if not in cooldown
 		if _cone_timer >= 5.0 and not _alert_fired and _alert_cooldown <= 0.0:
 			_alert_fired = true
 			_alert_cooldown = 30.0
-			_was_patrolling = is_patrolling
+			# Only latch _was_patrolling when actually patrolling — never clobber an
+			# already-true value (the patrol may already be halted by halt-to-aim).
 			if is_patrolling:
+				_was_patrolling = true
 				is_patrolling = false  # Pause patrol during alert
 			var _pa_str := "not captured" if _pre_alert_facing == Vector2.ZERO else str(snapped(rad_to_deg(_pre_alert_facing.angle()) + 90.0, 0.1)) + "°"
 			print("🚨 [ALERT FIRED] ", name, " | facing: ", snapped(rad_to_deg(facing_direction.angle()) + 90.0, 0.1), "° | pre_alert_facing: ", _pa_str)
 			_is_alerted = true
 			_broadcast_detection_alert(_nearest_vision_zombie_pos)
 	else:
-		# Cone clear — reset cone timer and alert flag, count down return timers
-		if _cone_timer > 0.0:
-			# Cone just cleared — note patrol state before timers start
-			if _cone_timer >= 5.0:
-				# Alert had fired — start return timers
-				_facing_return_timer = max(_facing_return_timer, 30.0)
-				_patrol_resume_timer = max(_patrol_resume_timer, 30.0)
+		# Cone clear — reset cone timer and alert flag, count down return timers.
+		# The cooldowns were already pinned to full while engaged (above) and the
+		# loss path (kill vs escape) sets the value to count down from, so there's
+		# nothing to re-arm here.
 		_cone_timer = 0.0
 		_alert_fired = false
 		
@@ -853,6 +860,10 @@ func _physics_process(delta: float) -> void:
 				_is_returning_to_original = true
 				# _is_alerted stays true — rotation block clears it when rotation completes
 		
+		# Note: a live target is dropped on cone-exit by _update_shooting (fresh
+		# per-frame check), not here — the cone block reads the lagged 0.3s vision
+		# count and must never null shoot_target, or the swing arc could snap facing
+		# to neutral during the detection lag and break the cone lock.
 		if _patrol_resume_timer > 0.0:
 			_patrol_resume_timer -= delta
 			if _patrol_resume_timer <= 0.0 and _was_patrolling and not is_patrolling:
@@ -860,6 +871,13 @@ func _physics_process(delta: float) -> void:
 				print("🚶 [PATROL RESUME] ", name, " | current facing: ", snapped(rad_to_deg(facing_direction.angle()) + 90.0, 0.1), "°")
 				is_patrolling = true
 				_was_patrolling = false
+				# Patrol movement owns facing now — clear any pending facing-return
+				# state so the alert-rotation block doesn't fight movement facing and
+				# leave _is_alerted/_pre_alert_facing stale for the next engagement.
+				_is_alerted = false
+				_target_facing = Vector2.ZERO
+				_is_returning_to_original = false
+				_pre_alert_facing = Vector2.ZERO
 	
 	# === TUNNEL VISION TIMER (v0.22.4) ===
 	if current_state == State.TUNNEL_VISION:
@@ -946,8 +964,12 @@ func _physics_process(delta: float) -> void:
 				facing_direction = facing_direction.rotated(sign(angle_diff) * max_turn)
 
 	# Update sentry swing arc (if applicable)
-	# Suppressed during alert or while shoot tracking — swing would overwrite facing each frame
-	if current_state == State.SENTRY and sentry_has_swing and not is_patrolling and patrol_leader.is_empty() and not _is_alerted and shoot_target == null:
+	# Only swings when fully calm — suppressed while alerted, while shoot tracking,
+	# AND throughout the post-engagement cooldown (return/resume timers > 0). Without
+	# the cooldown guard a momentary shoot_target gap during engagement would let the
+	# swing snap facing back to its neutral centre, breaking the cone lock (the zombie
+	# would fall outside the now-neutral cone and never be re-acquired).
+	if current_state == State.SENTRY and sentry_has_swing and not is_patrolling and patrol_leader.is_empty() and not _is_alerted and shoot_target == null and _facing_return_timer <= 0.0 and _patrol_resume_timer <= 0.0:
 		update_swing_arc(delta)
 	
 	# Update facing direction based on movement
@@ -965,7 +987,22 @@ func _physics_process(delta: float) -> void:
 	# Armed units shoot in IDLE, SENTRY, or TUNNEL_VISION states
 	if weapon_range > 0.0 and (current_state == State.IDLE or current_state == State.SENTRY or current_state == State.TUNNEL_VISION):
 		_update_shooting(delta)
-	
+
+		# === PATROL HALT-TO-AIM (v0.25.7) ===
+		# A patrolling leader that acquires a shoot target stops dead and holds
+		# aim instead of continuing its route. Clearing has_target + velocity
+		# halts movement immediately; the shoot-tracking facing block (gated on
+		# `not is_patrolling`) then locks aim onto the zombie. _was_patrolling is
+		# recorded so the existing _patrol_resume_timer machinery resumes the
+		# route after the standard cone-clear cooldown. update_patrol() re-sets
+		# the move target on resume, so clearing has_target here is safe.
+		if is_patrolling and shoot_target != null and is_instance_valid(shoot_target):
+			_was_patrolling = true
+			is_patrolling = false
+			has_target = false
+			velocity = Vector2.ZERO
+			print("🎯 [PATROL HALT] ", name, " stopped patrol to aim at ", shoot_target.name)
+
 	# Fade tracer line
 	if _tracer_timer > 0.0:
 		_tracer_timer -= delta
@@ -1208,10 +1245,12 @@ func _update_shooting(delta: float) -> void:
 			shoot_target = null
 			_aim_timer = 0.0
 			_aim_paused = false
-			# Begin return to original facing after short hold.
+			# Kill = quick reset: threat eliminated, normalize fast (~2s) rather than
+			# the full escape cooldown. Force the value (the in-cone pin left it at 15).
 			if not _is_alerted:
 				_is_alerted = true
-			_facing_return_timer = max(_facing_return_timer, 2.0)
+			_facing_return_timer = 2.0
+			_patrol_resume_timer = 2.0
 			var _ret_str_d := "sentry default" if _pre_alert_facing == Vector2.ZERO else str(snapped(rad_to_deg(_pre_alert_facing.angle()) + 90.0, 0.1)) + "°"
 			print("↩️ [SHOOT TARGET LOST - DEAD] ", name, " | current: ", snapped(rad_to_deg(facing_direction.angle()) + 90.0, 0.1), "° | will return to: ", _ret_str_d, " in 2s")
 			return
@@ -1248,22 +1287,27 @@ func _update_shooting(delta: float) -> void:
 					# Timer expired but not in range yet — hold at 0, wait for zombie to close
 					_aim_timer = 0.0
 		else:
-			# Lost vision entirely (building or left cone) — pause timer
-			if not _aim_paused:
-				_aim_paused = true
-				#print("⏸️ ", name, " aim paused — target lost from vision cone")
-			# If target has also left vision range entirely, drop it and reacquire
-			if position.distance_to(shoot_target.position) > sentry_vision_range:
-				shoot_target = _acquire_shoot_target()
-				_aim_timer = aim_time if shoot_target != null else 0.0
+			# Target left the vision cone (arc, LOS, or range — all fold into
+			# can_see_unit). This is the authoritative "lost aim" signal and uses a
+			# fresh per-frame check, so it's the single place a live target is
+			# dropped — the cone block (which reads the lagged 0.3s vision count)
+			# never nulls shoot_target, which is what keeps the swing arc from
+			# snapping facing to neutral during the acquisition/detection lag.
+			# If another zombie is still in the cone, re-lock immediately (no
+			# cooldown). Otherwise drop and start the 15s escape cooldown.
+			shoot_target = _acquire_shoot_target()
+			if shoot_target != null:
+				_aim_timer = aim_time
 				_aim_paused = false
-				# If no new target acquired, begin return to original facing.
-				if shoot_target == null:
-					if not _is_alerted:
-						_is_alerted = true
-					_facing_return_timer = max(_facing_return_timer, 2.0)
-					var _ret_str_r := "sentry default" if _pre_alert_facing == Vector2.ZERO else str(snapped(rad_to_deg(_pre_alert_facing.angle()) + 90.0, 0.1)) + "°"
-					print("↩️ [SHOOT TARGET LOST - OUT OF RANGE] ", name, " | current: ", snapped(rad_to_deg(facing_direction.angle()) + 90.0, 0.1), "° | will return to: ", _ret_str_r, " in 2s")
+			else:
+				_aim_timer = 0.0
+				_aim_paused = false
+				if not _is_alerted:
+					_is_alerted = true
+				_facing_return_timer = 15.0
+				_patrol_resume_timer = 15.0
+				var _ret_str_r := "sentry default" if _pre_alert_facing == Vector2.ZERO else str(snapped(rad_to_deg(_pre_alert_facing.angle()) + 90.0, 0.1)) + "°"
+				print("↩️ [SHOOT TARGET LOST - LEFT CONE] ", name, " | current: ", snapped(rad_to_deg(facing_direction.angle()) + 90.0, 0.1), "° | will return to: ", _ret_str_r, " in 15s")
 	else:
 		# No target — try to acquire within vision cone
 		shoot_target = _acquire_shoot_target()
@@ -1434,11 +1478,13 @@ func _receive_detection_alert(threat_pos: Vector2) -> void:
 	else:
 		print("🔒 [PRE-ALERT PRESERVED] ", name, " | already alerted, keeping: ", snapped(rad_to_deg(_pre_alert_facing.angle()) + 90.0, 0.1), "°")
 	_alert_cooldown = 30.0
-	_was_patrolling = is_patrolling
+	# Only latch when actually patrolling — never clobber an already-true value
+	# (patrol may already be halted to aim and awaiting its resume cooldown).
 	if is_patrolling:
+		_was_patrolling = true
 		is_patrolling = false
-	_facing_return_timer = 30.0
-	_patrol_resume_timer = 30.0
+	_facing_return_timer = 15.0
+	_patrol_resume_timer = 15.0
 	_is_alerted = true
 	_apply_alert_facing(threat_pos)
 
