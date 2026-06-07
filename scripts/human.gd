@@ -325,6 +325,16 @@ var _base_move_speed: float = 0.0
 ## Audio player for the gun cocking sound — fires when a zombie enters the vision cone
 @onready var _aim_sound: AudioStreamPlayer2D = $AimSoundPlayer
 
+## Gunshot foley — played once per shot in _fire_at(). Shared AK47 clip for all
+## classes for now; per-class clips can be assigned via _gunshot_sound.stream in
+## _apply_class_defaults() later. Routed through the SFX bus (limiter) to keep
+## large overlapping volleys from clipping.
+@onready var _gunshot_sound: AudioStreamPlayer2D = $GunshotSoundPlayer
+
+## Call-to-attention whistle — played when this human broadcasts a detection alert
+## to nearby allies (the 5-second cone call-out). Gated by the alert's own cooldown.
+@onready var _whistle_sound: AudioStreamPlayer2D = $WhistleSoundPlayer
+
 ## Reference to the physics space for raycasting (line-of-sight checks)
 ## Cached for performance
 var space_state: PhysicsDirectSpaceState2D
@@ -454,6 +464,13 @@ var _aim_timer: float = 0.0
 
 ## Whether aim timer is currently paused (target temporarily lost LOS).
 var _aim_paused: bool = false
+
+## Whether the gun-cocking foley has already played for the current engagement.
+## Set when the cock plays on first target acquisition; reset only when the human
+## fully disengages (returns to its watch / resumes patrol). Prevents the cock
+## from replaying on every re-acquisition (e.g. per kill during a sustained
+## firefight, which was very noticeable for fast classes like Spec Ops).
+var _has_cocked: bool = false
 
 ## Line2D node used to draw the tracer line on firing.
 ## Created in _ready() as a child node.
@@ -858,6 +875,9 @@ func _physics_process(delta: float) -> void:
 				print("↩️ [DETECTION RETURN] ", name, " returning to ", snapped(rad_to_deg(_ret_dir2.angle()) + 90.0, 0.1), "° (was ", snapped(rad_to_deg(facing_direction.angle()) + 90.0, 0.1), "°  pre_alert_captured=", _pre_alert_facing != Vector2.ZERO, ")")
 				_target_facing = _ret_dir2
 				_is_returning_to_original = true
+				# Engagement over — re-arm the gun-cock so the next fresh detection
+				# cocks again (it's suppressed during a continuous engagement).
+				_has_cocked = false
 				# _is_alerted stays true — rotation block clears it when rotation completes
 		
 		# Note: a live target is dropped on cone-exit by _update_shooting (fresh
@@ -1314,7 +1334,11 @@ func _update_shooting(delta: float) -> void:
 		if shoot_target:
 			_aim_timer = aim_time
 			_aim_paused = false
-			_aim_sound.play()
+			# Cock once per engagement — not on every re-acquisition (per-kill spam).
+			# Reset to false when the human fully disengages (see cone-clear block).
+			if not _has_cocked:
+				_aim_sound.play()
+				_has_cocked = true
 			#print("🎯 ", name, " acquired target: ", shoot_target.name, " (", int(position.distance_to(shoot_target.position)), "px)")
 
 
@@ -1379,7 +1403,10 @@ func _fire_at(target: Unit) -> void:
 		return
 	
 	#print("⚡ ", name, " fired at ", target.name, " (", int(position.distance_to(target.position)), "px)")
-	
+
+	# Gunshot foley — every human type fires through this path
+	_gunshot_sound.play()
+
 	# Broadcast high urgency alert to nearby allies — gunshot radius 150px
 	_broadcast_high_urgency_alert(target.global_position, 150.0)
 	
@@ -1441,6 +1468,9 @@ func _broadcast_detection_alert(threat_pos: Vector2) -> void:
 	if threat_pos == Vector2.ZERO:
 		return
 
+	# Call-to-attention whistle — the audible "everyone focus that one" cue
+	_whistle_sound.play()
+
 	# Alerter faces threat directly
 	_apply_alert_facing(threat_pos)
 
@@ -1469,6 +1499,11 @@ func _broadcast_detection_alert(threat_pos: Vector2) -> void:
 func _receive_detection_alert(threat_pos: Vector2) -> void:
 	if current_state in [State.FLEEING, State.GRAPPLED, State.DEAD, State.TUNNEL_VISION]:
 		return
+	# Being alerted by an ally suppresses this human's OWN call-out — set before
+	# the aiming early-out so an already-engaged human is silenced too. This is
+	# what stops the whistle from cascading across the whole squad (each member
+	# re-broadcasting at its own 5s mark).
+	_alert_cooldown = 30.0
 	if shoot_target != null:
 		return
 	# Capture original facing before first alert — preserved across chained alerts.
@@ -1477,7 +1512,6 @@ func _receive_detection_alert(threat_pos: Vector2) -> void:
 		print("🔒 [PRE-ALERT CAPTURED] ", name, " | facing: ", snapped(rad_to_deg(facing_direction.angle()) + 90.0, 0.1), "° (detection alert)")
 	else:
 		print("🔒 [PRE-ALERT PRESERVED] ", name, " | already alerted, keeping: ", snapped(rad_to_deg(_pre_alert_facing.angle()) + 90.0, 0.1), "°")
-	_alert_cooldown = 30.0
 	# Only latch when actually patrolling — never clobber an already-true value
 	# (patrol may already be halted to aim and awaiting its resume cooldown).
 	if is_patrolling:

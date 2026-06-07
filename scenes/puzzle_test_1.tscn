@@ -1,0 +1,116 @@
+[gd_scene format=3 uid="uid://dsmxtd3pa64hp"]
+
+[ext_resource type="Script" uid="uid://3sf8250t3l5r" path="res://scripts/camera_controller.gd" id="1_ranx7"]
+[ext_resource type="Script" uid="uid://b112ultiv3ox0" path="res://scripts/level_bounds.gd" id="2_x8g7u"]
+[ext_resource type="Script" uid="uid://crornii8mcmn3" path="res://scripts/initializer.gd" id="3_xvqv2"]
+[ext_resource type="Script" uid="uid://c7bww3rdcm8pt" path="res://scripts/game_manager.gd" id="4_xpoum"]
+[ext_resource type="PackedScene" uid="uid://c8yqh3jvpxn3w" path="res://scenes/zombie.tscn" id="5_sxbni"]
+[ext_resource type="PackedScene" uid="uid://brqxu82wy6h2r" path="res://scenes/human.tscn" id="6_8i2yc"]
+[ext_resource type="Script" uid="uid://c5fmdp1r7ticb" path="res://scripts/vision_renderer.gd" id="7_eis46"]
+[ext_resource type="PackedScene" uid="uid://bmw8qx5r2n8pk" path="res://scenes/building.tscn" id="8_l07ew"]
+[ext_resource type="Script" uid="uid://cax0dih7wnxe0" path="res://scripts/selection_manager.gd" id="11_8xmie"]
+[ext_resource type="PackedScene" uid="uid://di2wxa5t7dmxv" path="res://scenes/debug_overlay.tscn" id="12_irsvf"]
+[ext_resource type="PackedScene" uid="uid://cpxw4y8m7n5pk" path="res://scenes/end_game_overlay.tscn" id="13_cu6wa"]
+
+[sub_resource type="NavigationPolygon" id="NavigationPolygon_sijf5"]
+vertices = PackedVector2Array(-792, -273, -772.1094, -255, -934, -255, -911, -273, -773.8906, -416.9375, -792, -392.89844, -934, -416.04688, -911, -394.10156)
+polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3), PackedInt32Array(4, 1, 0, 5), PackedInt32Array(3, 2, 6, 7), PackedInt32Array(7, 6, 4, 5)])
+outlines = Array[PackedVector2Array]([PackedVector2Array(-944, -426, -944, -245, -762, -245, -764, -427), PackedVector2Array(-901, -384, -802, -383, -802, -283, -901, -283)])
+
+[node name="Main" type="Node2D" unique_id=151308185]
+
+[node name="Camera" type="Camera2D" parent="." unique_id=585395039 groups=["camera"]]
+position = Vector2(-852, -336)
+script = ExtResource("1_ranx7")
+bounds_max = Vector2(1000, 500)
+
+[node name="LevelBounds" type="Node2D" parent="." unique_id=904357471]
+script = ExtResource("2_x8g7u")
+bounds_min = Vector2(-1000, -500)
+bounds_max = Vector2(1000, 500)
+
+[node name="Initializer" type="Node" parent="." unique_id=1515215272]
+script = ExtResource("3_xvqv2")
+enabled = false
+
+[node name="GameManager" type="Node" parent="." unique_id=1045185710 groups=["game_manager"]]
+script = ExtResource("4_xpoum")
+zombie_scene = ExtResource("5_sxbni")
+human_scene = ExtResource("6_8i2yc")
+
+[node name="VisionRenderer" type="Node2D" parent="." unique_id=1618763304]
+z_index = 1
+script = ExtResource("7_eis46")
+
+[node name="TestLevel" type="Node2D" parent="." unique_id=2129652431]
+
+[node name="Ground" type="ColorRect" parent="TestLevel" unique_id=19404831]
+offset_left = -1002.0
+offset_top = -496.0
+offset_right = 998.0
+offset_bottom = 504.0
+color = Color(0.2, 0.3, 0.2, 1)
+metadata/_edit_use_anchors_ = true
+
+[node name="Buildings" type="Node2D" parent="TestLevel" unique_id=985347166]
+
+[node name="Building" parent="TestLevel/Buildings" unique_id=1498543913 instance=ExtResource("8_l07ew")]
+position = Vector2(-850, -336)
+building_height = 100.0
+
+[node name="Building2" parent="TestLevel/Buildings" unique_id=865494844 instance=ExtResource("8_l07ew")]
+position = Vector2(-953, -338)
+building_width = 20.0
+building_height = 180.0
+
+[node name="Building3" parent="TestLevel/Buildings" unique_id=250178202 instance=ExtResource("8_l07ew")]
+position = Vector2(-751, -338)
+building_width = 20.0
+building_height = 180.0
+
+[node name="Building4" parent="TestLevel/Buildings" unique_id=1454370040 instance=ExtResource("8_l07ew")]
+position = Vector2(-852, -237)
+building_width = 180.0
+building_height = 20.0
+
+[node name="Building5" parent="TestLevel/Buildings" unique_id=1686053044 instance=ExtResource("8_l07ew")]
+position = Vector2(-852, -440)
+building_width = 180.0
+building_height = 20.0
+
+[node name="Escape Zones" type="Node" parent="TestLevel" unique_id=1359137202]
+
+[node name="Humans" type="Node" parent="TestLevel" unique_id=827267819]
+
+[node name="Human2" parent="TestLevel/Humans" unique_id=1321911954 instance=ExtResource("6_8i2yc")]
+position = Vector2(-782, -352)
+initial_state = 1
+defender_class = 2
+morale_max = 200.0
+sighting_drain = 0.0
+fleeing_drain = 40.0
+weapon_range = 150.0
+aim_time = 0.55
+sentry_facing_degrees = 180.0
+flee_vision_range = 100.0
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Zombies" type="Node" parent="TestLevel" unique_id=393150134]
+
+[node name="Zombie" parent="TestLevel/Zombies" unique_id=114495039 instance=ExtResource("5_sxbni")]
+position = Vector2(-925, -266)
+
+[node name="Units" type="Node2D" parent="." unique_id=1968361044 groups=["units_parent"]]
+
+[node name="SelectionManager" type="Node2D" parent="." unique_id=423906801 groups=["selection_manager"]]
+script = ExtResource("11_8xmie")
+
+[node name="NavigationRegion" type="NavigationRegion2D" parent="." unique_id=257540646]
+position = Vector2(1, -2)
+navigation_polygon = SubResource("NavigationPolygon_sijf5")
+
+[node name="DebugOverlay" parent="." unique_id=468344591 instance=ExtResource("12_irsvf")]
+
+[node name="EndGameOverlay" parent="." unique_id=2000451810 instance=ExtResource("13_cu6wa")]
+visible = false

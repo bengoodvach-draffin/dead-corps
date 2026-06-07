@@ -48,6 +48,13 @@ var _human_press_detected: bool = false
 
 func _ready() -> void:
 	z_index = 1
+	# Draw in world space, independent of any parent transform. The cone helpers
+	# raycast in world space and use those same coords to draw, so the renderer's
+	# local space must equal world space. top_level guarantees that even if this
+	# node (or a parent) is moved, and lets us feed unit global_positions directly
+	# so a bumped units-parent can't offset the overlay.
+	top_level = true
+	global_position = Vector2.ZERO
 
 
 func _process(_delta: float) -> void:
@@ -140,7 +147,7 @@ func _get_human_at_position(world_pos: Vector2) -> Human:
 		var human := unit as Human
 		if human.is_dead:
 			continue
-		var dist: float = world_pos.distance_to(human.position)
+		var dist: float = world_pos.distance_to(human.global_position)
 		if dist < min_dist:
 			min_dist = dist
 			closest = human
@@ -165,8 +172,8 @@ func _draw_facing_line(human: Human) -> void:
 	if direction.length() < 0.1:
 		return
 
-	var start := human.position
-	var end   := human.position + direction.normalized() * FACING_LINE_LENGTH
+	var start := human.global_position
+	var end   := human.global_position + direction.normalized() * FACING_LINE_LENGTH
 	draw_line(start, end, FACING_LINE_COLOR, LINE_WIDTH)
 
 
@@ -179,7 +186,7 @@ func draw_human_vision(human: Human) -> void:
 	if human.current_state == Human.State.GRAPPLED:
 		return
 
-	var pos      := human.position
+	var pos      := human.global_position
 	var is_armed := human.weapon_range > 0.0
 
 	match human.current_state:

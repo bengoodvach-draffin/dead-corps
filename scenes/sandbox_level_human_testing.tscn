@@ -46,9 +46,9 @@ script = ExtResource("7_h166s")
 [node name="TestLevel" type="Node2D" parent="." unique_id=2129652431]
 
 [node name="Ground" type="ColorRect" parent="TestLevel" unique_id=19404831]
-offset_left = -500.0
+offset_left = -499.0
 offset_top = -500.0
-offset_right = 1500.0
+offset_right = 1501.0
 offset_bottom = 500.0
 color = Color(0.2, 0.3, 0.2, 1)
 metadata/_edit_use_anchors_ = true
@@ -180,13 +180,12 @@ alignment_rate = 0.3
 [node name="Human5" parent="TestLevel/Humans" unique_id=1809152776 instance=ExtResource("6_qckbd")]
 position = Vector2(958, 187)
 initial_state = 1
-defender_class = 3
-morale_max = 400.0
+defender_class = 4
+morale_max = 1000.0
 sighting_drain = 0.0
-grappled_drain = 275.0
-fleeing_drain = 20.0
+fleeing_drain = 0.0
 weapon_range = 250.0
-aim_time = 0.525
+aim_time = 0.26
 sentry_facing_degrees = 264.0
 flee_vision_range = 100.0
 cohesion_strength = 12.0
@@ -207,7 +206,7 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human12" parent="TestLevel/Humans" unique_id=1087255169 instance=ExtResource("6_qckbd")]
-position = Vector2(1283, -335)
+position = Vector2(988, -374)
 initial_state = 1
 defender_class = 4
 morale_max = 1000.0
@@ -221,7 +220,7 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human13" parent="TestLevel/Humans" unique_id=1672202995 instance=ExtResource("6_qckbd")]
-position = Vector2(1245, -378)
+position = Vector2(988, -347)
 initial_state = 1
 defender_class = 4
 morale_max = 1000.0
@@ -235,7 +234,7 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human14" parent="TestLevel/Humans" unique_id=1116798384 instance=ExtResource("6_qckbd")]
-position = Vector2(1337, -369)
+position = Vector2(988, -394)
 initial_state = 1
 defender_class = 4
 morale_max = 1000.0

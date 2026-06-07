@@ -76,6 +76,12 @@ var target_zoom: float = 2.5
 ## Used for edge scroll detection
 var viewport_size: Vector2
 
+## Explicit 2D audio listener. A Camera2D used as the listener folds its zoom
+## into 2D audio distance (zooming out makes everything quieter); an explicit
+## AudioListener2D uses only world distance, so on-screen sounds stay at a
+## consistent volume regardless of zoom. It follows the camera as a child.
+var _audio_listener: AudioListener2D
+
 
 ## Called when the node enters the scene tree
 ## Initializes camera state
@@ -95,6 +101,13 @@ func _ready() -> void:
 	if use_bounds and bounds_min == Vector2(-500, -500) and bounds_max == Vector2(500, 500):
 		bounds_min = WorldBounds.world_bounds_min
 		bounds_max = WorldBounds.world_bounds_max
+
+	# Drive 2D audio off an explicit listener so sound volume is independent of
+	# camera zoom. As a child it tracks the camera's position; zoom is a viewport
+	# transform, not a node transform, so it isn't applied to the listener.
+	_audio_listener = AudioListener2D.new()
+	add_child(_audio_listener)
+	_audio_listener.make_current()
 
 
 ## Called every frame

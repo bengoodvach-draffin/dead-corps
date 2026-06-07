@@ -1,7 +1,9 @@
 [gd_scene format=3 uid="uid://brqxu82wy6h2r"]
 
 [ext_resource type="Script" uid="uid://c6kspbrhevmi4" path="res://scripts/human.gd" id="1_human"]
-[ext_resource type="AudioStream" path="res://audio/sfx/gun_cocking.wav" id="sfx_gun_cocking"]
+[ext_resource type="AudioStream" uid="uid://dg55va1x188xr" path="res://audio/sfx/humanAK47Gunshot.wav" id="sfx_gunshot"]
+[ext_resource type="AudioStream" uid="uid://cdqfg4ijghidg" path="res://audio/sfx/gun_cocking.wav" id="sfx_gun_cocking"]
+[ext_resource type="AudioStream" uid="uid://w2wi5oo4bvle" path="res://audio/sfx/whistle.wav" id="sfx_whistle"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_1"]
 radius = 12.0
@@ -46,6 +48,20 @@ offset_bottom = -20.0
 value = 100.0
 show_percentage = false
 
-[node name="AimSoundPlayer" type="AudioStreamPlayer2D" parent="."]
+[node name="AimSoundPlayer" type="AudioStreamPlayer2D" parent="." unique_id=1514919260]
 stream = ExtResource("sfx_gun_cocking")
-max_distance = 700.0
+attenuation = 0.5
+bus = &"SFX"
+
+[node name="GunshotSoundPlayer" type="AudioStreamPlayer2D" parent="." unique_id=1838909739]
+stream = ExtResource("sfx_gunshot")
+volume_db = 4.0
+attenuation = 0.5
+max_polyphony = 4
+bus = &"SFX"
+
+[node name="WhistleSoundPlayer" type="AudioStreamPlayer2D" parent="." unique_id=34398379]
+stream = ExtResource("sfx_whistle")
+volume_db = -2.0
+attenuation = 0.5
+bus = &"SFX"
