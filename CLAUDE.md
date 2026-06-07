@@ -1,6 +1,6 @@
 # Dead Corps — Claude Code Project Memory
 
-**Current version:** v0.25.6 · **Engine:** Godot 4.6 / GDScript · **Perspective:** 2D isometric (full 3D migration confirmed as next architectural direction)
+**Current version:** v0.26.0 · **Engine:** Godot 4.6 / GDScript · **Perspective:** 2D isometric (full 3D migration confirmed as next architectural direction)
 
 This file is loaded into every Claude Code session. It is the lean orchestrator: working rules, design pillars, and pointers. Detailed reference lives in `docs/` and is read on demand — do not assume those files are in context until you've read them.
 
@@ -66,6 +66,7 @@ docs/
 - `human.gd` (`Human` extends `Unit`) — AI defenders. States IDLE/SENTRY/FLEEING/GRAPPLED/DEAD/TUNNEL_VISION. `DefenderClass` enum (CIVILIAN/MILITIA/POLICE/GI/SPEC_OPS), morale bar, shooting, dual-zone vision arcs, low/high-urgency alert system, patrol (LOOP/PING_PONG) with Phase C per-waypoint behaviour, formation squads. Uses `@tool` for editor visuals.
 - `game_manager.gd` (`GameManager`) — **core coordinator, do NOT rename or replace.** Tracks units, spawning, conversion-after-incubation, win/loss. Found via group `"game_manager"`.
 - `selection_manager.gd`, `camera_controller.gd`, `vision_renderer.gd`, `world_bounds.gd` (autoload `WorldBounds`), `level_bounds.gd`, `building.gd`, `escape_zone.gd`, `initializer.gd`, overlays.
+- Level-geometry & nav tooling (v0.26.0): `wall.gd` (`Wall` extends `Polygon2D`) — mouse-editable polygon walls added via Add Child Node → "Wall", `perimeter` (hollow, edges-only collision + thick outline) or `solid` (filled) via the `solid` toggle. Independent per placement (no scene-instance propagation); generates a hidden, non-serialized `StaticBody2D`/collision/`Line2D` as internal children. `nav_baker.gd` (`NavBaker` extends `NavigationRegion2D`) — auto-bakes the nav mesh at runtime (+ editor "Bake preview" button) from `LevelBounds` + obstacle `get_nav_footprint()`; no hand-authored coordinates, no manual re-bake. Both `Building` and `Wall` report footprints so exclusion is deterministic.
 - Special zombies: `fat_zombie.gd` (gunshot-only death → spawns `fat_zombie_corpse.gd` blocking obstacle) and `costume_zombie.gd` (undetectable until it pins a human, then permanently reverts). Pattern: subclasses set `is_special = true` in `_ready()` *before* `super._ready()`; never redeclare `is_special`.
 
 ---

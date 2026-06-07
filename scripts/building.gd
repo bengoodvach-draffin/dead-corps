@@ -74,6 +74,23 @@ func _ready() -> void:
 	
 	# Add to "buildings" group so other systems can find all buildings
 	add_to_group("buildings")
+	# Add to "nav_obstacle" group so NavBaker carves this footprint out of the mesh
+	add_to_group("nav_obstacle")
+
+
+## Reports this building's footprint to NavBaker so it's carved from the nav mesh.
+## Returns global-space outlines: { obstruction: [...], traversable: [...] }.
+func get_nav_footprint() -> Dictionary:
+	var half_w := building_width * 0.5
+	var half_h := building_height * 0.5
+	var corners := [
+		Vector2(-half_w, -half_h), Vector2(half_w, -half_h),
+		Vector2(half_w, half_h), Vector2(-half_w, half_h),
+	]
+	var outline := PackedVector2Array()
+	for corner in corners:
+		outline.append(global_transform * corner)
+	return {"obstruction": [outline], "traversable": []}
 
 
 ## Called every frame in editor mode to keep visual in sync with collision shape

@@ -1,5 +1,11 @@
 # Navigation Setup - Final Steps
 
+> ⚠️ **LEGACY (superseded v0.26.0).** New levels use `NavBaker` (`nav_baker.gd` on the
+> `NavigationRegion2D`), which auto-bakes from `LevelBounds` + obstacle footprints — no
+> manual agent-radius config or editor re-baking. See `PROJECT_CONTEXT.md` → Scripts /
+> Known issues. This guide (and the other `NAVIGATION_*` docs) describes the old manual
+> collider-parse workflow, kept only for legacy hand-baked levels.
+
 **Version:** v0.17.3  
 **Status:** Code ready, needs final configuration in Godot
 

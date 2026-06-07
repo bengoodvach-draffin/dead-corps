@@ -59,6 +59,9 @@ func _ready() -> void:
 	# Always redraw when entering tree
 	queue_redraw()
 
+	# Register so NavBaker can locate this level's playable area (editor + game).
+	add_to_group("level_bounds")
+
 	# Don't update WorldBounds in editor - only at runtime
 	if Engine.is_editor_hint():
 		return

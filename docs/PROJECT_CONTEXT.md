@@ -1,6 +1,6 @@
 # Dead Corps — Project Context
 
-**Current version:** v0.25.6 · **Engine:** Godot 4.6 / GDScript · **Location:** Amsterdam, NL
+**Current version:** v0.26.0 · **Engine:** Godot 4.6 / GDScript · **Location:** Amsterdam, NL
 
 Technical state, per-script purpose table, known issues, and quick-reference values. For design intent, zombie/defender specs, and the decision log, see `GAME_DESIGN_DOCUMENT.md`. For working rules, see the root `CLAUDE.md`. For the full feature history, see `archive/` changelogs and GDD §2.
 
@@ -25,7 +25,9 @@ GDD §2 has the authoritative implemented/not-implemented breakdown.
 | `selection_manager.gd` | `SelectionManager` : `Node2D` | Click/box/Shift/Ctrl selection, Ctrl+1-9 control groups. Clicking a human preserves zombie selection (v0.25.1). Group `"selection_manager"`. |
 | `camera_controller.gd` | `CameraController` : `Camera2D` | WASD pan, wheel zoom, edge scroll, bounds synced from `WorldBounds` on ready. Group `"camera"`. |
 | `vision_renderer.gd` | `VisionRenderer` : `Node2D` | Human vision cones + facing lines. Click-to-pin cone, V key shows all, white 20px facing lines always drawn, tunnel-vision cones always shown. Merged-blob logic removed; zombie vision removed (v0.25.0). |
-| `building.gd` | `Building` : `StaticBody2D` | Blocks movement + LOS. `@tool` preview. In `"buildings"` group for nav baking. |
+| `building.gd` | `Building` : `StaticBody2D` | Blocks movement + LOS. `@tool` preview. In `"buildings"` + `"nav_obstacle"` groups; exposes `get_nav_footprint()` (rect) for `NavBaker`. |
+| `wall.gd` | `Wall` : `Polygon2D` | **Mouse-editable level geometry** (v0.26.0). Add via Add Child Node → "Wall"; edit points directly in the 2D editor. `solid=false` = perimeter (edges-only segment collision on inner+outer offset rings so units don't clip the stroke; thick `Line2D` outline); `solid=true` = filled block. `wall_color`/`wall_thickness` exports. Generates hidden, non-serialized internal `StaticBody2D`/`CollisionPolygon2D`×2/`Line2D` (`@tool`). In `"nav_obstacle"` group; `get_nav_footprint()` returns solid polygon, or thin per-edge quads for perimeter (interior stays walkable). Independent per placement — no scene-instance propagation. |
+| `nav_baker.gd` | `NavBaker` : `NavigationRegion2D` | **Runtime auto-bake of the nav mesh** (v0.26.0). On level load (and via editor `bake_preview` button) rebuilds the `NavigationPolygon` from live geometry: walkable area = `LevelBounds`, obstacles carve their own `get_nav_footprint()`. Scans the scene tree directly (not groups) so it's robust in editor + game. `agent_radius` (default 12) / `bake_cell_size` (default 4) exports. Replaces hand-authored coordinates + manual editor re-bakes; deterministic obstacle exclusion (no collider/group-parse config). |
 | `escape_zone.gd` | `EscapeZone` : `Area2D` | Humans entering = escaped; zombies entering die. Sets Fat Zombie `spawn_corpse_on_death = false` to suppress corpse on escape. `@tool`. |
 | `world_bounds.gd` | autoload `WorldBounds` : `Node` | Single source of truth for world bounds. Read by unit + camera. |
 | `level_bounds.gd` | `@tool` : `Node2D` | Placed per level; writes `bounds_min`/`bounds_max` into `WorldBounds` on ready. Draws orange boundary. Use this instead of editing `world_bounds.gd`. |
@@ -40,8 +42,8 @@ GDD §2 has the authoritative implemented/not-implemented breakdown.
 ## Scenes (`scenes/`)
 
 Units: `zombie.tscn` (NavigationAgent2D r30, CollisionShape2D r12), `human.tscn` (add `Waypoint1`, `Waypoint2`… child Node2Ds for patrol), `fat_zombie.tscn` (r18, `corpse_scene` wired), `fat_zombie_corpse.tscn` (spawned at runtime — don't place manually), `costume_zombie.tscn` (pink).
-Props: `building.tscn`, `escape_zone.tscn`.
-Levels: `main.tscn` (camera, managers, renderer, GameManager, Initializer, overlays), `test_level_1.tscn`, `sandbox_level_1.tscn`, `sandbox_level_human_testing.tscn`.
+Props: `building.tscn`, `escape_zone.tscn`. **Walls have no scene** — add `Wall` as a node (Add Child Node → "Wall"), not an instance. Keep `Wall` near the top of each level group so it doesn't steal viewport clicks from buildings/units underneath it.
+Levels: `main.tscn` (camera, managers, renderer, GameManager, Initializer, overlays), `test_level_1.tscn`, `sandbox_level_1.tscn`, `sandbox_level_human_testing.tscn`, `puzzle_test_1.tscn`. For auto-nav, give the level's `NavigationRegion2D` the `nav_baker.gd` script + a `LevelBounds`; obstacles bake automatically.
 UI: `debug_overlay.tscn`, `end_game_overlay.tscn`.
 
 ---
@@ -53,7 +55,7 @@ UI: `debug_overlay.tscn`, `end_game_overlay.tscn`.
 - **Costume Zombie scoring:** broken-disguise = 25pts (it sets `is_special = false`). Pending design decision on whether that's intended.
 - **Costume Zombie reaction strength:** the grappled-drain event fires when a costumed zombie bites an ally, but the visual surprise may warrant a larger morale hit / extra response. Flagged for post-validation tuning.
 - **Patrol resume:** by design, a sentry that detects a zombie stops patrolling permanently and does not resume. Re-evaluate in playtesting.
-- **Navigation baking:** auto-bake can fail; use the "Groups" method, ensure StaticBody2D on buildings, and matching nav layers (both Layer 1).
+- **Navigation baking:** levels using `NavBaker` (`nav_baker.gd` on the `NavigationRegion2D`) auto-bake from geometry on load — no manual coordinates/re-bake, deterministic building/wall exclusion. Tune `agent_radius` to ≈ unit radius (12px); larger values erode small handcrafted rooms. Legacy levels with hand-baked `NavigationPolygon` still work but won't pick up geometry changes. The old "Groups" / collider-parse method is superseded for `NavBaker` levels.
 - **README.md is stale** (v0.12.4) — needs a refresh in a separate pass.
 - **3D_MIGRATION_ANALYSIS.md** was created in a March 2026 session but never committed — needs re-creating.
 
@@ -65,7 +67,7 @@ UI: `debug_overlay.tscn`, `end_game_overlay.tscn`.
 - **Always `global_position`** for calculations (nested-scene safety).
 - **BOID flocking** for spacing instead of physics collision; separation/alignment only (cohesion disabled).
 - **Vision is state-dependent** (idle circle vs moving/sentry arc) with LOS raycasting. Zombie vision arcs removed in v0.25.0 — arcs are human-only visual language.
-- **Navigation is optional/opt-in** per level; falls back to direct movement.
+- **Navigation is optional/opt-in** per level; falls back to direct movement. Levels opt in by putting `nav_baker.gd` on their `NavigationRegion2D` (auto-bakes from `LevelBounds` + obstacle `get_nav_footprint()`); obstacles report footprints rather than the baker parsing colliders, so exclusion is explicit.
 - **Conversion/incubation:** dead humans stay on map in DEAD state 5s, counted in the zombie total for scoring + lose checks, then convert.
 - **3D migration** is the confirmed architectural direction (low-poly, simple 3D characters, rotatable isometric camera) — driven by rooftop traversal and urban occlusion. Game logic survives; camera/vision renderer/scenes get rewritten.
 
@@ -73,7 +75,9 @@ UI: `debug_overlay.tscn`, `end_game_overlay.tscn`.
 
 ## Quick-reference values
 
-**Units:** zombie/human radius 12px · zombie speed 105 (leap 210 at 40px) · human speed 90 · patrol speed 50 · nav agent radius 30px · formation spacing 40px · regroup timeout 10s · grapple proximity 50px (70px during leap) · incubation 5s.
+**Units:** zombie/human radius 12px · zombie speed 105 (leap 210 at 40px) · human speed 90 · patrol speed 50 · zombie `NavigationAgent2D` radius 30px (path-following clearance) · formation spacing 40px · regroup timeout 10s · grapple proximity 50px (70px during leap) · incubation 5s.
+
+**Level geometry / nav (v0.26.0):** `Wall` thickness default 16px, perimeter collision on inner+outer offset rings · `NavBaker` bake `agent_radius` default 12px (≈ unit radius; keep below room sizes), `bake_cell_size` default 4px.
 
 **Vision:** human IDLE 100px circle · SENTRY/FLEEING 350px arc 90° · TUNNEL_VISION 350px arc 22.5° threat-facing 10s. Dual-zone inner ranges: Militia/Police 150px, GI/Spec Ops 250px, Civilian single-zone.
 
