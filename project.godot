@@ -15,9 +15,13 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="Dead Corps Prototype"
-run/main_scene="uid://de3qfbeuvvxem"
+run/main_scene="uid://dsmxtd3pa64hp"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
+
+[audio]
+
+buses/default_bus_layout="uid://d20g6cbygis83"
 
 [autoload]
 
