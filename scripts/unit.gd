@@ -398,7 +398,14 @@ func apply_separation_force() -> void:
 	for other_unit in nearby_units:
 		if other_unit == self or not other_unit is Unit:
 			continue
-		
+
+		# Skip dead/dying neighbors. A zombie's health hits 0 the instant it's shot
+		# (before its 0.3s corpse linger / queue_free), so excluding them here means
+		# the living stop being pushed by a falling brethren immediately — no more
+		# getting caught behind a corpse that's still nominally in the group.
+		if (other_unit as Unit).current_health <= 0:
+			continue
+
 		var distance := position.distance_to(other_unit.position)
 		
 		# If too close, add repulsion force
@@ -416,10 +423,13 @@ func apply_separation_force() -> void:
 	# Apply averaged separation force
 	if neighbor_count > 0:
 		separation_vector /= neighbor_count
-		# NOTE: Separation uses position adjustment (not target adjustment)
-		# This is intentional - we need immediate response to prevent stacking
-		# Cohesion uses target adjustment to avoid speed artifacts
-		position += separation_vector * get_physics_process_delta_time()
+		# NOTE: Separation uses immediate position adjustment (not target adjustment)
+		# so units respond instantly and don't stack. We move via move_and_collide
+		# (NOT a raw `position +=`) so the push is swept against walls/buildings —
+		# a direct position write is a teleport that bypasses collision and lets a
+		# corner pile-up shove a unit straight through a wall. Units don't collide
+		# with each other (BOID-only layers), so this only resolves against geometry.
+		move_and_collide(separation_vector * get_physics_process_delta_time())
 
 
 ## Applies cohesion force to pull unit toward the center of nearby allies

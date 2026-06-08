@@ -122,7 +122,7 @@ func _physics_process(delta: float) -> void:
 	
 	if attack_target and is_instance_valid(attack_target) and attack_target.is_human():
 		manage_melee_attacker_status()
-	
+
 	update_leap_state()
 	super._physics_process(delta)
 
@@ -297,20 +297,24 @@ func manage_melee_attacker_status() -> void:
 	
 	if distance_to_target <= attack_range:
 		if not is_melee_attacker:
-			if attack_target.attacker_count < 2:
+			# Gate on actual MELEE occupancy, not the targeting count. A whole horde
+			# may be commanded onto one human; only 2 hold melee slots at a time, and
+			# freed slots (from a dying attacker) are claimed by waiting zombies here.
+			var melee_count: int = attack_target.count_melee_attackers()
+			if melee_count < 2:
 				is_melee_attacker = true
 				is_committed_to_target = true
-				print("Zombie entered melee with human (", attack_target.attacker_count, "/2 attackers)")
+				print("Zombie entered melee with human (", melee_count + 1, "/2 melee attackers)")
 			else:
 				if not is_committed_to_target:
-					print("Human already has 2 melee attackers - finding different target")
 					var new_target := _find_nearest_human_simple(continuation_range)
 					if new_target and new_target != attack_target:
+						print("Human melee full - switching to ", new_target.name)
 						set_attack_target(new_target)
 	else:
 		if is_melee_attacker:
 			is_melee_attacker = false
-			print("Zombie left melee range (", attack_target.attacker_count, "/2 attackers)")
+			print("Zombie left melee range")
 
 
 func check_if_stuck(delta: float) -> void:
@@ -388,12 +392,23 @@ func clear_attack_target() -> void:
 func die() -> void:
 	if is_melee_attacker and attack_target and is_instance_valid(attack_target) and attack_target.is_human():
 		attack_target.remove_attacker()
-		is_melee_attacker = false
-	
+
+	# A dead zombie is no longer attacking — clear ALL engagement flags (not just
+	# is_melee_attacker) so a human it was grappling detects the grappler is gone
+	# (is_being_attacked() reads these) and gets up. Previously has_leap_grappled
+	# stayed true, pinning the human to its dead attacker forever.
+	is_melee_attacker = false
+	has_leap_grappled = false
+	leap_grappled_target = null
+	is_committed_to_target = false
+
 	current_state = State.DEAD
 	velocity = Vector2.ZERO
 	modulate = Color(0.4, 0.0, 0.0)
-	
+	# NOTE: living zombies stop being pushed by this corpse via the BOID separation
+	# skip (dead units excluded by current_health <= 0 in apply_separation_force),
+	# not via collision layers — units don't collide with each other anyway.
+
 	await get_tree().create_timer(0.3).timeout
 	if is_instance_valid(self):
 		queue_free()

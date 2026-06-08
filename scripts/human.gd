@@ -294,6 +294,16 @@ var grapple_timer: float = 1.0
 ## How long a grapple lasts if zombie moves away
 var grapple_duration: float = 0.5
 
+## Direction the grappling zombie came from (toward it at grapple time).
+## Captured on grapple; used so a released human "gets up" facing that way.
+var _grapple_came_from: Vector2 = Vector2.ZERO
+
+## Seconds a freed human stays down before standing up after its grappler dies.
+var grapple_getup_delay: float = 3.0
+
+## Countdown to standing up; starts once no zombie is grappling. 0 = not counting.
+var _getup_timer: float = 0.0
+
 ## Whether this human is dead but not yet converted to zombie
 var is_dead: bool = false
 
@@ -404,12 +414,12 @@ var _alert_fired: bool = false
 var _alert_cooldown: float = 0.0
 
 ## Counts down after the target leaves the cone before a human returns to its
-## original facing. Set per loss reason: ~2s after a kill, 15s after an escape.
+## original facing. Set per loss reason: ~3s after a kill, 10s after an escape.
 ## Resets (re-pinned to full) while a zombie remains engaged in the cone.
 var _facing_return_timer: float = 0.0
 
 ## Counts down after the target leaves the cone before a patrolling human resumes
-## patrol. Set per loss reason: ~2s after a kill, 15s after an escape.
+## patrol. Set per loss reason: ~3s after a kill, 10s after an escape.
 ## Resets (re-pinned to full) while a zombie remains engaged in the cone.
 var _patrol_resume_timer: float = 0.0
 
@@ -443,10 +453,6 @@ var _high_urgency_pending_pos: Vector2 = Vector2.ZERO
 
 ## Countdown before applying high urgency facing — 0.4s reaction delay.
 var _high_urgency_delay_timer: float = 0.0
-
-## Hold timer — after high urgency event, holds alerted facing for 2s before returning.
-## Only returns if no zombies are in the new sightline when it expires.
-var _high_urgency_hold_timer: float = 0.0
 
 ## Target facing direction for smooth rotation toward alert events.
 ## Each frame, facing_direction rotates toward this at ALERT_TURN_SPEED.
@@ -547,10 +553,15 @@ func _apply_class_defaults() -> void:
 ## Called when the node enters the scene tree
 ## Ensures this unit is always on the human team
 func _ready() -> void:
+	# Capture inspector value before _apply_class_defaults() clobbers it.
+	# 0.0 means "use class default"; any other value is an intentional override.
+	var _inspector_weapon_range := weapon_range
 	# Apply morale and weapon defaults for the selected defender class.
 	# Must run first — other systems may read these values.
-	# Individual export overrides in the Inspector take effect after this.
 	_apply_class_defaults()
+	# Restore inspector override if one was set.
+	if _inspector_weapon_range != 0.0:
+		weapon_range = _inspector_weapon_range
 	
 	# Force this unit to be on the human team
 	team = Team.HUMANS
@@ -771,18 +782,27 @@ func _physics_process(delta: float) -> void:
 	# Handle grapple state transitions
 	if current_state == State.GRAPPLED:
 		is_grappled = true  # Sync flag for compatibility
-		# Once grappled, stay grappled until killed - NO ESCAPE
-		# Zombies hold humans until they're converted or die
+		# Stay grappled while a zombie is still pinning us. If the grappler is gone
+		# (killed before it could convert us — our own death would have set DEAD
+		# first and skipped this branch), wait grapple_getup_delay seconds, then the
+		# human gets up. is_being_attacked() returns false once no engaged zombie
+		# remains within range; a fresh pin cancels the pending get-up.
+		if is_being_attacked():
+			_getup_timer = 0.0  # still pinned — cancel any pending get-up
+		else:
+			if _getup_timer <= 0.0:
+				_getup_timer = grapple_getup_delay  # grappler just died — start countdown
+			_getup_timer -= delta
+			if _getup_timer <= 0.0:
+				_release_from_grapple()
 	else:
 		is_grappled = false  # Sync flag for compatibility
 		# Not currently grappled - check if we should be
 		if is_being_attacked():
-			pass
 			# Just got grappled - transition to grappled state
-	#			print("Human at ", position, " grappled by zombie!")
 			current_state = State.GRAPPLED
 			is_grappled = true  # Sync flag
-	
+
 	# While grappled, can't move
 	if current_state == State.GRAPPLED:
 		velocity = Vector2.ZERO
@@ -821,30 +841,19 @@ func _physics_process(delta: float) -> void:
 			_target_facing = (_high_urgency_pending_pos - global_position).normalized()
 			print("🔄 [ROTATING] ", name, " → ", snapped(rad_to_deg(_target_facing.angle()) + 90.0, 0.1), "° (high urgency facing applied)")
 			_high_urgency_pending_pos = Vector2.ZERO
-	
-	# === HIGH URGENCY HOLD TIMER (v0.23.1) ===
-	# After 2s with no zombies in new sightline, return to original facing.
-	if _high_urgency_hold_timer > 0.0:
-		_high_urgency_hold_timer -= delta
-		if _high_urgency_hold_timer <= 0.0 and _zombies_in_vision_count == 0:
-			var _ret_dir := _pre_alert_facing if _pre_alert_facing != Vector2.ZERO else degrees_to_vector(sentry_facing_degrees)
-			print("↩️ [HIGH URGENCY] ", name, " returning to ", snapped(rad_to_deg(_ret_dir.angle()) + 90.0, 0.1), "° (was ", snapped(rad_to_deg(facing_direction.angle()) + 90.0, 0.1), "°  pre_alert_captured=", _pre_alert_facing != Vector2.ZERO, ")")
-			_target_facing = _ret_dir
-			_is_returning_to_original = true
-			# _is_alerted stays true — rotation block clears it when rotation completes
-	
+
 	var zombies_in_cone := _zombies_in_vision_count > 0
 	if zombies_in_cone and current_state != State.TUNNEL_VISION:
-		# Zombie in cone — increment cone timer. Keep the return/resume cooldowns
-		# "full" only while genuinely engaged: armed units while actively aiming
-		# (shoot_target set), unarmed units whenever a zombie is in the cone. Once
-		# the target is gone the cooldown counts down from whatever the loss set it
-		# to — a short kill reset or the full escape cooldown — and the lagging cone
-		# count (0.3s detection interval) can't re-pin it back to full.
+		# Zombie in cone — increment cone timer and keep the return/resume cooldowns
+		# pinned "full" for as long as a live zombie is visible, whether or not this
+		# human is aiming at it. A passive watcher is just as anchored as a shooter.
+		# Once the zombie is gone the cooldown counts down from whatever the loss set
+		# it to — a short kill reset (3s) or the full escape cooldown (10s). A kill
+		# forces an immediate recount (see _update_shooting / receive_zombie_killed_alert)
+		# so the up-to-0.3s-stale count here can't re-pin a just-killed zombie to full.
 		_cone_timer += delta
-		if shoot_target != null or weapon_range == 0.0:
-			_facing_return_timer = 15.0
-			_patrol_resume_timer = 15.0
+		_facing_return_timer = 10.0
+		_patrol_resume_timer = 10.0
 
 		# Fire detection alert at 5 seconds if not in cooldown
 		if _cone_timer >= 5.0 and not _alert_fired and _alert_cooldown <= 0.0:
@@ -1262,17 +1271,28 @@ func _update_shooting(delta: float) -> void:
 	# If we have a target, check it's still valid
 	if shoot_target != null:
 		if not is_instance_valid(shoot_target) or shoot_target.current_state == Zombie.State.DEAD:
+			# Capture the kill location before clearing the target — used to tell
+			# nearby alerted watchers "the threat is gone" so they normalize on the
+			# same quick (3s) clock instead of mistaking it for an escape (10s).
+			var _kill_pos := shoot_target.global_position if is_instance_valid(shoot_target) else global_position
 			shoot_target = null
 			_aim_timer = 0.0
 			_aim_paused = false
-			# Kill = quick reset: threat eliminated, normalize fast (~2s) rather than
-			# the full escape cooldown. Force the value (the in-cone pin left it at 15).
+			# Kill = quick reset: threat eliminated, normalize fast (~3s) rather than
+			# the full escape cooldown. Force the value (the in-cone pin left it at 10).
 			if not _is_alerted:
 				_is_alerted = true
-			_facing_return_timer = 2.0
-			_patrol_resume_timer = 2.0
+			_facing_return_timer = 3.0
+			_patrol_resume_timer = 3.0
+			# Force an immediate vision recount. The cone count is only refreshed every
+			# 0.3s, so it still includes the zombie we just killed — without this, next
+			# frame's cone block would re-pin the timer back to 10s and clobber the 3s
+			# reset. The recount excludes DEAD zombies, dropping us to the true live count.
+			check_for_nearby_zombies()
+			detection_timer = detection_interval
+			_broadcast_zombie_killed(_kill_pos, 150.0)
 			var _ret_str_d := "sentry default" if _pre_alert_facing == Vector2.ZERO else str(snapped(rad_to_deg(_pre_alert_facing.angle()) + 90.0, 0.1)) + "°"
-			print("↩️ [SHOOT TARGET LOST - DEAD] ", name, " | current: ", snapped(rad_to_deg(facing_direction.angle()) + 90.0, 0.1), "° | will return to: ", _ret_str_d, " in 2s")
+			print("↩️ [SHOOT TARGET LOST - DEAD] ", name, " | current: ", snapped(rad_to_deg(facing_direction.angle()) + 90.0, 0.1), "° | will return to: ", _ret_str_d, " in 3s")
 			return
 		
 		var in_vision := can_see_unit(shoot_target)  # Full vision cone check
@@ -1324,10 +1344,10 @@ func _update_shooting(delta: float) -> void:
 				_aim_paused = false
 				if not _is_alerted:
 					_is_alerted = true
-				_facing_return_timer = 15.0
-				_patrol_resume_timer = 15.0
+				_facing_return_timer = 10.0
+				_patrol_resume_timer = 10.0
 				var _ret_str_r := "sentry default" if _pre_alert_facing == Vector2.ZERO else str(snapped(rad_to_deg(_pre_alert_facing.angle()) + 90.0, 0.1)) + "°"
-				print("↩️ [SHOOT TARGET LOST - LEFT CONE] ", name, " | current: ", snapped(rad_to_deg(facing_direction.angle()) + 90.0, 0.1), "° | will return to: ", _ret_str_r, " in 15s")
+				print("↩️ [SHOOT TARGET LOST - LEFT CONE] ", name, " | current: ", snapped(rad_to_deg(facing_direction.angle()) + 90.0, 0.1), "° | will return to: ", _ret_str_r, " in 10s")
 	else:
 		# No target — try to acquire within vision cone
 		shoot_target = _acquire_shoot_target()
@@ -1517,8 +1537,8 @@ func _receive_detection_alert(threat_pos: Vector2) -> void:
 	if is_patrolling:
 		_was_patrolling = true
 		is_patrolling = false
-	_facing_return_timer = 15.0
-	_patrol_resume_timer = 15.0
+	_facing_return_timer = 10.0
+	_patrol_resume_timer = 10.0
 	_is_alerted = true
 	_apply_alert_facing(threat_pos)
 
@@ -1544,6 +1564,12 @@ func _apply_alert_facing(threat_pos: Vector2) -> void:
 ## @param event_pos: World position of the event
 ## @param radius: Broadcast radius
 func _broadcast_high_urgency_alert(event_pos: Vector2, radius: float) -> void:
+	# The broadcaster also reacts to its own event (subject to receive_*'s guards:
+	# cooldown, IDLE/SENTRY only, no shoot_target). Without this, a lone witness —
+	# e.g. only two humans where one is the grappled victim — would alert nobody and
+	# never turn. With 3+ humans two witnesses cross-trigger, which had masked the bug.
+	# Safe for the gunshot caller: the shooter has a shoot_target, so receive_* no-ops.
+	receive_high_urgency_alert(event_pos)
 	var all_humans := get_tree().get_nodes_in_group("humans")
 	for other in all_humans:
 		if other == self or not other is Human:
@@ -1557,7 +1583,9 @@ func _broadcast_high_urgency_alert(event_pos: Vector2, radius: float) -> void:
 
 ## Called when a nearby high urgency event occurs (grapple, kill, or gunshot).
 ## All classes respond identically — direct facing toward event position.
-## 0.4s reaction delay before facing updates. 2s shared cooldown. 2s hold after event.
+## 0.4s reaction delay before facing updates. 2s shared cooldown. Seeds the
+## unified return timer (~2s) so the human holds the alerted facing before
+## relaxing — re-pinned to 10s while a live zombie stays in its cone.
 ## @param event_pos: World position of the event to face
 func receive_high_urgency_alert(event_pos: Vector2) -> void:
 	if _high_urgency_cooldown > 0.0:
@@ -1575,9 +1603,51 @@ func receive_high_urgency_alert(event_pos: Vector2) -> void:
 	_high_urgency_pending_pos = event_pos
 	_high_urgency_delay_timer = 0.4
 	_high_urgency_cooldown = 2.0
-	_high_urgency_hold_timer = 2.0
+	# Seed the unified return timer. If a zombie is (or comes) in cone, the cone
+	# block re-pins this to 10s every frame; if the human turned toward an event it
+	# can't actually see, it counts down from here and returns after ~2s.
+	_facing_return_timer = 2.0
+	_patrol_resume_timer = 2.0
 	_is_alerted = true
 	print("⚡ [HIGH URGENCY] ", name, " | event at: ", event_pos.snapped(Vector2(1,1)), " | reacting in 0.4s")
+
+
+## Tells nearby alerted humans that a zombie they may have been reacting to has
+## been killed, so they normalize on the quick kill clock (3s) rather than the
+## escape clock (10s). A watcher cannot tell locally whether the threat it lost
+## sight of died or walked off — this is how the killer announces it died.
+## @param event_pos: World position of the kill (broadcast origin)
+## @param radius: Broadcast radius
+func _broadcast_zombie_killed(event_pos: Vector2, radius: float) -> void:
+	var all_humans := get_tree().get_nodes_in_group("humans")
+	for other in all_humans:
+		if other == self or not other is Human:
+			continue
+		var ally := other as Human
+		if not is_instance_valid(ally):
+			continue
+		if global_position.distance_to(ally.global_position) <= radius:
+			ally.receive_zombie_killed_alert()
+
+
+## Received by an alerted human when a nearby zombie is killed. Switches the
+## return countdown to the quick kill clock (3s). Skipped if this human is still
+## aiming at another live target. If it still passively sees ANOTHER live zombie,
+## the forced recount below keeps the cone count > 0 and the cone block re-pins to
+## 10s — so this only "sticks" once no live threat remains in view.
+func receive_zombie_killed_alert() -> void:
+	if not _is_alerted:
+		return
+	if shoot_target != null:
+		return
+	_facing_return_timer = 3.0
+	_patrol_resume_timer = 3.0
+	# Refresh our own vision now — like the shooter, our cone count is up to 0.3s
+	# stale and may still include the just-killed zombie, which would re-pin us to
+	# 10s next frame. The recount excludes DEAD zombies so the 3s clock survives.
+	check_for_nearby_zombies()
+	detection_timer = detection_interval
+
 
 ## Applies a morale drain, clamps to 0, and checks for response trigger.
 ## @param amount: Amount to subtract from current morale (positive value)
@@ -2615,9 +2685,36 @@ func is_being_attacked() -> bool:
 					is_grappled = true
 					current_state = State.GRAPPLED
 					grapple_timer = grapple_duration
+					# Instantly turn to face the attacker — a pinned human struggles
+					# toward the zombie on them. GRAPPLED returns early in
+					# _physics_process before the smooth-rotation block, so set
+					# facing_direction directly (no easing). The same direction is stored
+					# as _grapple_came_from for the get-up facing when released.
+					var to_grappler: Vector2 = zombie.global_position - global_position
+					if to_grappler.length() > 0.01:
+						facing_direction = to_grappler.normalized()
+						_target_facing = facing_direction
+						_grapple_came_from = facing_direction  # remember for get-up
 				return true  # Return true whether newly grappled or already grappled
 	
 	return false
+
+
+## Releases this human from a grapple when the grappling zombie is gone (killed
+## before it could convert us). The human "gets up" into SENTRY watch, facing the
+## way the zombie came from (re-centres the swing arc there too so it doesn't snap
+## back to its old post). Patrol is not auto-resumed — it was just attacked.
+func _release_from_grapple() -> void:
+	is_grappled = false
+	grapple_timer = 0.0
+	_getup_timer = 0.0
+	current_state = State.SENTRY
+	is_patrolling = false
+	if _grapple_came_from != Vector2.ZERO:
+		facing_direction = _grapple_came_from
+		_target_facing = Vector2.ZERO
+		swing_center_angle = rad_to_deg(_grapple_came_from.angle()) + 90.0
+	print("🧍 [GRAPPLE RELEASED] ", name, " got up facing ", snapped(rad_to_deg(facing_direction.angle()) + 90.0, 0.1), "° (grappler killed)")
 
 
 ## Humans don't attack - they're defenseless
@@ -2659,21 +2756,30 @@ func set_attack_target(_target: Unit) -> void:
 	pass
 
 
-## Checks if this human can accept more attackers
-## Returns false if already has 3 zombies attacking
-## @return: true if can accept more attackers, false if at max (3)
+## Counts zombies currently in MELEE against this human (is_melee_attacker == true).
+## Distinct from attacker_count, which tracks every zombie *targeting* this human.
+## The 2-attacker cap applies to melee slots, NOT to how many may target/approach —
+## so a large horde can be commanded onto one human and rotate into the 2 melee
+## slots as the front rank dies. @return: number of zombies actively meleeing.
+func count_melee_attackers() -> int:
+	var count: int = 0
+	for zombie in get_tree().get_nodes_in_group("zombies"):
+		if zombie is Zombie and zombie.attack_target == self and zombie.is_melee_attacker:
+			count += 1
+	return count
+
+
+## True if a melee slot is open (fewer than 2 zombies currently meleeing).
 func can_accept_attacker() -> bool:
-	return attacker_count < 2
+	return count_melee_attackers() < 2
 
 
-## Increments the attacker count when a zombie targets this human
-## Called by zombie when setting this human as attack target
+## Increments the attacker count when a zombie targets this human.
+## Called by zombie when setting this human as attack target. Any number of
+## zombies may target one human (no cap here) — the melee cap is separate.
 func add_attacker() -> void:
 	attacker_count += 1
 	update_targeting_visual()  # Show red border when targeted
-	# Debug logging
-	if attacker_count > 2:
-		push_warning("Human has more than 2 attackers! Count: ", attacker_count)
 
 
 ## Decrements the attacker count when a zombie stops targeting this human

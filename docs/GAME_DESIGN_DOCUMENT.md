@@ -373,6 +373,8 @@ When human detects zombie (150px range):
 - When zombie within 50px → human grappled (frozen for 0.5 seconds)
 - Leap grapple (40px trigger) → immediate pin
 - Timer-based: grapple_timer counts down, human escapes if zombie moves away
+- On grapple, the human **instantly turns to face the attacking zombie** (all classes, no easing) — a pinned human struggling toward their attacker (v0.26.0)
+- **Release on grappler death (v0.26.0):** if the grappling zombie is killed before it converts the human, the human stays down for **3s** (`grapple_getup_delay`) then **gets up** into SENTRY, facing the way the zombie came from (the swing arc re-centres there). Patrol is not auto-resumed. If a second attacker is still pinning — or a new zombie re-pins during the 3s — the human stays grappled and the get-up cancels.
 
 **Panic Spreading (v0.16.0 - v0.21.2) — being replaced in v0.22.0:**
 
@@ -995,7 +997,7 @@ Note: Sighting drain activates within weapon range for armed units. Civilians dr
 - IDLE: Stationary, circle vision
 - SENTRY: On patrol or watching, arc vision
 - FLEEING: Running from zombies, forward arc vision
-- GRAPPLED: Pinned by zombie, no vision
+- GRAPPLED: Pinned by zombie, no vision; instantly faces the attacking zombie on grapple; gets up (→ SENTRY) facing the came-from direction if the grappler is killed first
 - DEAD: Converting to zombie
 - TUNNEL_VISION: GI/Spec Ops — threat-facing, 22.5° orange cone, 10s, immune to drain
 - FREEZE: Civilian only — 5s paralysis (designed, deferred)

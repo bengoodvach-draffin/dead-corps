@@ -27,13 +27,13 @@ func _ready() -> void:
 	controls_label.text = """CONTROLS:
 WASD - Pan Camera
 Mouse Wheel - Zoom
-Left Click - Select Zombies
+Left Click on Zombie - Select Zombies
+Left Click on Human - See Vision Cone
 Right Click - Move/Attack
 Shift+Click - Add to Selection
 Ctrl+1-9 - Assign Control Group
 1-9 - Select Control Group
 Ctrl+0 - Clear Assignment
-Tab - Toggle Zombie Vision Cones
 """
 	
 	# Connect reset button

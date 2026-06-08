@@ -333,12 +333,36 @@ func _resolve_group_engagement(zombies: Array[Unit], clicked_human: Unit) -> voi
 		if zombie in assigned:
 			(zombie as Zombie).set_attack_target(assigned[zombie])
 		else:
-			# Overflow: move to clicked human's position (stays with the fight)
-			zombie.set_move_target(clicked_human.global_position)
+			# Overflow: attack the nearest human in the target group, NOT a dead-end
+			# move order. The per-frame melee gate (count_melee_attackers < 2) keeps
+			# only 2 actively meleeing per human; the extras pursue and rotate into a
+			# freed slot the moment a front-rank attacker dies. This is what lets a
+			# horde finish a lone defender instead of idling on the corpse-spot.
+			var nearest: Unit = _nearest_in_group(zombie, target_group)
+			if nearest:
+				(zombie as Zombie).set_attack_target(nearest)
+			else:
+				zombie.set_move_target(clicked_human.global_position)
 			overflow_count += 1
-	
+
 	if overflow_count > 0:
-		print("  ", overflow_count, " overflow zombies moving to fight position")
+		print("  ", overflow_count, " overflow zombies sent to attack nearest in group")
+
+
+## Returns the nearest living human in `group` to `zombie`, or null if none valid.
+func _nearest_in_group(zombie: Unit, group: Array[Unit]) -> Unit:
+	var best: Unit = null
+	var best_dist: float = INF
+	for human in group:
+		if not is_instance_valid(human):
+			continue
+		if human is Human and (human as Human).is_dead:
+			continue
+		var d: float = zombie.global_position.distance_to(human.global_position)
+		if d < best_dist:
+			best_dist = d
+			best = human
+	return best
 
 func get_unit_at_position(pos: Vector2, group: String) -> Unit:
 	var units := get_tree().get_nodes_in_group(group)
