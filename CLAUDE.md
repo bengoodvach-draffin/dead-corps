@@ -91,6 +91,13 @@ docs/
 - Sandbox scenes for focused testing: `scenes/sandbox_level_1.tscn`, `scenes/sandbox_level_human_testing.tscn`.
 - To hand-build a level, uncheck **Enabled** on the `Initializer` node (otherwise it auto-spawns the test scenario), then place units/buildings/escape zones from `scenes/`.
 - There is **no automated test suite** — testing is manual play sessions plus debug-print output. After implementing, print explicit test steps for Ben to run.
+- **Parse-error gate (run after any `.gd` edit, before telling Ben it's done):**
+  `powershell -ExecutionPolicy Bypass -File tools/check.ps1`. It headlessly compiles
+  every script and **hard-fails on any GDScript parse error** — catches the
+  partial-comment / empty-block trap noted above, which gdlint does *not*. gdlint
+  style findings are advisory only. Claude should run this itself when changing
+  scripts (Ben will forget); see `tools/README.md`. Needs Godot on `GODOT_BIN` or the
+  default path. This is the project's only automated safety net.
 
 ---
 

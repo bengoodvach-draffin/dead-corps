@@ -178,9 +178,6 @@ func _process(delta: float) -> void:
 func _physics_process(delta: float) -> void:
 	# Apply BOID flocking forces
 	apply_separation_force()   # Prevent stacking
-	# apply_cohesion_force()   # Pull toward group center — disabled v0.25.1
-	#                            (existed to create merged vision blobs; merged cones removed)
-	#                            Re-enable here if horde clustering behaviour is wanted later.
 	apply_alignment_force()    # Align facing with group
 	
 	# Priority 1: If we have a valid attack target, handle combat
@@ -430,48 +427,6 @@ func apply_separation_force() -> void:
 		# corner pile-up shove a unit straight through a wall. Units don't collide
 		# with each other (BOID-only layers), so this only resolves against geometry.
 		move_and_collide(separation_vector * get_physics_process_delta_time())
-
-
-## Applies cohesion force to pull unit toward the center of nearby allies
-## Part of BOID flocking behavior - creates group formations
-## Only applies to idle units - respects player commands
-func apply_cohesion_force() -> void:
-	# Don't apply cohesion if disabled (state-based tuning sets to 0)
-	if cohesion_strength <= 0.1:
-		return
-	
-	# Don't apply if unit is currently moving
-	# Only apply gentle drift when truly idle
-	if velocity.length() > 5.0:
-		return
-	
-	# Find nearby allies
-	var allies := find_nearby_allies()
-	
-	# Need minimum number of allies to form a group
-	if allies.size() < min_formation_size:
-		return
-	
-	# Calculate center of mass of the group
-	var center_of_mass := Vector2.ZERO
-	for ally in allies:
-		center_of_mass += ally.position
-	center_of_mass /= allies.size()
-	
-	# Calculate direction toward center
-	var to_center := center_of_mass - position
-	var distance_to_center := to_center.length()
-	
-	# Only apply if not already close to group center
-	# Stop pulling once within 60% of grouping distance to prevent jitter
-	var cohesion_stop_distance: float = 48.0  # 60% of 80px grouping threshold
-	if distance_to_center > cohesion_stop_distance:
-		# Cohesion force - scales with distance for natural grouping
-		var max_cohesion_per_frame: float = 8.0  # Increased from 2.0 - faster grouping
-		var cohesion_vector: Vector2 = to_center.normalized() * min(cohesion_strength * 0.3, max_cohesion_per_frame)
-		
-		# Apply as gentle adjustment to position
-		position += cohesion_vector * get_physics_process_delta_time()
 
 
 ## Applies alignment force to match facing direction with nearby allies
