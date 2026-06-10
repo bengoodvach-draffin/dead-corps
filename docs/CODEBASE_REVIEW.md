@@ -172,14 +172,10 @@ big bang.
     the 3D migration unchanged.
 14. Replace the 295-line `_physics_process` with per-state handler methods.
 
-### Recommended timing
-- **Now:** Phases 0–1 (cheap; one is a real bug).
-- **Next:** Phase 2 — makes the 3D migration tractable *and* improves the
-  current game.
-- **Hold Phase 3** until the validation slice has been playtested (scope-control
-  pillar: don't elaborate systems before validating the loop is fun). If the
-  loop validates, decompose during/alongside the 3D migration when scenes are
-  being rewritten anyway.
+> **The phases above are a catalogue of work items.** For the single ordered
+> execution sequence — which interleaves these phases with the scaling work and
+> accounts for validation now running at high unit counts — see
+> **[Master Roadmap](#master-roadmap--single-ordered-execution-sequence)** below.
 
 ---
 
@@ -263,33 +259,187 @@ Beyond A–E, this count needs presentation-layer work:
 - (Tiers for reference: ≤150 = A–E only, keep nodes. 1000+ = data-oriented rebuild
   on `PhysicsServer2D`/`RenderingServer`, no per-unit nodes — out of current scope.)
 
-### Sequenced plan
+> The scaling fixes A–E and the Tier-2 presentation work are sequenced together
+> with the rest of the project in the **Master Roadmap** below — not as a separate
+> track.
 
-1. **Benchmark first.** Throwaway scene spawning N idle units to find the real
-   cliff on target hardware before committing effort. (Establishes the baseline
-   and proves each step.)
-2. **Spatial index + neighbour cache** (fix A) — replace all hot-path
-   `get_nodes_in_group` neighbour queries. Biggest single win.
-3. **AI tick decoupling / bucketed LOD** (fix B) + gate the shooting scan (D).
-4. **Event-driven UI** (C) + strip hot-path prints (E).
-5. **Navigation throttling / sharing** (D, nav half).
-6. **Rendering: MultiMesh + node pooling + drop per-unit Control nodes** (Tier 2
-   presentation work).
-7. **Shared audio pool.**
+---
 
-### Timing vs validation
+## Master Roadmap — single ordered execution sequence
 
-This affects the validation phase: the test slice should be played at
-representative counts, so do **steps 1–4 before (or early in) validation** — they
-fix the algorithmic cliff and are low-risk. Hold steps 5–7 (rendering/audio/nav
-rework, more invasive) until counts are confirmed in play, and fold them into the
-3D migration where the scene/render layer is being rewritten anyway.
+This is **the** order of work. It merges the improvement phases (P0–P3) and the
+scaling fixes (A–E + Tier 2) into one line. The key scheduling decision:
+**because the validation slice will now be played at 150–500 units, the
+algorithmic scaling core (Stage C) moves *before* validation** — you cannot
+validate "is the loop fun at scale" on an engine that cliffs at 80 units.
+
+Tags: `P#.n` = phase item above · `Fix X` = scaling fix above.
+
+### Stage A — Safety net & cleanup *(do now; low risk; unblocks the rest)*
+1. `.gitignore` exports `/Exports/`, `*.exe`, `*.pck` *(P0.1)*
+2. gdlint/gdformat + a headless `godot --headless --check-only` CI gate *(P0.2)* —
+   doubly important now: it's the parse-error safety net for any
+   lower-capability model doing the mechanical work below.
+3. Name physics/navigation layers in `project.godot` *(P0.3)*
+4. Gate all hot-path `print()` behind `OS.is_debug_build()` / a debug flag
+   *(P0.4 + Fix E)* — also a real per-frame win.
+5. Fix manually-placed-zombie signal wiring `game_manager.gd:251` *(P1.6)* — latent bug.
+6. Delete dead code *(P1.7)*; consolidate nav/patrol docs *(P1.8)*.
+- *Standalone decision:* git-history rewrite for the ~63 MB of dead binaries
+  (destructive — needs explicit go-ahead; not blocking).
+
+### Stage B — Benchmark baseline *(before any scaling work)*
+7. Throwaway scene spawning N idle + N engaged units; record the FPS cliff per
+   count on target hardware. Proves the baseline and measures each later step.
+   *(Perf step 1)*
+
+### Stage C — Algorithmic scaling core *(REQUIRED before validation)*
+8. **Spatial index + neighbour cache** in `GameManager`, rebuilt once/frame from
+   the `all_*` arrays; units call `neighbours_within(pos, radius)` instead of
+   `get_nodes_in_group` + full loop. *(P2.9 + Fix A — biggest single win.)*
+   **Design it on a 2D ground-plane projection so it transfers to 3D unchanged
+   (see 3D Migration Impact).**
+9. Remove the base-class-knows-subclass smell while in `unit.gd` *(P2.10)*.
+10. AI tick decoupling / bucketed LOD — decisions at ~10–15 Hz, movement at 60 Hz
+    *(Fix B)*.
+11. Gate the shooting scan on a timer + throttle `NavigationAgent2D` repaths *(Fix D)*.
+12. Event-driven health bars + gate the vision redraw *(P2.11 + Fix C)*.
+
+### Stage D — VALIDATION SLICE *(the current design focus, now at representative counts)*
+13. Playtest the handcrafted level at 150–500 units. Confirm the loop is fun and
+    the scaling core holds. Scope-control pillar gates everything below this line.
+
+### Stage E — Presentation-layer scaling *(after counts confirmed; fold into 3D)*
+14. `MultiMeshInstance2D` unit bodies + node pooling *(Tier 2)*.
+15. Drop per-unit `ProgressBar`/`Label` → batched health overlay *(Tier 2)*.
+16. Shared/pooled audio manager *(Tier 2)*.
+17. Flow-field / shared group paths *(Fix D nav half + Tier 2)*.
+> Do Stage E **lightly** in 2D — just enough to validate counts. The full version
+> belongs in 3D (Stage G), where this exact code is rewritten anyway. Don't
+> gold-plate 2D rendering you're about to replace.
+
+### Stage F — `human.gd` decomposition *(after validation; alongside 3D)*
+18. Extract `DefenderStats` resource *(P3.12)*.
+19. Component split: Vision → Morale → Weapon → Alert → Patrol/Formation → Flee *(P3.13)*.
+20. Per-state handler methods replacing the 295-line `_physics_process` *(P3.14)*.
+
+### Stage G — 3D migration
+21. Presentation rewrite (see next section). Stages E and F naturally fold in here.
+
+---
+
+## 3D Migration Impact
+
+Short answer to "do we keep the performance improvements?": **yes — all of the
+algorithmic ones, and most of the architectural ones.** The split is clean
+because performance work here is logic/data and the migration is presentation.
+
+### Survives 100% (logic/data — engine-dimension-agnostic)
+- Spatial index + neighbour cache *(Fix A)* — **if** built on a 2D ground-plane
+  (x/z) projection, which is standard for tactical games even in 3D. Design it
+  that way now and it transfers with ~zero change.
+- AI tick decoupling / LOD scheduling *(Fix B)*; gated scans + nav throttling
+  logic *(Fix D)*; event-driven state logic *(Fix C — the logic; the widget changes)*.
+- `human.gd` decomposition + `DefenderStats` *(Stage F)* — pure logic/components.
+- All game systems: state machines, morale, combat, patrol, formations, alerts.
+
+### Rewritten (presentation — expected, already in the plan)
+- `Sprite2D`/`ColorRect` → `MeshInstance3D` / `MultiMeshInstance3D`.
+- `vision_renderer` 2D `_draw` → 3D cone meshes/decals/shaders + 3D raycasts.
+- `camera_controller` → 3D camera; selection picking → screen→world 3D raycast.
+- `CharacterBody2D`/`CollisionShape2D`/`NavigationAgent2D` → their 3D equivalents.
+- All `.tscn` scene files.
+
+### Partially redone (the Tier-2 presentation-scaling work, Stage E)
+- `MultiMeshInstance2D` → `MultiMeshInstance3D`: same architecture (pooling,
+  batched health overlay, no per-unit Control), parallel API. The *pattern*
+  carries; the *code* is partly rewritten. Hence the "do Stage E lightly in 2D"
+  guidance above.
+
+### New issues that arise in 3D (did not exist in 2D)
+1. **Rendering becomes the dominant cost.** 500 sprites is cheap; 500 animated,
+   lit, shadow-casting 3D characters is not. Mitigations: low-poly, MultiMesh,
+   mesh LODs / billboard impostors at distance, no per-unit shadows, GPU/vertex
+   animation over skeletal for the crowd. **Re-benchmark rendering in 3D — the 2D
+   benchmark does not predict it.**
+2. **Physics is heavier.** Consider keeping crowd units kinematic / off the
+   physics server (units already don't collide with each other), rather than full
+   `CharacterBody3D` per unit.
+3. **Navigation/avoidance.** `NavigationServer3D` + navmesh baking on multi-level
+   geometry. Upside: RVO avoidance becomes available and could *replace* the
+   hand-rolled BOID separation — a net simplification.
+4. **Vertical occlusion / LOS.** The reason for 3D (rooftops, urban occlusion)
+   means vision/LOS now care about height and floors; the spatial index may need a
+   coarse vertical band.
+5. **Asset/animation pipeline.** Rigs, animation states, import settings, LODs — a
+   content cost 2D didn't have.
+6. **Renderer choice now matters** — resolve the `Forward Plus` vs
+   `gl_compatibility` mismatch (Findings §4) deliberately; 3D lighting needs it.
+
+**Recommendation:** to maximise survival, build Stage C with a light model/view
+separation — keep unit *simulation* data (position, state, stats) addressable
+independently of the node — so 3D becomes mostly a view swap. Expect rendering,
+not AI, to be the new bottleneck in 3D.
+
+---
+
+## Executing this plan (implementer notes — incl. lower-capability models)
+
+**Is more technical documentation needed for a cheaper model to execute safely?
+Yes — but not all of it up front.** Today's docs (CLAUDE.md, GDD,
+PROJECT_CONTEXT, rich inline comments) are excellent *context and guardrails* but
+the roadmap items are *intent-level*, not executable specs. A smaller model holds
+less context, infers less, and is likelier to silently break an invariant it
+can't see. Two-part fix:
+
+### 1. Durable invariants & verification (write once, stable)
+The cross-cutting rules any model MUST preserve when touching hot paths (these are
+scattered through CLAUDE.md / PROJECT_CONTEXT today — a single checklist is the gap):
+- **Corpse-linger filtering:** dead units (`current_health <= 0`) must stay
+  excluded from separation/targeting during the 0.3 s linger (`unit.gd:406`).
+- **Melee gate is decoupled:** the live 2-attacker cap reads
+  `count_melee_attackers()`, **not** `attacker_count` (total targeting). Don't
+  merge them.
+- **`global_position` for all cross-unit math** — never local `position`
+  (already violated in `unit.gd`; don't propagate it).
+- **`@tool` scripts must guard game logic** with `Engine.is_editor_hint()`.
+- **Special-zombie checks use duck typing** (`zombie.get("is_costumed")`), never
+  `class_name` checks — avoids load-order parse errors.
+- **Optional-array / empty-default pattern** for new per-unit behaviour
+  (backwards compatibility — empty = old behaviour).
+- **Bulk-commenting prints can leave empty blocks** → parse error; scan after.
+- **Verification = manual play** (no automated suite). Each task ships with
+  explicit test steps; the Stage A lint + headless `--check-only` gate is the
+  only automated safety net, which is why it's first.
+
+### 2. Just-in-time per-task tickets (write immediately before each task)
+Don't pre-write all tickets — line numbers and the spatial-index design will
+drift (and may change after the Stage B benchmark). Write each ticket against
+*current* code right before execution, containing: scope · exact files/functions
++ current signatures · the precise approach/data structures · which invariants it
+touches · step-by-step edits · acceptance criteria + manual test steps · rollback note.
+
+### Division of labour (respects the design-led, propose-first workflow)
+- **Design, ticket-writing, and review** → Ben or a high-capability model. Smaller
+  models are weak at the "propose / push back / judge against the pillars" step
+  this project requires.
+- **Execution of well-specified, low-judgement tickets** → fine for a cheaper
+  model: the Stage A mechanical work (gitignore, lint setup, dead-code deletion,
+  layer naming), applying a spec'd algorithm, mechanical refactors with a clear
+  acceptance test. Do **not** hand it open-ended design or "make it faster" tasks.
 
 ---
 
 ## Notes / open decisions
 
-- Git-history rewrite is the only destructive item and is explicitly deferred to
-  a deliberate decision.
-- Phase 3 deliberately trails the validation slice per the project's scope-control pillar.
+- The **Master Roadmap** is the authoritative execution order; the phase
+  catalogue and the scaling fixes feed into it.
+- Scaling core (Stage C) is scheduled **before** validation (Stage D) because the
+  validation slice now runs at 150–500 units.
+- `human.gd` decomposition (Stage F) deliberately trails validation per the
+  scope-control pillar, and folds into the 3D migration.
+- Git-history rewrite is the only destructive item — explicitly deferred to a
+  deliberate decision.
+- Detailed per-task tickets are written just-in-time against current code (see
+  "Executing this plan"), not pre-written here.
 - Line numbers are v0.27.0 snapshots and will drift.
