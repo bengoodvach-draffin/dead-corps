@@ -750,9 +750,11 @@ func _physics_process(delta: float) -> void:
 	if Engine.is_editor_hint():
 		return
 	
-	# DEBUG: Detect state mismatch
+	# Detect + self-correct a state mismatch. The correction always runs; the
+	# diagnostic is debug-build-only so it doesn't ship.
 	if is_dead and current_state != State.DEAD:
-		push_error("BUG FOUND! is_dead=true but current_state=", State.keys()[current_state], " at ", position)
+		if OS.is_debug_build():
+			push_error("BUG FOUND! is_dead=true but current_state=", State.keys()[current_state], " at ", position)
 		# Force correct state
 		current_state = State.DEAD
 		velocity = Vector2.ZERO
@@ -765,7 +767,7 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector2.ZERO
 		
 		# Debug: Check if velocity is somehow non-zero AFTER we clear it
-		if velocity.length() > 0.01:
+		if OS.is_debug_build() and velocity.length() > 0.01:
 			push_warning("DEAD HUMAN MOVING! Velocity: ", velocity, " at ", position)
 		
 		incubation_timer -= delta

@@ -251,6 +251,12 @@ func register_manually_placed_units() -> void:
 	for zombie in get_tree().get_nodes_in_group("zombies"):
 		if zombie is Zombie and not all_zombies.has(zombie):
 			all_zombies.append(zombie)
+			# Wire the same signals spawn_zombie() connects, so a hand-placed
+			# zombie dying still updates tracking and triggers the lose check.
+			if not zombie.zombie_killed_human.is_connected(_on_zombie_killed_human):
+				zombie.zombie_killed_human.connect(_on_zombie_killed_human)
+			if not zombie.tree_exiting.is_connected(_on_zombie_removed):
+				zombie.tree_exiting.connect(_on_zombie_removed.bind(zombie))
 			print("  Registered manually placed zombie: ", zombie.name)
 	
 	# Find all humans in the scene  

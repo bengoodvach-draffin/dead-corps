@@ -6,6 +6,11 @@ Thumbs.db
 .godot/
 .nomedia
 
+# Exported builds — never commit binaries (export_presets.cfg writes the .exe to repo root)
+/Exports/
+*.exe
+*.pck
+
 # Godot-specific ignores
 .import/
 export.cfg
