@@ -393,9 +393,11 @@ less context, infers less, and is likelier to silently break an invariant it
 can't see. Two-part fix:
 
 ### 1. Durable invariants & verification (write once, stable)
-> Now written up in full as **`docs/IMPLEMENTER_GUIDE.md`** — the durable,
-> task-agnostic execution reference (invariants, verification workflow, ticket
-> template, division of labour). The summary below is the headline list.
+> Implemented as **`docs/IMPLEMENTER_GUIDE.md`** — the detailed, code-grounded
+> build spec for the Stage C scaling work (one spec per optimisation: data
+> structures, exact functions, pseudocode, invariants-to-preserve, pass criteria),
+> plus the optimisation-specific invariants checklist and the ticket template.
+> The summary below is the headline invariants list only.
 
 The cross-cutting rules any model MUST preserve when touching hot paths (these are
 scattered through CLAUDE.md / PROJECT_CONTEXT today — a single checklist is the gap):
