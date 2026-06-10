@@ -183,6 +183,110 @@ big bang.
 
 ---
 
+## Performance & Scaling (deep dive)
+
+**Target scale (decided):** ~150–500 active units on screen at peak. This section
+plans for that tier specifically. It supersedes the brief perf notes in Findings §2.
+
+### Core problem
+
+Every unit independently re-queries the entire scene tree every physics frame,
+and there is no spatial index anywhere. This is the classic O(n²) crowd trap:
+invisible at the current ~11-unit test scenario, it degrades quadratically and
+will cliff somewhere around 50–150 active units. Doubling the horde ~quadruples
+the cost.
+
+### Where the frames go (measured against v0.27.0 code)
+
+1. **BOID flocking — dominant cost (`unit.gd`).** Every `Unit._physics_process`
+   (60 Hz) runs `apply_separation_force()` (`:383`) and `apply_alignment_force()`
+   (`:479`, zombies). Each does its own `get_tree().get_nodes_in_group()` (fresh
+   array alloc) + a full team loop; alignment also re-loops via
+   `find_nearby_allies()` (`:359`). Net: ~2 group fetches + ~2 full O(Z) loops
+   per zombie per frame → ~2·Z² distance calcs/frame.
+   - Z=11 → ~240/frame (trivial); Z=150 → ~45k/frame; Z=300 → ~180k/frame (~10.8M/s).
+   - Plus a fresh `Array` per `get_nodes_in_group` → constant GC churn.
+2. **Melee bookkeeping — second O(n²) (`zombie.gd`).** Each attacking zombie calls
+   `manage_melee_attacker_status()` → `count_melee_attackers()` every frame, which
+   scans all zombies (`human.gd:2766`).
+3. **Human perception — partly gated (`human.gd`).** Heavy detection IS throttled
+   to 0.3 s (`detection_timer`, `:819`) — correct pattern, keep it. But
+   `_acquire_shoot_target` / `_find_in_range_target` run **every frame, ungated**
+   (`:1369,1395`): full zombie scan + raycast per zombie per armed human (H·Z
+   raycasts/frame). 15 `get_nodes_in_group` sites total; several reachable per
+   frame. Per-frame `print()` with `snapped(rad_to_deg(...))` string-building
+   (`:842,868`) fires in the loop.
+4. **Per-unit node weight.** Human ≈10 nodes incl. a `ProgressBar` + 3×
+   `AudioStreamPlayer2D`; zombie ≈9 nodes incl. `NavigationAgent2D` + `ProgressBar`
+   + `Label`. At 300 units ≈3,000 nodes, ~300 ProgressBars laying out, ~900 audio
+   players. `update_health_bar()` runs every frame per unit (`unit.gd:172`) even
+   at full health.
+5. **Navigation churn (`zombie.gd`).** `nav_agent.target_position` set every frame
+   while pursuing (`:176,202`) can force frequent repaths; nothing throttles or
+   shares paths.
+6. **Vision rendering — NOT the bottleneck.** `queue_redraw()` is unconditional
+   (`vision_renderer.gd:61`) but normal play only draws the pinned + tunnel-vision
+   cones (cheap). The 37-raycasts-per-cone cost only triggers with the `V`
+   all-cones debug key. Gate the redraw eventually, but don't spend rebuild effort
+   here.
+
+### Fixes (carry across the 3D migration — pure logic/data, not throwaway)
+
+- **A. Central spatial index + neighbour cache (the big one).** Uniform
+  spatial-hash grid in `GameManager`, rebuilt once per frame from the
+  `all_zombies`/`all_humans` arrays it already maintains. Units call
+  `neighbours_within(pos, radius)` instead of `get_nodes_in_group` + full loop.
+  Turns O(n²) → ~O(n·k); removes per-frame array allocations. This is what makes
+  the target count possible at all.
+- **B. AI tick decoupling / LOD.** Run flocking + AI decisions at ~10–15 Hz,
+  staggered across units in buckets (not all on the same frame); tick distant /
+  unengaged units even less often. Keep movement at 60 Hz for smoothness —
+  decisions don't need it. Generalises the existing 0.3 s detection throttle.
+- **C. Event-driven UI.** Update health bars only in `take_damage`, not per frame;
+  hide/disable bars + audio players offscreen. At this tier, move to a single
+  batched health overlay / `MultiMesh` rather than a `ProgressBar` per unit.
+- **D. Gate the shooting scan** on a timer like detection; throttle
+  `NavigationAgent2D` target updates (repath only when target moved > ~1 tile or
+  every N ticks); share/reuse paths for grouped movement.
+- **E. Strip hot-path prints** behind `OS.is_debug_build()` / a debug flag.
+
+### Tier 2 specifics (150–500 units)
+
+Beyond A–E, this count needs presentation-layer work:
+- **MultiMeshInstance2D** for unit bodies; per-unit `Sprite`/`ColorRect` draw calls
+  won't scale to hundreds. Pool unit nodes (don't instantiate/free mid-wave).
+- **Drop per-unit Control nodes** (`ProgressBar`, `Label`) in favour of batched
+  drawing — Control layout is the heaviest per-unit cost at this scale.
+- **Shared audio** — a small pooled audio manager instead of 3 players × 500 units.
+- **Throttled / shared navigation** — flow-field or shared group paths rather than
+  per-agent repaths.
+- (Tiers for reference: ≤150 = A–E only, keep nodes. 1000+ = data-oriented rebuild
+  on `PhysicsServer2D`/`RenderingServer`, no per-unit nodes — out of current scope.)
+
+### Sequenced plan
+
+1. **Benchmark first.** Throwaway scene spawning N idle units to find the real
+   cliff on target hardware before committing effort. (Establishes the baseline
+   and proves each step.)
+2. **Spatial index + neighbour cache** (fix A) — replace all hot-path
+   `get_nodes_in_group` neighbour queries. Biggest single win.
+3. **AI tick decoupling / bucketed LOD** (fix B) + gate the shooting scan (D).
+4. **Event-driven UI** (C) + strip hot-path prints (E).
+5. **Navigation throttling / sharing** (D, nav half).
+6. **Rendering: MultiMesh + node pooling + drop per-unit Control nodes** (Tier 2
+   presentation work).
+7. **Shared audio pool.**
+
+### Timing vs validation
+
+This affects the validation phase: the test slice should be played at
+representative counts, so do **steps 1–4 before (or early in) validation** — they
+fix the algorithmic cliff and are low-risk. Hold steps 5–7 (rendering/audio/nav
+rework, more invasive) until counts are confirmed in play, and fold them into the
+3D migration where the scene/render layer is being rewritten anyway.
+
+---
+
 ## Notes / open decisions
 
 - Git-history rewrite is the only destructive item and is explicitly deferred to
