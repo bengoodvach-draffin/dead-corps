@@ -340,10 +340,9 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Level 7" type="Node2D" parent="TestLevel" unique_id=2031917393]
-position = Vector2(-229, 52)
 
 [node name="Wall2" type="Polygon2D" parent="TestLevel/Level 7" unique_id=1049515011]
-position = Vector2(-319, 29)
+position = Vector2(-464, 82)
 scale = Vector2(1.5, 1.5)
 color = Color(0, 0, 0, 0)
 polygon = PackedVector2Array(-100, -100, 100, -100, 100, 100, -100, 100)
@@ -352,21 +351,12 @@ wall_thickness = 5.0
 metadata/_custom_type_script = "uid://cvde25j0ujcg"
 
 [node name="Building3" parent="TestLevel/Level 7" unique_id=1889307383 instance=ExtResource("8_l07ew")]
-position = Vector2(-317, 32)
+position = Vector2(-462, 85)
 building_width = 180.0
 building_height = 180.0
 
-[node name="Zombie3" parent="TestLevel/Level 7" unique_id=1071675238 instance=ExtResource("5_sxbni")]
-position = Vector2(-439, 1)
-
-[node name="Zombie4" parent="TestLevel/Level 7" unique_id=1552032895 instance=ExtResource("5_sxbni")]
-position = Vector2(-438, 38)
-
-[node name="Zombie5" parent="TestLevel/Level 7" unique_id=8865011 instance=ExtResource("5_sxbni")]
-position = Vector2(-438, 74)
-
 [node name="Human3" parent="TestLevel/Level 7" unique_id=594128001 instance=ExtResource("6_8i2yc")]
-position = Vector2(-197, -84)
+position = Vector2(-342, -31)
 initial_state = 1
 defender_class = 2
 morale_max = 200.0
@@ -382,7 +372,7 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human5" parent="TestLevel/Level 7" unique_id=1314729568 instance=ExtResource("6_8i2yc")]
-position = Vector2(-196, -29)
+position = Vector2(-341, 24)
 initial_state = 1
 defender_class = 2
 morale_max = 200.0
@@ -396,6 +386,15 @@ patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector
 flee_vision_range = 100.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
+
+[node name="Zombie" parent="TestLevel/Level 7" unique_id=738780467 instance=ExtResource("5_sxbni")]
+position = Vector2(-582, 68)
+
+[node name="Zombie2" parent="TestLevel/Level 7" unique_id=1813520226 instance=ExtResource("5_sxbni")]
+position = Vector2(-583, 108)
+
+[node name="Zombie3" parent="TestLevel/Level 7" unique_id=306804887 instance=ExtResource("5_sxbni")]
+position = Vector2(-583, 145)
 
 [node name="Level 8" type="Node2D" parent="TestLevel" unique_id=782630570]
 
@@ -438,6 +437,11 @@ alignment_rate = 0.3
 position = Vector2(229, -85)
 initial_state = 1
 defender_class = 2
+morale_max = 200.0
+sighting_drain = 0.0
+fleeing_drain = 40.0
+weapon_range = 150.0
+aim_time = 0.55
 sentry_facing_degrees = 180.0
 patrol_enabled = true
 patrol_mode = 1
