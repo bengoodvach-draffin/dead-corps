@@ -66,7 +66,7 @@ Several entries are **mooted by the v2 pivot** (the underlying system is slated 
 - **Costume Zombie reaction strength:** the grappled-drain event fires when a costumed zombie bites an ally, but the visual surprise may warrant a larger morale hit / extra response. Flagged for post-validation tuning. *(Mooted by v2: morale and GRAPPLED are both dead.)*
 - **Patrol resume:** by design, a sentry that detects a zombie stops patrolling permanently and does not resume. Re-evaluate in playtesting. *(v2: patrols survive as positioning-over-time; the detection/sentry model around them changes — re-evaluate inside the new fill model.)*
 - **Navigation baking:** levels using `NavBaker` (`nav_baker.gd` on the `NavigationRegion2D`) auto-bake from geometry on load — no manual coordinates/re-bake, deterministic building/wall exclusion. Tune `agent_radius` to ≈ unit radius (12px); larger values erode small handcrafted rooms. Legacy levels with hand-baked `NavigationPolygon` still work but won't pick up geometry changes. The old "Groups" / collider-parse method is superseded for `NavBaker` levels.
-- **README.md is stale** (v0.12.4) — needs a refresh in a separate pass.
+- **No current README** — the stale v0.12.4 `docs/README.md` was archived (`Archive/README_v0.12.4.md`); write a fresh one in a separate pass, sensibly after the PoC verdict.
 - **3D_MIGRATION_ANALYSIS.md** was created in a March 2026 session but never committed — needs re-creating.
 
 ---

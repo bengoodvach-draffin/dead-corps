@@ -68,8 +68,7 @@ docs/
   ARCHITECTURE_GUIDELINES.md # anti-god-class rules — read before creating or substantially extending any script
   GAME_DESIGN_DOCUMENT.md  # v1 design intent, all 11 zombie types, 5 defender classes, level philosophy, decision log
   PROJECT_CONTEXT.md       # technical state, scripts purpose table, KNOWN ISSUES, quick-reference values
-  HUMAN_DEFENDER_SYSTEM_SPEC.md
-  archive/                 # superseded GDD versions, changelogs, historical notes — reference only, do not act on
+  Archive/                 # superseded docs (incl. the v1 defender spec, v1 implementer guide, legacy nav/patrol guides), old GDD versions, changelogs — reference only, do not act on
 ```
 
 **Read `docs/V2_DIRECTION_SPEC.md` first for any core-loop design question** (zombie/human behavior, combat, scoring, controls, win/lose). The GDD remains the reference for what the pivot doesn't touch — level philosophy, the wider zombie roster, world/fiction — and for the decision log, but its core-loop sections are superseded and not yet rewritten. **Read `docs/PROJECT_CONTEXT.md` for technical state, the per-script purpose table, and the current known-issues list** before diagnosing bugs or adding to a system.

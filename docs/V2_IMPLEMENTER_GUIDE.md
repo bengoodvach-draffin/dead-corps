@@ -6,7 +6,7 @@ paged in). It contains the things the build plan deliberately leaves out: the
 cross-cutting invariants any implementer must preserve, which steps are safe to
 delegate at all, the per-step ticket discipline, and how to verify work.
 
-**What this is NOT:** `docs/IMPLEMENTER_GUIDE.md` (the v1 scaling guide). That
+**What this is NOT:** `docs/Archive/IMPLEMENTER_GUIDE.md` (the v1 scaling guide, archived). That
 document's specs target v1 code and its invariants checklist describes systems
 the pivot deletes (melee gate, corpse linger, morale, health bars). It survives
 only as the post-PoC reference for upgrading the Phase-0 registry internals

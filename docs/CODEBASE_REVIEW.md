@@ -393,7 +393,7 @@ less context, infers less, and is likelier to silently break an invariant it
 can't see. Two-part fix:
 
 ### 1. Durable invariants & verification (write once, stable)
-> Implemented as **`docs/IMPLEMENTER_GUIDE.md`** — the detailed, code-grounded
+> Implemented as **`docs/Archive/IMPLEMENTER_GUIDE.md`** (archived during the v2 pivot — its specs target v1 code; see `V2_IMPLEMENTER_GUIDE.md`) — the detailed, code-grounded
 > build spec for the Stage C scaling work (one spec per optimisation: data
 > structures, exact functions, pseudocode, invariants-to-preserve, pass criteria),
 > plus the optimisation-specific invariants checklist and the ticket template.
