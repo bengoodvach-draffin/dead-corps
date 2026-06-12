@@ -63,6 +63,9 @@ scenes/                    # all .tscn (units, levels, overlays)
 audio/                     # audio assets (system in progress, not yet doc-synced)
 docs/
   V2_DIRECTION_SPEC.md     # THE PREDATOR PIVOT — authoritative core-loop design; supersedes GDD §3/§6/parts of §11
+  V2_POC_BUILD_PLAN.md     # the agreed phased implementation order for this branch (v2-poc)
+  V2_IMPLEMENTER_GUIDE.md  # invariants checklist, delegation map, ticket discipline — read before executing any build-plan step
+  ARCHITECTURE_GUIDELINES.md # anti-god-class rules — read before creating or substantially extending any script
   GAME_DESIGN_DOCUMENT.md  # v1 design intent, all 11 zombie types, 5 defender classes, level philosophy, decision log
   PROJECT_CONTEXT.md       # technical state, scripts purpose table, KNOWN ISSUES, quick-reference values
   HUMAN_DEFENDER_SYSTEM_SPEC.md
@@ -91,6 +94,7 @@ This describes the codebase **as it exists today (v1 systems)** — it is the ac
 ## GDScript / Godot conventions & gotchas
 
 - Godot **4.6**. Type hints everywhere (`var distance: float`); explicit nullability (`var target: Node2D = null`). Comments explain *why*, not *what*.
+- **On `v2-poc`: `docs/ARCHITECTURE_GUIDELINES.md` governs all new/rebuilt scripts** (component ownership, ~400-line/~40-line tripwires, dispatcher `_physics_process`, signals-up-calls-down, registry-only discovery). `docs/V2_IMPLEMENTER_GUIDE.md` has the invariants checklist for any build-plan work.
 - **Always use `global_position`** for cross-unit calculations — nested scenes break local `position` (notably escape zones).
 - **Waypoint ordering uses `naturalnocasecmp_to()`** so `Waypoint2` sorts before `Waypoint10`.
 - `@tool` scripts must guard game logic with `Engine.is_editor_hint()` — units must not run AI in the editor.
