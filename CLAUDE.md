@@ -1,25 +1,38 @@
 # Dead Corps — Claude Code Project Memory
 
-**Current version:** v0.28.0 · **Engine:** Godot 4.6 / GDScript · **Perspective:** 2D isometric (full 3D migration confirmed as next architectural direction)
+**Current version:** v0.28.0 · **Engine:** Godot 4.6 / GDScript · **Perspective:** 2D isometric (full 3D migration still confirmed, but now waits behind the v2 pivot PoC)
 
 This file is loaded into every Claude Code session. It is the lean orchestrator: working rules, design pillars, and pointers. Detailed reference lives in `docs/` and is read on demand — do not assume those files are in context until you've read them.
 
 ---
 
-## What Dead Corps is
+## ⚠️ Active direction: the V2 Predator Pivot (June 2026)
 
-A real-time tactical puzzle game that inverts the zombie genre: the player commands a growing zombie horde against AI-controlled human defenders. The player is the apocalypse, not the survivor. Design lineage: Commandos / Shadow Tactics (tactical positioning, timing, handcrafted puzzles) and Hotline Miami (fast, iterative, score-attack pacing). Solo portfolio/learning project; community level editor is a long-term post-launch goal.
+**Read `docs/V2_DIRECTION_SPEC.md` before any design or core-loop work.** Playtesting found v1 played like "ninja commando zombies" — a stealth-puzzle game — while the single most engaging moment was watching a wave get thinned by gunfire. The v2 spec rebuilds the core loop around predation: **bodies are ammunition, detection is a cost not a fail state, and the player corrals/releases/combo-routes a frenzied horde.** Stealth grammar (vision cones, facing, swing arcs, alerts, morale psychology) is removed.
+
+Status: **design locked pending PoC validation.** It supersedes the core-loop sections of the GDD (the GDD is deliberately NOT updated until the PoC validates — its sections 3, 6, and parts of 11 no longer reflect design intent). The codebase is still v1 — the deprecation audit in spec §11 lists what dies, what survives, and which files take major work.
 
 ---
 
-## Design pillars (gate every suggestion against these)
+## What Dead Corps is
 
-- **The player is the threat defenders react to** — not an agent navigating their patterns. Defenders respond to the horde; the player drives the encounter.
-- **Predictability over simulation.** Puzzle depth comes from handcrafted level design, not from AI complexity. Enemy predictability is a prerequisite, not a weakness. Before proposing any new system, audit whether it creates a *meaningful player decision* or just adds friction — if the latter, say so and recommend against it.
-- **Player agency is preserved.** Reject any solution that takes control away from the player (this is why auto-pursuit was removed in v0.25.0).
-- **Morale drain benefits the player** — it is a reward signal, never a punishment mechanic.
-- **Deterministic primary responses.** Randomness in *when* something happens (panic timing) is good and emergent; randomness in *what* happens is frustrating. Primary stress responses per class are deterministic; only small-percentage secondaries are random.
-- **Scope control.** The validation slice comes before further system elaboration. Resist feature accumulation that hasn't been validated in play.
+A real-time tactical **predation** game that inverts the zombie genre: the player commands a growing zombie horde against AI-controlled human defenders. The player is the apocalypse, not the survivor. The puzzle is attrition math and chase geometry, executed at speed — losses are spending, not failure. Design lineage: Hotline Miami (fast, iterative, score-attack pacing) over the original Commandos / Shadow Tactics stealth framing, which the v2 pivot retired. Solo portfolio/learning project; community level editor is a long-term post-launch goal.
+
+---
+
+## Design pillars (gate every suggestion against these — v2, from the pivot spec)
+
+- **Attrition is currency.** Losses are spending, not failure. Every wall has a body price.
+- **Setup is 1/3 of the game; the chase and the combo are 2/3.** Favor pursuit and momentum over planning and positioning.
+- **Command the calm, influence the storm.** The reserve is fully controllable; released zombies are not. Released is released — no recall, ever.
+- **Bias, not command.** Influence on ferals reorders their choices; it never moves a unit anywhere prey isn't.
+- **The frenzy chases what moves; what's frozen waits for deliberate collection.**
+- **Determinism in rules, suspense in execution.** Identical inputs produce identical runs — no live RNG anywhere (spec §10). Randomness in *what* happens is frustrating; suspense comes from execution, not dice.
+- **The frenzy ends when nothing in the encounter is left alive or everything has escaped.**
+
+Carried over from v1 and still firm: **player agency is preserved** (reject anything that takes control away — released-is-released is a deliberate spend, not lost control), **predictability over simulation** (audit every proposed system for whether it creates a *meaningful player decision* or just friction — if friction, say so and recommend against it), and **scope control** (the PoC slice comes before any further elaboration; the spec's Parked Register is parked for a reason).
+
+Superseded by the pivot: "morale drain benefits the player" — the morale system is dead in v2, replaced by fill + fear radius.
 
 ---
 
@@ -49,17 +62,20 @@ scripts/                   # all GDScript
 scenes/                    # all .tscn (units, levels, overlays)
 audio/                     # audio assets (system in progress, not yet doc-synced)
 docs/
-  GAME_DESIGN_DOCUMENT.md  # design intent, all 11 zombie types, 5 defender classes, level philosophy, decision log
+  V2_DIRECTION_SPEC.md     # THE PREDATOR PIVOT — authoritative core-loop design; supersedes GDD §3/§6/parts of §11
+  GAME_DESIGN_DOCUMENT.md  # v1 design intent, all 11 zombie types, 5 defender classes, level philosophy, decision log
   PROJECT_CONTEXT.md       # technical state, scripts purpose table, KNOWN ISSUES, quick-reference values
   HUMAN_DEFENDER_SYSTEM_SPEC.md
   archive/                 # superseded GDD versions, changelogs, historical notes — reference only, do not act on
 ```
 
-**Read `docs/GAME_DESIGN_DOCUMENT.md` for any design question.** **Read `docs/PROJECT_CONTEXT.md` for technical state, the per-script purpose table, and the current known-issues list** before diagnosing bugs or adding to a system.
+**Read `docs/V2_DIRECTION_SPEC.md` first for any core-loop design question** (zombie/human behavior, combat, scoring, controls, win/lose). The GDD remains the reference for what the pivot doesn't touch — level philosophy, the wider zombie roster, world/fiction — and for the decision log, but its core-loop sections are superseded and not yet rewritten. **Read `docs/PROJECT_CONTEXT.md` for technical state, the per-script purpose table, and the current known-issues list** before diagnosing bugs or adding to a system.
 
 ---
 
 ## Architecture at a glance
+
+This describes the codebase **as it exists today (v1 systems)** — it is the accurate starting point for the PoC work. Spec §11 maps each system below to its v2 fate (dead / replaced / survives) and lists the files taking major work: `human.gd` (behavior-core rewrite), `zombie.gd` (feral states + pounce), `vision_renderer.gd` (rewrite), `selection_manager.gd` (release/Mark/inspect), `game_manager.gd` (rise pipeline, win/lose, score), `escape_zone.gd` (boundary), `unit.gd` (speeds, determinism), plus a NEW `level_config.gd`.
 
 - `unit.gd` (`Unit` extends `CharacterBody2D`) — base for all units: movement, combat, health, selection, BOID separation/alignment, world-bound clamping. Cohesion force is disabled (commented out). Separation moves via `move_and_collide` (not raw `position +=`) so a corner pile-up can't shove a unit through a wall, and skips dead neighbours (`current_health <= 0`) so a freshly-shot unit stops pushing the living during its corpse linger.
 - `zombie.gd` (`Zombie` extends `Unit`) — player-controlled. States IDLE/MOVING/PURSUING/LEAPING/MELEE/DEAD. No auto-pursuit; all engagements are right-click initiated. `can_receive_command()` is false while LEAPING or committed. Post-kill 250px LOS continuation scan. Melee is capped at 2 attackers per human, gated live on `human.count_melee_attackers()` (actual meleeing zombies) — *not* on `attacker_count` (total targeting), so any number may pursue and rotate into a freed slot when a front-rank attacker dies.
@@ -103,8 +119,8 @@ docs/
 
 ## Current focus
 
-**Validation slice (the actual next work):** build one handcrafted level — Costume Zombie + Fat Zombie vs Police + a barricaded GI — and run focused play sessions to confirm the core puzzle loop is fun *before* adding more systems. Systems exist but haven't been meaningfully playtested together.
+**The v2 PoC validation slice** (spec §12) — built 2D-first in the current codebase. Roster: Civilian, Militia, Police, GI. **No specials** (Fat/Costume code paths excluded from PoC; re-audit post-validation), no Spec Ops, no pressure systems. Milestones: **M1** — core loop without the Mark; **M2** — add the Mark + LMB fill-line inspect. First tuning job after the slice runs: the **sacred-ratio sweep** (fill speed vs zombie speed) until a GI position kills ~3–4 of a charging wave. The spec's seven validation questions (§12) are the verdict criteria on the pivot. Next step per the spec: PoC build plan / implementation sequencing — propose-before-implementing applies as always.
 
-After that: full 3D migration (low-poly geometry, simple 3D characters, rotatable isometric camera; driven by rooftop traversal and urban occlusion). Game logic — state machines, morale, combat, patrol, formations — survives intact; camera, vision renderer, and all scene files get rewritten.
+After the pivot validates: full 3D migration (low-poly geometry, simple 3D characters, rotatable isometric camera; driven by rooftop traversal and urban occlusion) — it inherits the v2 simplification, so there's far less to port.
 
-Open known issues to keep in mind (full list in PROJECT_CONTEXT.md): Fat Zombie corpse navigation avoidance is deferred; morale/weapon kill counts run higher than spec and await playtest tuning; the broken-disguise Costume Zombie scoring edge case (25 vs 100 pts) is undecided.
+The old v1 validation slice (Costume + Fat Zombie vs Police + barricaded GI) is superseded — it was played, and its findings are what produced the pivot. Several v1 known issues (morale/weapon kill-count tuning, Costume scoring edge case) are mooted by the pivot; the full annotated list lives in PROJECT_CONTEXT.md.

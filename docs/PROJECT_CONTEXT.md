@@ -6,11 +6,19 @@ Technical state, per-script purpose table, known issues, and quick-reference val
 
 ---
 
+## ⚠️ V2 Predator Pivot (June 2026) — read before acting on this document
+
+`V2_DIRECTION_SPEC.md` is the authoritative core-loop design (design locked pending PoC validation). It supersedes the GDD's core-loop sections and slates large parts of the systems documented below for removal or rewrite — morale, alerts, vision cones, tunnel vision, HP/grapple melee, Spec Ops, the incubation pipeline, and more (full mapping: spec §11 deprecation audit).
+
+**This document still accurately describes the codebase as it exists** — the code is v1 until the PoC is built — so it remains the correct reference for diagnosing bugs and understanding current scripts. But do not *extend* a system listed as dead in the spec's deprecation audit without flagging it. Sections below that the pivot moots are annotated inline; values for the v2 systems live in spec §9 and the new `level_config.gd` (not yet created).
+
+---
+
 ## Current state (high level)
 
-The prototype has core RTS control, combat/conversion, vision, navigation, a full patrol system (manual + visual waypoints, Phase C per-waypoint behaviour, formation squads), five human defender classes with a morale bar and shooting, a low/high-urgency alert system, a click-to-pin vision-cone system, player-controlled engagement (no auto-pursuit), and two special zombies (Fat, Costume). Not yet built: building transformation, the other 9 special zombies, multiple levels, campaign, audio (in progress), final art, and the confirmed 3D migration.
+The prototype has core RTS control, combat/conversion, vision, navigation, a full patrol system (manual + visual waypoints, Phase C per-waypoint behaviour, formation squads), five human defender classes with a morale bar and shooting, a low/high-urgency alert system, a click-to-pin vision-cone system, player-controlled engagement (no auto-pursuit), and two special zombies (Fat, Costume). Not yet built: the entire v2 core loop (feral/calm states, pounce, fill, fear radius, Mark, combo scoring, rise-in-place — see `V2_DIRECTION_SPEC.md`), multiple levels, campaign, audio (in progress), final art, and the 3D migration (now gated behind the v2 PoC).
 
-GDD §2 has the authoritative implemented/not-implemented breakdown.
+GDD §2 has the authoritative implemented/not-implemented breakdown **for v1 systems**; the spec's §11 audit maps each to its v2 fate.
 
 ---
 
@@ -50,11 +58,13 @@ UI: `debug_overlay.tscn`, `end_game_overlay.tscn`.
 
 ## Known issues
 
+Several entries are **mooted by the v2 pivot** (the underlying system is slated for removal) — marked below. They remain listed because the code still runs today.
+
 - **Fat Zombie corpse navigation:** `FatZombieCorpse` blocks movement physically, but zombies don't path around it cleanly because `avoidance_enabled = false` on the zombie `NavigationAgent2D` — `NavigationObstacle2D` has no effect without it. Fix = enable avoidance + add `NavigationObstacle2D` to `fat_zombie_corpse.gd`. Deferred to a future avoidance pass.
-- **Morale / shooting tuning:** per-class kill counts run higher than spec because the aim timer starts at vision range. Fundamentally working; left for playtest tuning.
-- **Costume Zombie scoring:** broken-disguise = 25pts (it sets `is_special = false`). Pending design decision on whether that's intended.
-- **Costume Zombie reaction strength:** the grappled-drain event fires when a costumed zombie bites an ally, but the visual surprise may warrant a larger morale hit / extra response. Flagged for post-validation tuning.
-- **Patrol resume:** by design, a sentry that detects a zombie stops patrolling permanently and does not resume. Re-evaluate in playtesting.
+- **Morale / shooting tuning:** per-class kill counts run higher than spec because the aim timer starts at vision range. Fundamentally working; left for playtest tuning. *(Mooted by v2: morale and the aim-timer shooting model are both dead — replaced by fill + fear radius; kill counts become emergent from the fill-speed/zombie-speed ratio.)*
+- **Costume Zombie scoring:** broken-disguise = 25pts (it sets `is_special = false`). Pending design decision on whether that's intended. *(Mooted by v2: per-zombie survivor scoring is dead; specials are excluded from the PoC and re-audited after.)*
+- **Costume Zombie reaction strength:** the grappled-drain event fires when a costumed zombie bites an ally, but the visual surprise may warrant a larger morale hit / extra response. Flagged for post-validation tuning. *(Mooted by v2: morale and GRAPPLED are both dead.)*
+- **Patrol resume:** by design, a sentry that detects a zombie stops patrolling permanently and does not resume. Re-evaluate in playtesting. *(v2: patrols survive as positioning-over-time; the detection/sentry model around them changes — re-evaluate inside the new fill model.)*
 - **Navigation baking:** levels using `NavBaker` (`nav_baker.gd` on the `NavigationRegion2D`) auto-bake from geometry on load — no manual coordinates/re-bake, deterministic building/wall exclusion. Tune `agent_radius` to ≈ unit radius (12px); larger values erode small handcrafted rooms. Legacy levels with hand-baked `NavigationPolygon` still work but won't pick up geometry changes. The old "Groups" / collider-parse method is superseded for `NavBaker` levels.
 - **README.md is stale** (v0.12.4) — needs a refresh in a separate pass.
 - **3D_MIGRATION_ANALYSIS.md** was created in a March 2026 session but never committed — needs re-creating.
@@ -69,11 +79,13 @@ UI: `debug_overlay.tscn`, `end_game_overlay.tscn`.
 - **Vision is state-dependent** (idle circle vs moving/sentry arc) with LOS raycasting. Zombie vision arcs removed in v0.25.0 — arcs are human-only visual language.
 - **Navigation is optional/opt-in** per level; falls back to direct movement. Levels opt in by putting `nav_baker.gd` on their `NavigationRegion2D` (auto-bakes from `LevelBounds` + obstacle `get_nav_footprint()`); obstacles report footprints rather than the baker parsing colliders, so exclusion is explicit.
 - **Conversion/incubation:** dead humans stay on map in DEAD state 5s, counted in the zombie total for scoring + lose checks, then convert.
-- **3D migration** is the confirmed architectural direction (low-poly, simple 3D characters, rotatable isometric camera) — driven by rooftop traversal and urban occlusion. Game logic survives; camera/vision renderer/scenes get rewritten.
+- **3D migration** is the confirmed architectural direction (low-poly, simple 3D characters, rotatable isometric camera) — driven by rooftop traversal and urban occlusion. **Now gated behind the v2 pivot PoC** (built 2D-first); the migration inherits the v2 simplification, so there is less to port.
 
 ---
 
 ## Quick-reference values
+
+These are the **v1 values currently in the code**. The v2 numbers (fill speeds, fear radius, pounce, combo, etc.) live in `V2_DIRECTION_SPEC.md` §9 and will move into the new `level_config.gd`.
 
 **Units:** zombie/human radius 12px · zombie speed 105 (leap 210 at 40px) · human speed 90 · patrol speed 50 · zombie `NavigationAgent2D` radius 30px (path-following clearance) · formation spacing 40px · regroup timeout 10s · grapple proximity 50px (70px during leap) · grapple get-up delay 3s · incubation 5s.
 
