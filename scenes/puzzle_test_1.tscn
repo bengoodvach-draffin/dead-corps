@@ -77,13 +77,6 @@ position = Vector2(-943, -231)
 position = Vector2(-799, -313)
 initial_state = 1
 defender_class = 2
-morale_max = 200.0
-sighting_drain = 0.0
-fleeing_drain = 40.0
-weapon_range = 150.0
-aim_time = 0.55
-sentry_facing_degrees = 180.0
-flee_vision_range = 100.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
@@ -104,15 +97,8 @@ position = Vector2(-691, -214)
 position = Vector2(-594, -350)
 initial_state = 1
 defender_class = 2
-morale_max = 200.0
-sighting_drain = 0.0
-fleeing_drain = 40.0
-weapon_range = 150.0
-aim_time = 0.55
-sentry_facing_degrees = 180.0
 patrol_enabled = true
 patrol_waypoints = Array[Vector2]([Vector2(-594, -215), Vector2(-594, -427)])
-flee_vision_range = 100.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
@@ -139,13 +125,6 @@ position = Vector2(-324, -192)
 position = Vector2(-439, -425)
 initial_state = 1
 defender_class = 2
-morale_max = 200.0
-sighting_drain = 0.0
-fleeing_drain = 40.0
-weapon_range = 150.0
-aim_time = 0.55
-sentry_facing_degrees = 180.0
-flee_vision_range = 100.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
@@ -153,16 +132,9 @@ alignment_rate = 0.3
 position = Vector2(-204, -421)
 initial_state = 1
 defender_class = 2
-morale_max = 200.0
-sighting_drain = 0.0
-fleeing_drain = 40.0
-weapon_range = 150.0
-aim_time = 0.55
-sentry_facing_degrees = 180.0
 patrol_enabled = true
 patrol_mode = 1
 patrol_waypoints = Array[Vector2]([Vector2(-300, -421), Vector2(-204, -421), Vector2(-204, -190)])
-flee_vision_range = 100.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
@@ -189,15 +161,6 @@ position = Vector2(49, -191)
 position = Vector2(-66, -424)
 initial_state = 1
 defender_class = 2
-morale_max = 200.0
-sighting_drain = 0.0
-fleeing_drain = 40.0
-weapon_range = 150.0
-aim_time = 0.55
-sentry_facing_degrees = 134.0
-sentry_has_swing = true
-sentry_swing_range = 20.0
-flee_vision_range = 100.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
@@ -205,15 +168,8 @@ alignment_rate = 0.3
 position = Vector2(169, -420)
 initial_state = 1
 defender_class = 2
-morale_max = 200.0
-sighting_drain = 0.0
-fleeing_drain = 40.0
-weapon_range = 150.0
-aim_time = 0.55
-sentry_facing_degrees = 180.0
 patrol_mode = 1
 patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-flee_vision_range = 100.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
@@ -249,14 +205,6 @@ position = Vector2(379, -185)
 position = Vector2(480, -430)
 initial_state = 1
 defender_class = 2
-morale_max = 200.0
-sighting_drain = 0.0
-fleeing_drain = 40.0
-weapon_range = 150.0
-aim_time = 0.55
-sentry_facing_degrees = 180.0
-sentry_swing_range = 20.0
-flee_vision_range = 100.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
@@ -264,15 +212,8 @@ alignment_rate = 0.3
 position = Vector2(531, -430)
 initial_state = 1
 defender_class = 2
-morale_max = 200.0
-sighting_drain = 0.0
-fleeing_drain = 40.0
-weapon_range = 150.0
-aim_time = 0.55
-sentry_facing_degrees = 180.0
 patrol_mode = 1
 patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-flee_vision_range = 100.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
@@ -280,15 +221,8 @@ alignment_rate = 0.3
 position = Vector2(505, -402)
 initial_state = 1
 defender_class = 2
-morale_max = 200.0
-sighting_drain = 0.0
-fleeing_drain = 40.0
-weapon_range = 150.0
-aim_time = 0.55
-sentry_facing_degrees = 180.0
 patrol_mode = 1
 patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-flee_vision_range = 100.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
@@ -327,15 +261,8 @@ position = Vector2(674, -241)
 position = Vector2(850, -418)
 initial_state = 1
 defender_class = 2
-morale_max = 200.0
-sighting_drain = 0.0
-fleeing_drain = 40.0
-weapon_range = 150.0
-aim_time = 0.55
-sentry_facing_degrees = 180.0
 patrol_mode = 1
 patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-flee_vision_range = 100.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
@@ -359,15 +286,6 @@ building_height = 180.0
 position = Vector2(-342, -31)
 initial_state = 1
 defender_class = 2
-morale_max = 200.0
-sighting_drain = 0.0
-fleeing_drain = 40.0
-weapon_range = 150.0
-aim_time = 0.55
-sentry_facing_degrees = 231.0
-sentry_has_swing = true
-sentry_swing_range = 20.0
-flee_vision_range = 100.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
@@ -375,15 +293,8 @@ alignment_rate = 0.3
 position = Vector2(-341, 24)
 initial_state = 1
 defender_class = 2
-morale_max = 200.0
-sighting_drain = 0.0
-fleeing_drain = 40.0
-weapon_range = 150.0
-aim_time = 0.55
-sentry_facing_degrees = 180.0
 patrol_mode = 1
 patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-flee_vision_range = 100.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
@@ -395,6 +306,33 @@ position = Vector2(-583, 108)
 
 [node name="Zombie3" parent="TestLevel/Level 7" unique_id=306804887 instance=ExtResource("5_sxbni")]
 position = Vector2(-583, 145)
+
+[node name="Zombie4" parent="TestLevel/Level 7" unique_id=1325715882 instance=ExtResource("5_sxbni")]
+position = Vector2(-728, 104)
+
+[node name="Zombie5" parent="TestLevel/Level 7" unique_id=1067108926 instance=ExtResource("5_sxbni")]
+position = Vector2(-729, 144)
+
+[node name="Zombie6" parent="TestLevel/Level 7" unique_id=889300941 instance=ExtResource("5_sxbni")]
+position = Vector2(-729, 181)
+
+[node name="Zombie7" parent="TestLevel/Level 7" unique_id=965821525 instance=ExtResource("5_sxbni")]
+position = Vector2(-767, 118)
+
+[node name="Zombie8" parent="TestLevel/Level 7" unique_id=782569221 instance=ExtResource("5_sxbni")]
+position = Vector2(-768, 158)
+
+[node name="Zombie9" parent="TestLevel/Level 7" unique_id=1252845129 instance=ExtResource("5_sxbni")]
+position = Vector2(-768, 195)
+
+[node name="Zombie10" parent="TestLevel/Level 7" unique_id=679392699 instance=ExtResource("5_sxbni")]
+position = Vector2(-812, 128)
+
+[node name="Zombie11" parent="TestLevel/Level 7" unique_id=1505792532 instance=ExtResource("5_sxbni")]
+position = Vector2(-813, 168)
+
+[node name="Zombie12" parent="TestLevel/Level 7" unique_id=1355043991 instance=ExtResource("5_sxbni")]
+position = Vector2(-813, 205)
 
 [node name="Level 8" type="Node2D" parent="TestLevel" unique_id=782630570]
 
@@ -419,17 +357,9 @@ position = Vector2(-66, 206)
 position = Vector2(225, 150)
 initial_state = 1
 defender_class = 2
-morale_max = 200.0
-sighting_drain = 0.0
-fleeing_drain = 40.0
-weapon_range = 150.0
-aim_time = 0.55
-sentry_facing_degrees = 270.0
-sentry_swing_range = 20.0
 patrol_enabled = true
 patrol_mode = 1
 patrol_waypoints = Array[Vector2]([Vector2(-20, 150), Vector2(225, 150)])
-flee_vision_range = 100.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
@@ -437,12 +367,6 @@ alignment_rate = 0.3
 position = Vector2(229, -85)
 initial_state = 1
 defender_class = 2
-morale_max = 200.0
-sighting_drain = 0.0
-fleeing_drain = 40.0
-weapon_range = 150.0
-aim_time = 0.55
-sentry_facing_degrees = 180.0
 patrol_enabled = true
 patrol_mode = 1
 patrol_waypoints = Array[Vector2]([Vector2(230, 110), Vector2(230, -84), Vector2(29, -84)])
@@ -451,16 +375,8 @@ patrol_waypoints = Array[Vector2]([Vector2(230, 110), Vector2(230, -84), Vector2
 position = Vector2(-1, 12)
 initial_state = 1
 defender_class = 2
-morale_max = 200.0
-sighting_drain = 0.0
-fleeing_drain = 40.0
-weapon_range = 150.0
-aim_time = 0.55
-sentry_facing_degrees = 180.0
-sentry_has_swing = true
 patrol_mode = 1
 patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-flee_vision_range = 100.0
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
