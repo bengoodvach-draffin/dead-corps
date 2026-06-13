@@ -23,6 +23,11 @@ var box_current_pos: Vector2
 ## Control groups - maps group number (1-9) to array of units
 var control_groups: Dictionary = {}
 
+## Incremented once per issued group move order. Used as the DetHash salt so
+## successive orders jitter differently while staying deterministic (spec §10) —
+## no live RNG. (Was randf_range; replaced in Phase 0.3.)
+var _move_order_counter: int = 0
+
 @onready var camera: Camera2D = get_tree().get_first_node_in_group("camera")
 
 func _ready() -> void:
@@ -439,19 +444,24 @@ func calculate_formation_positions(target_pos: Vector2, units: Array[Unit]) -> A
 	var start_x: float = target_pos.x - grid_width / 2.0
 	var start_y: float = target_pos.y - grid_height / 2.0
 	
-	# Assign positions in a grid with randomization
+	# One salt per group order so successive orders vary; captured before the
+	# loop so every unit in THIS order shares it (decorrelated only by unit_uid).
+	var order_salt := _move_order_counter
+	_move_order_counter += 1
+
+	# Assign positions in a grid with deterministic jitter (spec §10 — no RNG)
 	for i in range(unit_count):
 		var row := i / units_per_row
 		var col := i % units_per_row
-		
-		# Add random jitter to make zombies look like a shambling horde
-		# Not a regimented formation
-		var jitter_x := randf_range(-15.0, 15.0)
-		var jitter_y := randf_range(-15.0, 15.0)
-		
+
+		# Deterministic per-unit jitter so zombies look like a shambling horde,
+		# not a regimented formation. Keyed off unit_uid + order_salt → identical
+		# every run, different per unit and per order.
+		var jitter := DetHash.offset(units[i].unit_uid, order_salt, 15.0)
+
 		var pos := Vector2(
-			start_x + col * spacing + jitter_x,
-			start_y + row * spacing + jitter_y
+			start_x + col * spacing + jitter.x,
+			start_y + row * spacing + jitter.y
 		)
 		
 		# Clamp to game bounds — read from WorldBounds autoload so this

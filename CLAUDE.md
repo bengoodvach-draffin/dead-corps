@@ -1,6 +1,6 @@
 # Dead Corps — Claude Code Project Memory
 
-**Current version:** v0.28.0 · **Engine:** Godot 4.6 / GDScript · **Perspective:** 2D isometric (full 3D migration still confirmed, but now waits behind the v2 pivot PoC)
+**Current version:** v0.29.0 · **Engine:** Godot 4.6 / GDScript · **Perspective:** 2D isometric (full 3D migration still confirmed, but now waits behind the v2 pivot PoC)
 
 This file is loaded into every Claude Code session. It is the lean orchestrator: working rules, design pillars, and pointers. Detailed reference lives in `docs/` and is read on demand — do not assume those files are in context until you've read them.
 
@@ -100,6 +100,7 @@ This describes the codebase **as it exists today (v1 systems)** — it is the ac
 - Navigation: `NavigationRegion2D` and `NavigationAgent2D` layers must match (both Layer 1); use the "Groups" method (buildings in `"buildings"` group). Note: zombie agents have `avoidance_enabled = false`, so runtime `NavigationObstacle2D` has no effect yet (see known issues).
 - **Special-zombie checks use property duck typing** — `zombie.get("is_costumed")` rather than class-name checks — to avoid GDScript load-order parse errors.
 - **Bulk-commenting print statements is dangerous:** partially commenting a multi-line `print(...)` can leave an empty block body and a parse error. Scan for empty blocks after any bulk comment-out.
+- **A NEW `class_name` script created outside the editor won't resolve until the project's global-class cache is regenerated.** The cache (`.godot/global_script_class_cache.cfg`, gitignored) is only rebuilt on an editor scan/import — so a fresh `class_name Foo` file made via the file tools fails *both* `tools/check.ps1` (parse error pinned on a *consumer* script, e.g. "Identifier Foo not declared") *and* runtime, until you regenerate it. Fix: run `<godot> --headless --import --path .` once (or open the editor). Do this immediately after creating any new global-class script, before the parse gate. Autoloads have the same staleness but resolve by their autoload name, not this cache.
 - Debug print emoji legend: 🔍 debug · ✅ success · ❌ error · ⚠️ warning · ⏸️ paused · ⏱️ timer.
 
 ---
