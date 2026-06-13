@@ -62,6 +62,7 @@ human_scene = ExtResource("5_human")
 [node name="DebugOverlay" parent="." unique_id=468344591 instance=ExtResource("7_debug")]
 
 [node name="EndGameOverlay" parent="." unique_id=2000451810 instance=ExtResource("10_endgame")]
+visible = false
 
 [node name="FatZombie" parent="." unique_id=649166868 instance=ExtResource("12_eb6dy")]
 position = Vector2(-74, -428)

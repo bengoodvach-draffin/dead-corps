@@ -26,6 +26,7 @@ buses/default_bus_layout="uid://d20g6cbygis83"
 [autoload]
 
 WorldBounds="*uid://q57huoqtmnim"
+GameConfig="*res://scripts/game_config.gd"
 
 [display]
 

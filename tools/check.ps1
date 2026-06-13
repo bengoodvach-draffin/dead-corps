@@ -61,6 +61,7 @@ foreach ($s in $scripts) {
         }
         elseif ($line -match "Compile Error:" -and
                 $line -notmatch "Identifier not found: WorldBounds" -and
+                $line -notmatch "Identifier not found: GameConfig" -and
                 $line -notmatch "Failed to compile depended scripts") {
             $semanticNotes += $rel + ": " + $line.Trim()
         }

@@ -110,6 +110,7 @@ This describes the codebase **as it exists today (v1 systems)** — it is the ac
 - Sandbox scenes for focused testing: `scenes/sandbox_level_1.tscn`, `scenes/sandbox_level_human_testing.tscn`.
 - To hand-build a level, uncheck **Enabled** on the `Initializer` node (otherwise it auto-spawns the test scenario), then place units/buildings/escape zones from `scenes/`.
 - There is **no automated test suite** — testing is manual play sessions plus debug-print output. After implementing, print explicit test steps for Ben to run.
+- **Godot MCP (`mcp__godot__*`) — Claude can boot a scene and read its console itself.** `run_project` (with `scene: "res://scenes/<name>.tscn"`) → `get_debug_output` (stdout prints + stderr warnings/errors) → `stop_project`. Use this to self-verify anything observable from a fresh boot: autoload load, print values, registration counts, runtime errors, and the §10 **determinism spot-check** (boot a scripted scenario twice, diff the logs). **Limit:** there is no input-injection tool — Claude cannot click/select/drag, so anything needing live input (release a horde, issue a move order) still needs Ben at the keyboard. "Boot + observe," not "play." It does **not** replace the parse gate below — run that first.
 - **Parse-error gate (run after any `.gd` edit, before telling Ben it's done):**
   `powershell -ExecutionPolicy Bypass -File tools/check.ps1`. It headlessly compiles
   every script and **hard-fails on any GDScript parse error** — catches the
