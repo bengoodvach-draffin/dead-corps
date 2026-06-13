@@ -17,6 +17,10 @@ var units_parent: Node2D
 var all_zombies: Array[Zombie] = []
 var all_humans: Array[Human] = []
 
+## Monotonic source for unit_uid. Assigned in registration order and never
+## reused — this is what makes the registry's query results stable-ordered (§10).
+var _next_unit_uid: int = 0
+
 ## Counter for humans that successfully escaped to the safe zone
 var escaped_humans: int = 0
 
@@ -56,14 +60,7 @@ func spawn_zombie(pos: Vector2) -> Zombie:
 	var zombie: Zombie = zombie_scene.instantiate()
 	zombie.position = pos
 	units_parent.add_child(zombie)
-	
-	# Connect to zombie's signal
-	zombie.zombie_killed_human.connect(_on_zombie_killed_human)
-	
-	# Connect to tree_exiting to track when zombie dies
-	zombie.tree_exiting.connect(_on_zombie_removed.bind(zombie))
-	
-	all_zombies.append(zombie)
+	_register_zombie(zombie)
 	return zombie
 
 func spawn_human(pos: Vector2) -> Human:
@@ -74,12 +71,43 @@ func spawn_human(pos: Vector2) -> Human:
 	var human: Human = human_scene.instantiate()
 	human.position = pos
 	units_parent.add_child(human)
-	
-	# Connect to human's signal
-	human.human_died.connect(_on_human_died)
-	
-	all_humans.append(human)
+	_register_human(human)
 	return human
+
+
+## === UNIT REGISTRY (V2) ===
+## Single owner of unit tracking: assigns the stable unit_uid, appends to the
+## tracking array, and wires the unit's signals. Both spawn_*() and
+## register_manually_placed_units() route through these so the wiring lives in
+## exactly one place (ARCHITECTURE_GUIDELINES rule 1).
+##
+## Idempotent: a unit already tracked is skipped (the manual-placement path may
+## re-encounter an already-spawned unit). uid is assigned in registration order
+## and never reused — successive registrations strictly increase it. That, plus
+## order-preserving appends and validity filtering, is the ordering contract the
+## query helpers below rely on.
+
+func _register_zombie(zombie: Zombie) -> void:
+	if all_zombies.has(zombie):
+		return
+	zombie.unit_uid = _next_unit_uid
+	_next_unit_uid += 1
+	all_zombies.append(zombie)
+	# Guarded so a re-encountered or pre-connected instance can't double-connect.
+	if not zombie.zombie_killed_human.is_connected(_on_zombie_killed_human):
+		zombie.zombie_killed_human.connect(_on_zombie_killed_human)
+	if not zombie.tree_exiting.is_connected(_on_zombie_removed):
+		zombie.tree_exiting.connect(_on_zombie_removed.bind(zombie))
+
+
+func _register_human(human: Human) -> void:
+	if all_humans.has(human):
+		return
+	human.unit_uid = _next_unit_uid
+	_next_unit_uid += 1
+	all_humans.append(human)
+	if not human.human_died.is_connected(_on_human_died):
+		human.human_died.connect(_on_human_died)
 
 func _on_zombie_killed_human(human: Human, _zombie: Zombie) -> void:
 	# With incubation system, we DON'T spawn immediately
@@ -227,6 +255,56 @@ func get_all_humans() -> Array[Human]:
 	all_humans = all_humans.filter(func(h): return is_instance_valid(h))
 	return all_humans
 
+
+## === REGISTRY QUERIES (V2) ===
+## Living-unit and neighbour lookups for v2 systems (contagion, fear count,
+## local scan, awareness, seeding, mark/shamble radii — all radius queries).
+##
+## ORDERING CONTRACT: results are in unit_uid order by construction. uid is
+## assigned in registration order, the tracking arrays only ever append, and
+## the validity filtering below preserves relative order. All v2 systems iterate
+## these results — NEVER re-sort them by anything non-deterministic (spec §10).
+## Internals are a naive O(n) scan: fine at PoC counts; a spatial hash can drop
+## in behind this API later (it must still return unit_uid order).
+
+## Living zombies (valid + alive). Dead units are excluded — the corpse-linger
+## invariant carried from v1. After HP is removed (demolition 1.3) the
+## current_health check becomes the alive flag; the "dead excluded" contract holds.
+func living_zombies() -> Array[Zombie]:
+	var result: Array[Zombie] = []
+	for z in get_all_zombies():
+		if z.current_health > 0:
+			result.append(z)
+	return result
+
+
+## Living humans (valid + alive). Same dead-exclusion contract as living_zombies().
+func living_humans() -> Array[Human]:
+	var result: Array[Human] = []
+	for h in get_all_humans():
+		if h.current_health > 0:
+			result.append(h)
+	return result
+
+
+## Living units of `team` (&"zombies" or &"humans") within `radius` of `pos`,
+## excluding `exclude` if given. Result is in unit_uid order (inherits the
+## living_*() ordering). global_position for all distance math — nested scenes
+## break local position (CLAUDE.md invariant).
+func neighbours_within(pos: Vector2, radius: float, team: StringName, exclude: Unit = null) -> Array[Unit]:
+	var result: Array[Unit] = []
+	var pool: Array
+	if team == &"zombies":
+		pool = living_zombies()
+	else:
+		pool = living_humans()
+	for u in pool:
+		if u == exclude:
+			continue
+		if u.global_position.distance_to(pos) <= radius:
+			result.append(u)
+	return result
+
 ## Gets total zombie count including incubating corpses (dead humans)
 ## For scoring purposes, dead humans count as zombies since they're converting
 func get_total_zombie_count() -> int:
@@ -247,25 +325,17 @@ func get_total_zombie_count() -> int:
 func register_manually_placed_units() -> void:
 	print("Registering manually placed units...")
 	
-	# Find all zombies in the scene
+	# Find all zombies in the scene. get_nodes_in_group returns scene-tree order
+	# (deterministic), so manually-placed uids are assigned in a stable order.
 	for zombie in get_tree().get_nodes_in_group("zombies"):
 		if zombie is Zombie and not all_zombies.has(zombie):
-			all_zombies.append(zombie)
-			# Wire the same signals spawn_zombie() connects, so a hand-placed
-			# zombie dying still updates tracking and triggers the lose check.
-			if not zombie.zombie_killed_human.is_connected(_on_zombie_killed_human):
-				zombie.zombie_killed_human.connect(_on_zombie_killed_human)
-			if not zombie.tree_exiting.is_connected(_on_zombie_removed):
-				zombie.tree_exiting.connect(_on_zombie_removed.bind(zombie))
+			_register_zombie(zombie)
 			print("  Registered manually placed zombie: ", zombie.name)
-	
-	# Find all humans in the scene  
+
+	# Find all humans in the scene
 	for human in get_tree().get_nodes_in_group("humans"):
 		if human is Human and not all_humans.has(human):
-			all_humans.append(human)
-			# Connect death signal
-			if not human.human_died.is_connected(_on_human_died):
-				human.human_died.connect(_on_human_died)
+			_register_human(human)
 			print("  Registered manually placed human: ", human.name)
 	
 	print("Registration complete: %d zombies, %d humans" % [all_zombies.size(), all_humans.size()])

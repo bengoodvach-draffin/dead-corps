@@ -110,6 +110,12 @@ enum Team {
 ## Current health points (starts at max_health, decreases when taking damage)
 var current_health: float
 
+## Stable, monotonic identity assigned by GameManager at registration (-1 until
+## registered). The registry's living/neighbour queries return results in
+## unit_uid order; all v2 deterministic logic (spec §10) keys off this, never
+## off chance or scene-tree position.
+var unit_uid: int = -1
+
 ## Whether this unit is currently selected by the player
 var is_selected: bool = false
 
