@@ -114,9 +114,8 @@ var space_state: PhysicsDirectSpaceState2D
 
 ## Initialise the human: team, state, patrol, base unit, LOS space.
 func _ready() -> void:
-	# Force onto the human team; humans deal no melee damage (pounce model owns kills).
+	# Force onto the human team.
 	team = Team.HUMANS
-	attack_damage = 0.0
 
 	current_state = initial_state
 
@@ -302,6 +301,7 @@ func die() -> void:
 
 	human_died.emit(self)
 
+	is_alive = false
 	current_state = State.DEAD
 	is_dead = true
 	incubation_timer = incubation_duration

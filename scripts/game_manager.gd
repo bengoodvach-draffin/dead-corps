@@ -268,12 +268,12 @@ func get_all_humans() -> Array[Human]:
 ## in behind this API later (it must still return unit_uid order).
 
 ## Living zombies (valid + alive). Dead units are excluded — the corpse-linger
-## invariant carried from v1. After HP is removed (demolition 1.3) the
-## current_health check becomes the alive flag; the "dead excluded" contract holds.
+## invariant carried from v1. Liveness is the is_alive flag (HP was removed in
+## demolition step 1.3); the "dead excluded" contract holds.
 func living_zombies() -> Array[Zombie]:
 	var result: Array[Zombie] = []
 	for z in get_all_zombies():
-		if z.current_health > 0:
+		if z.is_alive:
 			result.append(z)
 	return result
 
@@ -282,7 +282,7 @@ func living_zombies() -> Array[Zombie]:
 func living_humans() -> Array[Human]:
 	var result: Array[Human] = []
 	for h in get_all_humans():
-		if h.current_health > 0:
+		if h.is_alive:
 			result.append(h)
 	return result
 

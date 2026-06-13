@@ -31,10 +31,6 @@ var facing_direction: Vector2 = Vector2.RIGHT
 ## keeps them parsing; full re-audit is post-validation.
 var is_special: bool = false
 
-## VESTIGIAL — read by unit.gd:390 (BOID alignment) until the HP/combat strip
-## (step 1.3). Carries no behavior here. Remove with that step.
-var is_melee_attacker: bool = false
-
 
 func _ready() -> void:
 	team = Team.ZOMBIES
@@ -94,25 +90,13 @@ func update_zombie_state() -> void:
 ## (Zombies become killable by gunfire in Phase 3.1; GameManager tracks the free
 ## for the lose condition.)
 func die() -> void:
+	is_alive = false
 	current_state = State.DEAD
 	velocity = Vector2.ZERO
 	modulate = Color(0.4, 0.0, 0.0)
 	# Living zombies stop being pushed by this corpse via the BOID separation skip
-	# (dead units excluded by current_health <= 0 in apply_separation_force), not
-	# via collision layers — units don't collide with each other anyway.
+	# (dead units excluded by is_alive in the registry / apply_separation_force),
+	# not via collision layers — units don't collide with each other anyway.
 	await get_tree().create_timer(0.3).timeout
 	if is_instance_valid(self):
 		queue_free()
-
-
-## Receives damage. The 2-arg signature is retained because fat_zombie.gd calls
-## super.take_damage(amount, knockback). HP plumbing (current_health,
-## update_health_bar) lives on Unit and is removed in step 1.3 — revisit then.
-func take_damage(amount: float, knockback_direction: Vector2 = Vector2.ZERO) -> void:
-	current_health -= amount
-	update_health_bar()
-	if current_health <= 0:
-		die()
-		if knockback_direction != Vector2.ZERO and is_instance_valid(self):
-			var tween := create_tween()
-			tween.tween_property(self, "position", position + knockback_direction * 8.0, 0.15)
