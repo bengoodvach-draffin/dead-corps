@@ -16,10 +16,9 @@ class_name Human
 ## rout/herding, cower) is rebuilt on top of this skeleton in Phase 3 — it reads
 ## all tunables per-class from GameConfig, not from this script.
 ##
-## NOTE (transitional): one vestigial enum value and a small combat-compat shim
-## block survive ONLY so the still-v1 zombie.gd / specials keep parsing until
-## their own demolition step strips them. Each is tagged with the step that
-## deletes it. They carry no live behavior here.
+## NOTE (transitional): one vestigial enum value (GRAPPLED) survives ONLY so
+## costume_zombie.gd keeps parsing until the specials patch (step 1.7). It
+## carries no live behavior here.
 
 ## Human behavioral states. Live in this skeleton: IDLE, DEAD (and SENTRY, which
 ## now behaves like IDLE — kept so level scenes that set initial_state = SENTRY
@@ -112,23 +111,6 @@ var patrol_pause_timer: float = 0.0   ## Countdown for the current waypoint paus
 
 ## Cached physics space for line-of-sight raycasts.
 var space_state: PhysicsDirectSpaceState2D
-
-# === V1 COMBAT COMPAT SHIM (transitional) ===
-# zombie.gd (still v1 until step 1.2) reads/writes these on its Unit-typed
-# attack_target during its leap/grapple/melee path. They carry NO behavior —
-# they exist only so zombie.gd parses AND so its now-defunct grapple write
-# (attack_target.grapple_timer = attack_target.grapple_duration) doesn't crash
-# at runtime. The human ignores all of them; it dies via Unit.take_damage like
-# any unit. DELETE this whole block in step 1.2 with zombie.gd's melee combat.
-var is_grappled: bool = false
-var grapple_timer: float = 1.0
-var grapple_duration: float = 0.5
-var attacker_count: int = 0   ## read by zombie.gd's target-selection (_find_nearest_human_simple)
-func count_melee_attackers() -> int: return 0
-func add_attacker() -> void: pass
-func remove_attacker() -> void: pass
-# === END COMPAT SHIM ===
-
 
 ## Initialise the human: team, state, patrol, base unit, LOS space.
 func _ready() -> void:
