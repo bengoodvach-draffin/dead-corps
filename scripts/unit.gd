@@ -57,12 +57,12 @@ enum Team {
 @export_group("")
 
 # === V1 COMBAT INTERFACE (transitional) ===
-# Kept ONLY so still-v1 callers parse until their own demolition step:
-#  - attack_target / set_attack_target → selection_manager engagement (removed in 1.5)
-#  - attack_damage / attack_range / perform_attack → specials (fat/costume) combat
-#    overrides (minimal-patched in 1.7)
-# The base combat loop is gone, so these carry no live behavior. (take_damage,
-# further down, is NOT vestigial — it's the v2 binary kill entry.)
+# Kept ONLY so the still-v1 specials parse until their patch in 1.7:
+#  - attack_target → costume_zombie reads it; attack_damage / attack_range →
+#    fat_zombie sets them; perform_attack → costume_zombie calls super on it.
+# The base combat loop is gone, so these carry no live behavior — attack_target
+# only ever stays null now that set_attack_target is removed (step 1.5).
+# (take_damage, further down, is NOT vestigial — it's the v2 binary kill entry.)
 @export var attack_damage: float = 0.0
 @export var attack_range: float = 0.0
 var attack_target: Unit = null
@@ -147,13 +147,6 @@ func set_move_target(target: Vector2) -> void:
 	target_position = WorldBounds.clamp_to_bounds(target)
 	has_target = true
 	attack_target = null
-
-
-## TRANSITIONAL (removed in 1.5 with selection_manager engagement). Inert — the
-## base combat loop is gone, so attack_target is no longer acted on.
-func set_attack_target(target: Unit) -> void:
-	attack_target = target
-	has_target = false
 
 
 ## TRANSITIONAL (removed in 1.7 with the specials patch). No-op — costume_zombie

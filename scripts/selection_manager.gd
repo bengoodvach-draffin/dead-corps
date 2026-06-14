@@ -157,27 +157,10 @@ func start_selection(_screen_pos: Vector2) -> void:
 	box_start_pos = get_global_mouse_position()
 	box_current_pos = box_start_pos
 	is_box_selecting = true
-	
-	# If not holding shift, clear current selection —
-	# UNLESS clicking on a human (cone inspection via VisionRenderer).
-	# Clicking a human should pin/toggle their vision cone without
-	# disturbing the current zombie selection.
-	if not Input.is_key_pressed(KEY_SHIFT) and not _is_human_at_position(box_start_pos):
+
+	# If not holding shift, clear current selection.
+	if not Input.is_key_pressed(KEY_SHIFT):
 		clear_selection()
-
-
-## Returns true if a living human is within 15px of world_pos.
-## Mirrors the hit radius used in VisionRenderer._get_human_at_position().
-func _is_human_at_position(world_pos: Vector2) -> bool:
-	var humans := get_tree().get_nodes_in_group("humans")
-	for unit in humans:
-		if not unit is Human:
-			continue
-		if (unit as Human).is_dead:
-			continue
-		if world_pos.distance_to(unit.position) <= 15.0:
-			return true
-	return false
 
 func update_selection_box(_screen_pos: Vector2) -> void:
 	box_current_pos = get_global_mouse_position()
@@ -249,139 +232,23 @@ func handle_command(_screen_pos: Vector2) -> void:
 
 	var world_pos := get_global_mouse_position()
 
-	# Check if right-clicking on an enemy
-	var target_unit := get_unit_at_position(world_pos, "humans")
-
-	if target_unit:
-		# Attack command — use group engagement resolver (v0.25.0)
-		_resolve_group_engagement(selected_units, target_unit)
-	else:
-		# Move command — only non-committed zombies respond
-		var commandable_units: Array[Unit] = []
-		for unit in selected_units:
-			if is_instance_valid(unit):
-				if unit is Zombie:
-					var zombie := unit as Zombie
-					if zombie.can_receive_command():
-						commandable_units.append(unit)
-				else:
+	# Move command. The v1 RMB-on-human engagement resolver is gone (step 1.5).
+	# RMB-on-human becomes the release/Pounce trigger in Phase 2.2; until then
+	# every right-click is a formation move order.
+	var commandable_units: Array[Unit] = []
+	for unit in selected_units:
+		if is_instance_valid(unit):
+			if unit is Zombie:
+				if (unit as Zombie).can_receive_command():
 					commandable_units.append(unit)
-		
-		if not commandable_units.is_empty():
-			var formation_positions := calculate_formation_positions(world_pos, commandable_units)
-			for i in range(commandable_units.size()):
-				commandable_units[i].set_move_target(formation_positions[i])
-
-
-## Group engagement resolver (v0.25.0)
-## When the player right-clicks a human, finds all humans within 150px of the click
-## and distributes selected zombies across the group using greedy bipartite assignment.
-## Max 2 zombies per human. Overflow zombies move to the clicked position.
-## @param zombies: Currently selected units
-## @param clicked_human: The human that was right-clicked
-func _resolve_group_engagement(zombies: Array[Unit], clicked_human: Unit) -> void:
-	# Step 1: Find target group — all humans within 150px of clicked human
-	var all_humans := get_tree().get_nodes_in_group("humans")
-	var target_group: Array[Unit] = []
-	for human in all_humans:
-		if not human is Human:
-			continue
-		if (human as Human).is_dead:
-			continue
-		var dist: float = clicked_human.global_position.distance_to(human.global_position)
-		if dist <= 150.0:
-			target_group.append(human)
-	# Safety: ensure clicked human is always included
-	if clicked_human not in target_group:
-		target_group.append(clicked_human)
-	
-	# Step 2: Filter commandable zombies
-	var commandable: Array[Unit] = []
-	for unit in zombies:
-		if not is_instance_valid(unit):
-			continue
-		if unit is Zombie and (unit as Zombie).can_receive_command():
-			commandable.append(unit)
-	
-	if commandable.is_empty():
-		return
-	
-	print("🎯 GROUP ENGAGEMENT: ", commandable.size(), " zombies vs ", target_group.size(), " humans")
-	
-	# Step 3: Build zombie-human distance pairs, sort ascending
-	var pairs: Array = []
-	for zombie in commandable:
-		for human in target_group:
-			pairs.append({
-				"zombie": zombie,
-				"human": human,
-				"dist": zombie.global_position.distance_to(human.global_position)
-			})
-	pairs.sort_custom(func(a, b): return a.dist < b.dist)
-	
-	# Step 4: Greedy bipartite assignment — max 2 zombies per human
-	var assigned: Dictionary = {}      # zombie → human
-	var human_counts: Dictionary = {}  # human → slot count
-	
-	for pair in pairs:
-		if pair.zombie in assigned:
-			continue
-		var count: int = human_counts.get(pair.human, 0)
-		if count >= 2:
-			continue
-		assigned[pair.zombie] = pair.human
-		human_counts[pair.human] = count + 1
-	
-	# Step 5: Issue commands
-	var overflow_count := 0
-	for zombie in commandable:
-		if zombie in assigned:
-			(zombie as Zombie).set_attack_target(assigned[zombie])
-		else:
-			# Overflow: attack the nearest human in the target group, NOT a dead-end
-			# move order. The per-frame melee gate (count_melee_attackers < 2) keeps
-			# only 2 actively meleeing per human; the extras pursue and rotate into a
-			# freed slot the moment a front-rank attacker dies. This is what lets a
-			# horde finish a lone defender instead of idling on the corpse-spot.
-			var nearest: Unit = _nearest_in_group(zombie, target_group)
-			if nearest:
-				(zombie as Zombie).set_attack_target(nearest)
 			else:
-				zombie.set_move_target(clicked_human.global_position)
-			overflow_count += 1
+				commandable_units.append(unit)
 
-	if overflow_count > 0:
-		print("  ", overflow_count, " overflow zombies sent to attack nearest in group")
+	if not commandable_units.is_empty():
+		var formation_positions := calculate_formation_positions(world_pos, commandable_units)
+		for i in range(commandable_units.size()):
+			commandable_units[i].set_move_target(formation_positions[i])
 
-
-## Returns the nearest living human in `group` to `zombie`, or null if none valid.
-func _nearest_in_group(zombie: Unit, group: Array[Unit]) -> Unit:
-	var best: Unit = null
-	var best_dist: float = INF
-	for human in group:
-		if not is_instance_valid(human):
-			continue
-		if human is Human and (human as Human).is_dead:
-			continue
-		var d: float = zombie.global_position.distance_to(human.global_position)
-		if d < best_dist:
-			best_dist = d
-			best = human
-	return best
-
-func get_unit_at_position(pos: Vector2, group: String) -> Unit:
-	var units := get_tree().get_nodes_in_group(group)
-	var closest_unit: Unit = null
-	var min_distance := 30.0
-	
-	for unit in units:
-		if unit is Unit:
-			var distance := pos.distance_to(unit.position)
-			if distance < min_distance:
-				min_distance = distance
-				closest_unit = unit
-	
-	return closest_unit
 
 func add_unit_to_selection(unit: Unit) -> void:
 	if unit not in selected_units:
