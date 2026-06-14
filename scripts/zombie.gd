@@ -1,102 +1,130 @@
 extends Unit
 class_name Zombie
 
-## Zombie unit — player-controlled undead (V2 skeleton).
+## Zombie unit — player-controlled undead. Thin SHELL per ARCHITECTURE_GUIDELINES
+## rule 2: it owns the state enum, identity/selectability, and the per-frame
+## dispatch; the actual behaviors live in child components.
 ##
-## Phase 1.2 demolition: the v1 stealth-era combat is GONE (V2_DIRECTION_SPEC
-## §11) — leap-as-speed-boost, melee + the 2-attacker gate, the post-kill
-## continuation scan, and stuck detection are all deleted. The lunge is REFRAMED
-## as the Pounce (kill delivery) and rebuilt fresh in Phase 2.2; FERAL states,
-## retargeting, and the hunt pool follow in 2.2–2.3. This skeleton is just: stand
-## (IDLE), move where the player commands (MOVING), die (DEAD). Movement is
-## Unit-base-driven via set_move_target — zombie.gd no longer pursues anything.
+## State model (spec §3.1): CALM (full RTS control — idle-shamble or commanded
+## move) vs FERAL (autonomous hunting) vs DEAD. _physics_process is a dispatcher
+## (rule 4) routing to _tick_calm / _tick_feral; DEAD is inert.
+##
+## Components:
+##   - ShambleBehavior (built 2.1) — calm idle wander, ticked from _tick_calm.
+##   - FeralBrain / PounceBehavior (2.2–2.3) — not built yet; _tick_feral stubbed.
 
 enum State {
-	IDLE,
-	MOVING,
+	CALM,   ## RTS-controlled: idle-shamble when no target, move when commanded
+	FERAL,  ## autonomous hunting (built in 2.2) — not selectable
 	DEAD
 }
 
-## Emitted on a kill. Nothing emits it in this skeleton — the Pounce re-emits it
-## in Phase 2.2. Kept wired so GameManager's listener survives the demolition.
+## Emitted on a kill — re-emitted by the Pounce in 2.2. Kept wired so
+## GameManager's listener survives.
 signal zombie_killed_human(human: Unit, zombie: Zombie)
 
 @onready var nav_agent: NavigationAgent2D = $NavigationAgent2D if has_node("NavigationAgent2D") else null
 
-var current_state: State = State.IDLE
+var current_state: State = State.CALM
 var facing_direction: Vector2 = Vector2.RIGHT
 
 ## Special zombies (FatZombie/CostumeZombie) set this true in their _ready().
-## Read by end_game_overlay.gd. Specials are excluded from the PoC — this only
-## keeps them parsing; full re-audit is post-validation.
+## Read by end_game_overlay.gd. Specials are PoC-excluded / non-functional.
 var is_special: bool = false
+
+## Calm idle-wander component (child node).
+var _shamble: ShambleBehavior = null
+
+## Tracks whether we were executing a commanded move last frame, so the shamble
+## anchor can reset to the arrival point the moment a move completes (spec §3.2).
+var _was_moving: bool = false
 
 
 func _ready() -> void:
 	team = Team.ZOMBIES
 	super._ready()
 
+	# Calm idle-wander component. Created at runtime (no editor presence needed);
+	# ticked by this shell's dispatcher, so it has no _physics_process of its own.
+	_shamble = ShambleBehavior.new()
+	_shamble.name = "ShambleBehavior"
+	add_child(_shamble)
+	_shamble.setup(self)
 
-## Whether this zombie can receive a new player command. Calm zombies always can
-## now — the committed leap/melee states that used to block commands are gone.
-## (Released ferals stop being selectable at all once Phase 2.4 lands.)
+
+## Whether this zombie can receive a player command. Calm zombies always can;
+## feral zombies are not selectable/commandable (enforced in selection, 2.4).
 func can_receive_command() -> bool:
-	return true
+	return current_state == State.CALM
 
 
+## Per-frame dispatcher (rule 4). DEAD is inert; CALM/FERAL route to handlers.
 func _physics_process(delta: float) -> void:
 	if current_state == State.DEAD:
 		velocity = Vector2.ZERO
 		return
 
-	update_zombie_state()
+	_apply_boid_tuning()
+	apply_separation_force()
+	apply_alignment_force()
 
-	# BOID tuning per movement state (cohesion is a no-op — disabled in unit.gd —
-	# but kept for parity; separation/alignment are the live forces).
 	match current_state:
-		State.IDLE:
-			self.cohesion_strength = 15.0
-			self.alignment_rate = 0.5
-			self.separation_radius = 30.0
-			self.separation_strength = 100.0
-		State.MOVING:
-			self.cohesion_strength = 0.0
-			self.alignment_rate = 0.8
-			self.separation_radius = 35.0
-			self.separation_strength = 120.0
-		State.DEAD:
-			self.cohesion_strength = 0.0
-			self.alignment_rate = 0.0
-			self.separation_radius = 25.0
-			self.separation_strength = 80.0
+		State.CALM:
+			_tick_calm(delta)
+		State.FERAL:
+			_tick_feral(delta)
 
-	# Face the direction of travel.
+	clamp_position_to_bounds()
+
 	if velocity.length() > 0.1:
 		facing_direction = velocity.normalized()
 
-	# Base Unit physics (movement toward target, BOID separation).
-	super._physics_process(delta)
 
-
-## MOVING while heading to a commanded position, else IDLE.
-func update_zombie_state() -> void:
+## CALM: execute a commanded move if we have one, otherwise idle-shamble. When a
+## commanded move just completed, reset the shamble anchor to the arrival point.
+func _tick_calm(delta: float) -> void:
 	if has_target:
-		current_state = State.MOVING
+		move_to_target(delta)
+		_was_moving = true
 	else:
-		current_state = State.IDLE
+		if _was_moving:
+			_shamble.set_anchor(global_position)
+			_was_moving = false
+		_shamble.tick(delta)
 
 
-## Death: enter DEAD, stop, recolor, linger briefly as a corpse, then free.
-## (Zombies become killable by gunfire in Phase 3.1; GameManager tracks the free
-## for the lose condition.)
+## FERAL: autonomous hunting — built in Phase 2.2 (FeralBrain + Pounce).
+func _tick_feral(_delta: float) -> void:
+	pass
+
+
+## BOID separation/alignment params, tuned per state (set before the forces run).
+## Cohesion is omitted — it's disabled in unit.gd.
+func _apply_boid_tuning() -> void:
+	match current_state:
+		State.CALM:
+			if has_target:
+				separation_radius = 35.0
+				separation_strength = 120.0
+				alignment_rate = 0.8
+			else:
+				separation_radius = 30.0
+				separation_strength = 100.0
+				alignment_rate = 0.5
+		State.FERAL:
+			separation_radius = 45.0
+			separation_strength = 150.0
+			alignment_rate = 1.5
+
+
+## Death: enter DEAD, stop, recolor, linger as a corpse, then free.
 func die() -> void:
 	is_alive = false
 	current_state = State.DEAD
 	velocity = Vector2.ZERO
 	modulate = Color(0.4, 0.0, 0.0)
 	# Living zombies stop being pushed by this corpse via the BOID separation skip
-	# (dead units excluded by is_alive in the registry / apply_separation_force),
-	# not via collision layers — units don't collide with each other anyway.
+	# (dead units excluded by is_alive in the registry), not collision layers.
 	await get_tree().create_timer(0.3).timeout
 	if is_instance_valid(self):
 		queue_free()

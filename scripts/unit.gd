@@ -114,6 +114,20 @@ func move_to_target(_delta: float) -> void:
 		has_target = false
 
 
+## Steps toward a world point at `speed`; returns true on arrival (within
+## arrive_dist). global_position-based. Used by behavior components that drive
+## their own movement (shamble now; feral pursuit later) — the shell owns the
+## decision of WHERE, Unit owns the movement.
+func step_toward(point: Vector2, speed: float, arrive_dist: float = 2.0) -> bool:
+	var to_point := point - global_position
+	if to_point.length() <= arrive_dist:
+		velocity = Vector2.ZERO
+		return true
+	velocity = to_point.normalized() * speed
+	move_and_slide()
+	return false
+
+
 ## Keeps the unit's edge (not centre) inside the world bounds.
 func clamp_position_to_bounds() -> void:
 	var bounds_min: Vector2 = WorldBounds.world_bounds_min

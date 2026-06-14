@@ -63,8 +63,11 @@ var release_cluster_radius: float = 300.0
 var mark_radius: float = 300.0
 
 # === IDLE SHAMBLE ===
-var shamble_leash: float = 25.0
-var shamble_speed: float = 20.0
+var shamble_leash: float = 5.0
+var shamble_speed: float = 7.0
+## Pause (seconds) a zombie idles at each wander point before moving to the next.
+## Per-point duration is varied deterministically (±50%) so a crowd doesn't pause in lockstep.
+var shamble_pause: float = 3.0
 
 # === FILL DECAY / ROTATION ===
 ## Fill-front decay multiplier (× fill speed), applied only when no zombie is visible.

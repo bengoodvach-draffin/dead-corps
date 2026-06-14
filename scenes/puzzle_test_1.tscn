@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://3sf8250t3l5r" path="res://scripts/camera_controller.gd" id="1_ranx7"]
 [ext_resource type="Script" uid="uid://b112ultiv3ox0" path="res://scripts/level_bounds.gd" id="2_x8g7u"]
+[ext_resource type="Script" uid="uid://dlqe4p8ushalq" path="res://scripts/level_config.gd" id="3_x8g7u"]
 [ext_resource type="Script" uid="uid://crornii8mcmn3" path="res://scripts/initializer.gd" id="3_xvqv2"]
 [ext_resource type="Script" uid="uid://c7bww3rdcm8pt" path="res://scripts/game_manager.gd" id="4_xpoum"]
 [ext_resource type="PackedScene" uid="uid://c8yqh3jvpxn3w" path="res://scenes/zombie.tscn" id="5_sxbni"]
@@ -34,6 +35,14 @@ position = Vector2(0, 3)
 script = ExtResource("2_x8g7u")
 bounds_min = Vector2(-1000, -500)
 bounds_max = Vector2(1000, 500)
+
+[node name="LevelConfig" type="Node2D" parent="." unique_id=1080841229]
+position = Vector2(-2, 0)
+script = ExtResource("3_x8g7u")
+shamble_leash = 5.0
+shamble_speed = 7.0
+shamble_pause = 3.0
+metadata/_custom_type_script = "uid://dlqe4p8ushalq"
 
 [node name="Initializer" type="Node" parent="." unique_id=1515215272]
 script = ExtResource("3_xvqv2")

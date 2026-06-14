@@ -56,8 +56,9 @@ class_name LevelConfig
 @export var mark_radius: float = 300.0
 
 # === IDLE SHAMBLE ===
-@export var shamble_leash: float = 25.0
-@export var shamble_speed: float = 20.0
+@export var shamble_leash: float = 5.0
+@export var shamble_speed: float = 7.0
+@export var shamble_pause: float = 3.0
 
 # === FILL DECAY / ROTATION ===
 @export var fill_decay_factor: float = 2.0
@@ -110,6 +111,7 @@ func _ready() -> void:
 
 	GameConfig.shamble_leash = shamble_leash
 	GameConfig.shamble_speed = shamble_speed
+	GameConfig.shamble_pause = shamble_pause
 
 	GameConfig.fill_decay_factor = fill_decay_factor
 	GameConfig.turn_speed = turn_speed
