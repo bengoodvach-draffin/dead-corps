@@ -4,14 +4,12 @@ class_name GameManager
 ## Main game manager that coordinates all gameplay systems
 ## Handles zombie conversion, spawning, escape tracking, and game state
 
-signal human_converted(position: Vector2)
 signal human_escaped()
 signal game_won()
 signal game_lost()
 
 @export var zombie_scene: PackedScene
 @export var human_scene: PackedScene
-@export var conversion_spawn_offset: float = 20.0
 
 var units_parent: Node2D
 var all_zombies: Array[Zombie] = []
@@ -109,28 +107,11 @@ func _register_human(human: Human) -> void:
 	if not human.human_died.is_connected(_on_human_died):
 		human.human_died.connect(_on_human_died)
 
-func _on_zombie_killed_human(human: Human, _zombie: Zombie) -> void:
-	# With incubation system, we DON'T spawn immediately
-	# The human will enter "dead" state and spawn zombie after 5 seconds
-	# This is handled by on_human_converted()
+func _on_zombie_killed_human(_human: Human, _zombie: Zombie) -> void:
+	# No-op. The v1 incubation→conversion pipeline is gone (demolition step 1.4).
+	# In v2 the Pounce delivers the kill (2.2) and the killed human rises in place
+	# via the riser pipeline (2.6), which will wire into this signal then.
 	pass
-
-func on_human_converted(human: Human) -> void:
-	# Called after incubation period (5 seconds)
-	# Spawn a new zombie at the human's position
-	var spawn_pos := human.position
-	
-	# Add small random offset so they don't overlap perfectly
-	var random_offset := Vector2(
-		randf_range(-conversion_spawn_offset, conversion_spawn_offset),
-		randf_range(-conversion_spawn_offset, conversion_spawn_offset)
-	)
-	spawn_pos += random_offset
-	
-	# Create new zombie
-	spawn_zombie(spawn_pos)
-	
-	human_converted.emit(spawn_pos)
 
 func _on_human_died(human: Human) -> void:
 	# Remove from tracking array
@@ -305,8 +286,13 @@ func neighbours_within(pos: Vector2, radius: float, team: StringName, exclude: U
 			result.append(u)
 	return result
 
-## Gets total zombie count including incubating corpses (dead humans)
-## For scoring purposes, dead humans count as zombies since they're converting
+## Gets total zombie count including dead humans.
+## DEFERRED CLEANUP (step 1.4 → 4.1): the "dead humans count as converting
+## zombies" assumption is stale now that the incubation pipeline is gone — but
+## it's harmless on this branch (no human dies between 1.4 and the Pounce in 2.2,
+## since combat is off). The win/lose conditions that call this are rebuilt to
+## spec §8 in step 4.1 (risers count toward the zombie total there); this whole
+## helper is revisited then. Left untouched in 1.4 to avoid overreaching into 4.1.
 func get_total_zombie_count() -> int:
 	var zombie_count := get_all_zombies().size()
 	

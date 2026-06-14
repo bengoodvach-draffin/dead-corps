@@ -94,13 +94,11 @@ var current_state: State = State.IDLE
 ## Facing direction — updated from movement; kept for rendering/readability.
 var facing_direction: Vector2 = Vector2.RIGHT
 
-## Whether this human is dead but not yet converted (incubating).
+## Whether this human is dead (a corpse). Set by die(); read by GameManager
+## win-check, selection, end-game overlay. In v2 a killed human becomes a
+## permanent corpse here until the riser pipeline (step 2.6) raises it in place —
+## the v1 incubation→conversion pipeline was removed in step 1.4.
 var is_dead: bool = false
-
-## Incubation countdown (seconds). The whole incubation→conversion pipeline is
-## replaced by rise-in-place in demolition step 1.4.
-var incubation_timer: float = 5.0
-var incubation_duration: float = 5.0
 
 # --- PATROL RUNTIME ---
 var current_waypoint_index: int = 0   ## Waypoint we're heading to (0-based)
@@ -154,13 +152,10 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector2.ZERO
 		has_target = false
 
-	# DEAD: incubating corpse — hold still, count down, convert. (Replaced in 1.4.)
+	# DEAD: permanent corpse — hold still. (The riser pipeline in step 2.6 will
+	# raise it in place; the v1 incubation→conversion was removed in step 1.4.)
 	if current_state == State.DEAD:
 		velocity = Vector2.ZERO
-		incubation_timer -= delta
-		if incubation_timer <= 0.0:
-			spawn_zombie_conversion()
-			queue_free()
 		return
 
 	# Patrol movement (positioning only — no facing/swing/regroup).
@@ -304,7 +299,6 @@ func die() -> void:
 	is_alive = false
 	current_state = State.DEAD
 	is_dead = true
-	incubation_timer = incubation_duration
 
 	velocity = Vector2.ZERO
 	has_target = false
@@ -313,14 +307,6 @@ func die() -> void:
 	modulate = Color(0.8, 0.2, 0.2, 1.0)   # red corpse
 	collision_layer = 0                     # corpses block nothing
 	collision_mask = 0
-
-
-## Asks GameManager to spawn a zombie at this corpse's position once incubation
-## completes. (Replaced by rise-in-place in demolition step 1.4.)
-func spawn_zombie_conversion() -> void:
-	var game_manager := get_tree().get_first_node_in_group("game_manager")
-	if game_manager and game_manager.has_method("on_human_converted"):
-		game_manager.on_human_converted(self)
 
 
 # === EDITOR VISUALS ===

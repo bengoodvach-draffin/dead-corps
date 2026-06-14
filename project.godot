@@ -86,6 +86,7 @@ command={
 2d_navigation/layer_1="Walkable"
 2d_physics/layer_2="Zombies"
 2d_physics/layer_3="Humans"
+2d_physics/layer_4="EscapeBarrier"
 
 [rendering]
 
