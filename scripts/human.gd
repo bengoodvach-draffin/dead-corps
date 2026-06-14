@@ -15,22 +15,14 @@ class_name Human
 ## The v2 defense behavior (radial fill front, fear radius + break, permanent
 ## rout/herding, cower) is rebuilt on top of this skeleton in Phase 3 — it reads
 ## all tunables per-class from GameConfig, not from this script.
-##
-## NOTE (transitional): one vestigial enum value (GRAPPLED) survives ONLY so
-## costume_zombie.gd keeps parsing until the specials patch (step 1.7). It
-## carries no live behavior here.
 
 ## Human behavioral states. Live in this skeleton: IDLE, DEAD (and SENTRY, which
 ## now behaves like IDLE — kept so level scenes that set initial_state = SENTRY
-## still load). GRAPPLED is a vestigial label still referenced by
-## costume_zombie.gd; remove it when specials are patched (step 1.7). No code
-## transitions into GRAPPLED here. (Enum int values for IDLE=0 / SENTRY=1 are
-## preserved so scene-serialized initial_state still loads.)
+## still load). No code transitions into SENTRY's old watching behavior.
 enum State {
-	IDLE,      ## Standing / calm
-	SENTRY,    ## Watching (now identical to IDLE — facing behavior deleted)
-	GRAPPLED,  ## VESTIGIAL — pounce replaces grapple; remove with specials (1.7)
-	DEAD       ## Incubating corpse (rise pipeline replaces this in step 1.4)
+	IDLE,    ## Standing / calm
+	SENTRY,  ## Watching (now identical to IDLE — facing behavior deleted)
+	DEAD     ## Permanent corpse (the riser pipeline raises it in step 2.6)
 }
 
 ## Patrol modes for waypoint movement.
@@ -302,7 +294,6 @@ func die() -> void:
 
 	velocity = Vector2.ZERO
 	has_target = false
-	attack_target = null
 
 	modulate = Color(0.8, 0.2, 0.2, 1.0)   # red corpse
 	collision_layer = 0                     # corpses block nothing

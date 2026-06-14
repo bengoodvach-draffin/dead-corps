@@ -56,18 +56,6 @@ enum Team {
 
 @export_group("")
 
-# === V1 COMBAT INTERFACE (transitional) ===
-# Kept ONLY so the still-v1 specials parse until their patch in 1.7:
-#  - attack_target → costume_zombie reads it; attack_damage / attack_range →
-#    fat_zombie sets them; perform_attack → costume_zombie calls super on it.
-# The base combat loop is gone, so these carry no live behavior — attack_target
-# only ever stays null now that set_attack_target is removed (step 1.5).
-# (take_damage, further down, is NOT vestigial — it's the v2 binary kill entry.)
-@export var attack_damage: float = 0.0
-@export var attack_range: float = 0.0
-var attack_target: Unit = null
-# === END TRANSITIONAL ===
-
 # === RUNTIME STATE ===
 
 ## Stable, monotonic identity assigned by GameManager at registration (-1 until
@@ -146,13 +134,6 @@ func clamp_position_to_bounds() -> void:
 func set_move_target(target: Vector2) -> void:
 	target_position = WorldBounds.clamp_to_bounds(target)
 	has_target = true
-	attack_target = null
-
-
-## TRANSITIONAL (removed in 1.7 with the specials patch). No-op — costume_zombie
-## calls super.perform_attack().
-func perform_attack() -> void:
-	pass
 
 
 ## V2 binary kill entry. No HP — any lethal event (gunfire in 3.1, the Pounce in
