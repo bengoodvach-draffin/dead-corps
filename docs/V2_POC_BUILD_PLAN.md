@@ -2,6 +2,7 @@
 
 **Date:** June 12, 2026 · **Basis:** `V2_DIRECTION_SPEC.md` (2.0-draft4) · **Branch:** `v2-poc`
 **Status:** Proposed sequencing for Ben's review. Each step still gets a short propose/confirm at execution time per the working rules — this document fixes the *order* and the *scope boundaries*, not the line-level approach.
+**Progress (v0.30.0):** Phase 0 ✅ and Phase 1 ✅ **complete** (1.6 vision-renderer stub was folded into 1.1). The branch is the sterile sandbox. **Next: Phase 2 — predation core.**
 
 The goal of the ordering: the game stays **bootable and manually testable after every step**, dependencies are built before their dependents, and the demolition of v1 systems happens in one contained band rather than bleeding through the whole build.
 
@@ -16,7 +17,7 @@ The goal of the ordering: the game stays **bootable and manually testable after 
 
 ---
 
-## Phase 0 — Foundations (additive; v1 still runs after this phase)
+## Phase 0 — Foundations (additive; v1 still runs after this phase) ✅ DONE
 
 - **0.1 `level_config.gd`** — NEW `@tool` node, `level_bounds.gd` pattern: placed per level, writes all spec-§9 knobs on `_ready()` into one readable place (autoload-style static access or group lookup — propose at execution). Every later step reads its numbers from here; nothing hardcodes a tunable.
 - **0.2 Unit registry + neighbour queries in `GameManager`** — cached `living_zombies()` / `living_humans()` arrays maintained by the existing registration/death signals, plus `neighbours_within(pos, radius, team)` returning results in **stable unit-ID order** (monotonic `unit_uid` assigned at registration). Internals are a naive O(n) scan — fine at PoC counts; the API is the contract (see Performance tie-in below — a spatial hash can drop in behind it later, invisible to callers).
@@ -26,7 +27,7 @@ The goal of the ordering: the game stays **bootable and manually testable after 
 
 ---
 
-## Phase 1 — Demolition (one contained band; "dumb but bootable" at the end)
+## Phase 1 — Demolition (one contained band; "dumb but bootable" at the end) ✅ DONE
 
 Strip per the spec-§11 audit. Sequenced so each commit passes the parse gate; accept that between 1.1 and the end of Phase 2 the game is a sterile sandbox (units move, nobody fights).
 
