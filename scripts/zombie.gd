@@ -68,7 +68,6 @@ func _ready() -> void:
 	add_child(_pounce)
 	_pounce.setup(self)
 	_pounce.landed_kill.connect(_on_pounce_kill)
-	_pounce.finished.connect(_on_pounce_finished)
 
 
 ## Whether this zombie can receive a player command. Calm only.
@@ -150,12 +149,6 @@ func ignite_feral(target: Human) -> void:
 ## contagion in 2.5 and risers in 2.6).
 func _on_pounce_kill(human: Human) -> void:
 	zombie_killed_human.emit(human, self)
-
-
-## Pounce recovery finished. 2.2: no retarget — return to calm. (2.3 retargets
-## from the hunt pool here instead, only calming on an empty pool.)
-func _on_pounce_finished() -> void:
-	_set_calm()
 
 
 ## Returns to CALM control: clears the feral target, reverts the tint, and anchors

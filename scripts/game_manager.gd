@@ -286,6 +286,48 @@ func neighbours_within(pos: Vector2, radius: float, team: StringName, exclude: U
 			result.append(u)
 	return result
 
+
+## === HUNT POOL (V2, spec §3.4) ===
+## Which humans are being hunted, for feral retargeting. Ferals report up here
+## (rule 5) instead of peeking into each other's FeralBrain (rule 8 — the registry
+## is the discovery mechanism). A count per human (several ferals may pursue one).
+
+var _pursuit_counts: Dictionary = {}   ## Human → number of ferals pursuing it
+
+
+## A feral started pursuing this human.
+func add_pursuit(human: Human) -> void:
+	_pursuit_counts[human] = _pursuit_counts.get(human, 0) + 1
+
+
+## A feral stopped pursuing this human (retargeted away, calmed, or died).
+func remove_pursuit(human: Human) -> void:
+	if not _pursuit_counts.has(human):
+		return
+	var c: int = _pursuit_counts[human] - 1
+	if c <= 0:
+		_pursuit_counts.erase(human)
+	else:
+		_pursuit_counts[human] = c
+
+
+## Living humans currently pursued by at least one feral — the {pursued} half of
+## the hunt pool. Built by filtering living_humans() so the result is unit_uid
+## ordered (§10) and never includes dead/freed humans (stale count keys are ignored).
+func pursued_humans() -> Array[Human]:
+	var result: Array[Human] = []
+	for h in living_humans():
+		if _pursuit_counts.has(h):
+			result.append(h)
+	return result
+
+
+## The {FLEEING} half of the hunt pool — empty until Phase 3 adds the flee state.
+## (Will filter living_humans() by FLEEING then.)
+func fleeing_humans() -> Array[Human]:
+	return []
+
+
 ## Gets total zombie count including dead humans.
 ## DEFERRED CLEANUP (step 1.4 → 4.1): the "dead humans count as converting
 ## zombies" assumption is stale now that the incubation pipeline is gone — but

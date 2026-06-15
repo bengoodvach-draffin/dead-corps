@@ -323,14 +323,510 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human7" parent="TestLevel/Level 7" unique_id=544416392 instance=ExtResource("6_8i2yc")]
-position = Vector2(-198, 399)
+position = Vector2(606, 381)
 initial_state = 1
 defender_class = 2
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human8" parent="TestLevel/Level 7" unique_id=122093242 instance=ExtResource("6_8i2yc")]
-position = Vector2(-197, 454)
+position = Vector2(607, 436)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human9" parent="TestLevel/Level 7" unique_id=123359927 instance=ExtResource("6_8i2yc")]
+position = Vector2(652, 363)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human10" parent="TestLevel/Level 7" unique_id=802561045 instance=ExtResource("6_8i2yc")]
+position = Vector2(653, 418)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human11" parent="TestLevel/Level 7" unique_id=2086367837 instance=ExtResource("6_8i2yc")]
+position = Vector2(705, 386)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human12" parent="TestLevel/Level 7" unique_id=2123312914 instance=ExtResource("6_8i2yc")]
+position = Vector2(706, 441)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human13" parent="TestLevel/Level 7" unique_id=1802181031 instance=ExtResource("6_8i2yc")]
+position = Vector2(751, 368)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human14" parent="TestLevel/Level 7" unique_id=1862594511 instance=ExtResource("6_8i2yc")]
+position = Vector2(752, 423)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human15" parent="TestLevel/Level 7" unique_id=1821312093 instance=ExtResource("6_8i2yc")]
+position = Vector2(602, 268)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human16" parent="TestLevel/Level 7" unique_id=407273159 instance=ExtResource("6_8i2yc")]
+position = Vector2(603, 323)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human17" parent="TestLevel/Level 7" unique_id=183575338 instance=ExtResource("6_8i2yc")]
+position = Vector2(648, 250)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human18" parent="TestLevel/Level 7" unique_id=1465967015 instance=ExtResource("6_8i2yc")]
+position = Vector2(649, 305)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human19" parent="TestLevel/Level 7" unique_id=753881892 instance=ExtResource("6_8i2yc")]
+position = Vector2(701, 273)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human20" parent="TestLevel/Level 7" unique_id=1315301692 instance=ExtResource("6_8i2yc")]
+position = Vector2(702, 328)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human21" parent="TestLevel/Level 7" unique_id=307641213 instance=ExtResource("6_8i2yc")]
+position = Vector2(747, 255)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human22" parent="TestLevel/Level 7" unique_id=1119156948 instance=ExtResource("6_8i2yc")]
+position = Vector2(748, 310)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human23" parent="TestLevel/Level 7" unique_id=739582286 instance=ExtResource("6_8i2yc")]
+position = Vector2(411, 381)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human24" parent="TestLevel/Level 7" unique_id=1011978984 instance=ExtResource("6_8i2yc")]
+position = Vector2(412, 436)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human25" parent="TestLevel/Level 7" unique_id=1206424053 instance=ExtResource("6_8i2yc")]
+position = Vector2(457, 363)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human26" parent="TestLevel/Level 7" unique_id=763210770 instance=ExtResource("6_8i2yc")]
+position = Vector2(458, 418)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human27" parent="TestLevel/Level 7" unique_id=1437281296 instance=ExtResource("6_8i2yc")]
+position = Vector2(510, 386)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human28" parent="TestLevel/Level 7" unique_id=1723281677 instance=ExtResource("6_8i2yc")]
+position = Vector2(511, 441)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human29" parent="TestLevel/Level 7" unique_id=519671664 instance=ExtResource("6_8i2yc")]
+position = Vector2(556, 368)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human30" parent="TestLevel/Level 7" unique_id=1709368166 instance=ExtResource("6_8i2yc")]
+position = Vector2(557, 423)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human31" parent="TestLevel/Level 7" unique_id=1129969910 instance=ExtResource("6_8i2yc")]
+position = Vector2(407, 268)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human32" parent="TestLevel/Level 7" unique_id=1025717526 instance=ExtResource("6_8i2yc")]
+position = Vector2(408, 323)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human33" parent="TestLevel/Level 7" unique_id=1213079309 instance=ExtResource("6_8i2yc")]
+position = Vector2(453, 250)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human34" parent="TestLevel/Level 7" unique_id=1143609845 instance=ExtResource("6_8i2yc")]
+position = Vector2(454, 305)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human35" parent="TestLevel/Level 7" unique_id=1091047095 instance=ExtResource("6_8i2yc")]
+position = Vector2(506, 273)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human36" parent="TestLevel/Level 7" unique_id=1202196120 instance=ExtResource("6_8i2yc")]
+position = Vector2(507, 328)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human37" parent="TestLevel/Level 7" unique_id=1387604670 instance=ExtResource("6_8i2yc")]
+position = Vector2(552, 255)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human38" parent="TestLevel/Level 7" unique_id=1867297987 instance=ExtResource("6_8i2yc")]
+position = Vector2(553, 310)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human39" parent="TestLevel/Level 7" unique_id=1385450221 instance=ExtResource("6_8i2yc")]
+position = Vector2(595, 149)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human40" parent="TestLevel/Level 7" unique_id=1088308616 instance=ExtResource("6_8i2yc")]
+position = Vector2(596, 204)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human41" parent="TestLevel/Level 7" unique_id=983024184 instance=ExtResource("6_8i2yc")]
+position = Vector2(641, 131)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human42" parent="TestLevel/Level 7" unique_id=47670333 instance=ExtResource("6_8i2yc")]
+position = Vector2(642, 186)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human43" parent="TestLevel/Level 7" unique_id=574994857 instance=ExtResource("6_8i2yc")]
+position = Vector2(694, 154)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human44" parent="TestLevel/Level 7" unique_id=1156658357 instance=ExtResource("6_8i2yc")]
+position = Vector2(695, 209)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human45" parent="TestLevel/Level 7" unique_id=1238193752 instance=ExtResource("6_8i2yc")]
+position = Vector2(740, 136)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human46" parent="TestLevel/Level 7" unique_id=1238499958 instance=ExtResource("6_8i2yc")]
+position = Vector2(741, 191)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human47" parent="TestLevel/Level 7" unique_id=1841165390 instance=ExtResource("6_8i2yc")]
+position = Vector2(591, 36)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human48" parent="TestLevel/Level 7" unique_id=1846610078 instance=ExtResource("6_8i2yc")]
+position = Vector2(592, 91)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human49" parent="TestLevel/Level 7" unique_id=926987552 instance=ExtResource("6_8i2yc")]
+position = Vector2(637, 18)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human50" parent="TestLevel/Level 7" unique_id=433285740 instance=ExtResource("6_8i2yc")]
+position = Vector2(638, 73)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human51" parent="TestLevel/Level 7" unique_id=1249131461 instance=ExtResource("6_8i2yc")]
+position = Vector2(690, 41)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human52" parent="TestLevel/Level 7" unique_id=1095364620 instance=ExtResource("6_8i2yc")]
+position = Vector2(691, 96)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human53" parent="TestLevel/Level 7" unique_id=1761131599 instance=ExtResource("6_8i2yc")]
+position = Vector2(736, 23)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human54" parent="TestLevel/Level 7" unique_id=1196543008 instance=ExtResource("6_8i2yc")]
+position = Vector2(737, 78)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human55" parent="TestLevel/Level 7" unique_id=1313721104 instance=ExtResource("6_8i2yc")]
+position = Vector2(398, 149)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human56" parent="TestLevel/Level 7" unique_id=666805101 instance=ExtResource("6_8i2yc")]
+position = Vector2(399, 204)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human57" parent="TestLevel/Level 7" unique_id=1159210320 instance=ExtResource("6_8i2yc")]
+position = Vector2(444, 131)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human58" parent="TestLevel/Level 7" unique_id=637887269 instance=ExtResource("6_8i2yc")]
+position = Vector2(445, 186)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human59" parent="TestLevel/Level 7" unique_id=1685946147 instance=ExtResource("6_8i2yc")]
+position = Vector2(497, 154)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human60" parent="TestLevel/Level 7" unique_id=886503814 instance=ExtResource("6_8i2yc")]
+position = Vector2(498, 209)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human61" parent="TestLevel/Level 7" unique_id=638356005 instance=ExtResource("6_8i2yc")]
+position = Vector2(543, 136)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human62" parent="TestLevel/Level 7" unique_id=1671563932 instance=ExtResource("6_8i2yc")]
+position = Vector2(544, 191)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human63" parent="TestLevel/Level 7" unique_id=1534600623 instance=ExtResource("6_8i2yc")]
+position = Vector2(394, 36)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human64" parent="TestLevel/Level 7" unique_id=1007115283 instance=ExtResource("6_8i2yc")]
+position = Vector2(395, 91)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human65" parent="TestLevel/Level 7" unique_id=806064779 instance=ExtResource("6_8i2yc")]
+position = Vector2(440, 18)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human66" parent="TestLevel/Level 7" unique_id=1125591277 instance=ExtResource("6_8i2yc")]
+position = Vector2(441, 73)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human67" parent="TestLevel/Level 7" unique_id=1673360671 instance=ExtResource("6_8i2yc")]
+position = Vector2(493, 41)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human68" parent="TestLevel/Level 7" unique_id=222132173 instance=ExtResource("6_8i2yc")]
+position = Vector2(494, 96)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human69" parent="TestLevel/Level 7" unique_id=518199684 instance=ExtResource("6_8i2yc")]
+position = Vector2(539, 23)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human70" parent="TestLevel/Level 7" unique_id=1106186476 instance=ExtResource("6_8i2yc")]
+position = Vector2(540, 78)
 initial_state = 1
 defender_class = 2
 patrol_mode = 1
@@ -434,12 +930,14 @@ alignment_rate = 0.3
 script = ExtResource("11_8xmie")
 
 [node name="NavigationRegion" type="NavigationRegion2D" parent="." unique_id=257540646]
+visible = false
 navigation_polygon = SubResource("NavigationPolygon_x8g7u")
 script = ExtResource("11_g1k1b")
 
 [node name="DebugOverlay" parent="." unique_id=468344591 instance=ExtResource("12_irsvf")]
 
 [node name="EndGameOverlay" parent="." unique_id=2000451810 instance=ExtResource("13_cu6wa")]
+visible = false
 
 [node name="EscapeZone" parent="." unique_id=1179168205 instance=ExtResource("14_ranx7")]
 position = Vector2(-460, 429)

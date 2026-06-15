@@ -14,9 +14,6 @@ extends Node
 ## zombie_killed_human (feeds contagion 2.5 / risers 2.6).
 signal landed_kill(human: Human)
 
-## Emitted when the recovery completes — the shell retargets (2.3) or goes CALM.
-signal finished()
-
 enum Phase { IDLE, FLIGHT, RECOVERY }
 
 var _owner: Zombie = null
@@ -57,12 +54,13 @@ func tick(delta: float) -> void:
 				_land()
 		Phase.RECOVERY:
 			# Stationary on the corpse, fully vulnerable to fills (matters in 3.1).
+			# On finish, go IDLE — the shell polls is_active() and resumes ticking
+			# the brain, which retargets the (now dead) target per §3.4.
 			_owner.velocity = Vector2.ZERO
 			_timer -= delta
 			if _timer <= 0.0:
 				_phase = Phase.IDLE
 				_target = null
-				finished.emit()
 
 
 ## Landing: the kill registers. Release the claim and kill the target, then enter
