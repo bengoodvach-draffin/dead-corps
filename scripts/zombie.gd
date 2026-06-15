@@ -32,29 +32,53 @@ var facing_direction: Vector2 = Vector2.RIGHT
 ## Read by end_game_overlay.gd. Specials are PoC-excluded / non-functional.
 var is_special: bool = false
 
-## Calm idle-wander component (child node).
-var _shamble: ShambleBehavior = null
+## Behavior components (child nodes), ticked from the dispatcher.
+var _shamble: ShambleBehavior = null   ## calm idle wander
+var _feral: FeralBrain = null          ## feral pursuit / target
+var _pounce: PounceBehavior = null     ## the lunge / kill-at-landing / recovery
 
 ## Tracks whether we were executing a commanded move last frame, so the shamble
 ## anchor can reset to the arrival point the moment a move completes (spec §3.2).
 var _was_moving: bool = false
+
+## Placeholder calm/feral tint for testability — the proper readability layer
+## (calm/feral colors, riser/cower) is built in 2.4 / 5.1.
+const CALM_TINT := Color(1, 1, 1, 1)
+const FERAL_TINT := Color(1.0, 0.5, 0.2)   # orange
 
 
 func _ready() -> void:
 	team = Team.ZOMBIES
 	super._ready()
 
-	# Calm idle-wander component. Created at runtime (no editor presence needed);
-	# ticked by this shell's dispatcher, so it has no _physics_process of its own.
+	# Behavior components — created at runtime, ticked by this shell's dispatcher,
+	# so none has its own _physics_process (single dispatcher, rule 4).
 	_shamble = ShambleBehavior.new()
 	_shamble.name = "ShambleBehavior"
 	add_child(_shamble)
 	_shamble.setup(self)
 
+	_feral = FeralBrain.new()
+	_feral.name = "FeralBrain"
+	add_child(_feral)
+	_feral.setup(self)
 
-## Whether this zombie can receive a player command. Calm zombies always can;
-## feral zombies are not selectable/commandable (enforced in selection, 2.4).
+	_pounce = PounceBehavior.new()
+	_pounce.name = "PounceBehavior"
+	add_child(_pounce)
+	_pounce.setup(self)
+	_pounce.landed_kill.connect(_on_pounce_kill)
+	_pounce.finished.connect(_on_pounce_finished)
+
+
+## Whether this zombie can receive a player command. Calm only.
 func can_receive_command() -> bool:
+	return current_state == State.CALM
+
+
+## Whether the player can select this zombie. Calm only — feral zombies are not
+## selectable (released is released, spec §3.1).
+func is_selectable() -> bool:
 	return current_state == State.CALM
 
 
@@ -84,7 +108,10 @@ func _physics_process(delta: float) -> void:
 ## commanded move just completed, reset the shamble anchor to the arrival point.
 func _tick_calm(delta: float) -> void:
 	if has_target:
-		move_to_target(delta)
+		# Commanded move at the chase speed (§9 zombie_speed). Read live from config
+		# (robust to LevelConfig push order) — same speed as feral pursuit.
+		if step_toward(target_position, GameConfig.zombie_speed, 5.0):
+			has_target = false
 		_was_moving = true
 	else:
 		if _was_moving:
@@ -93,9 +120,51 @@ func _tick_calm(delta: float) -> void:
 		_shamble.tick(delta)
 
 
-## FERAL: autonomous hunting — built in Phase 2.2 (FeralBrain + Pounce).
-func _tick_feral(_delta: float) -> void:
-	pass
+## FERAL: orchestrate the hunt. While a pounce is active (committed), tick only
+## it; otherwise tick the brain and act on its report. The shell mediates between
+## FeralBrain and PounceBehavior (rule 2 — they never call each other).
+func _tick_feral(delta: float) -> void:
+	if _pounce.is_active():
+		_pounce.tick(delta)
+		return
+
+	match _feral.tick(delta):
+		FeralBrain.Result.READY_TO_POUNCE:
+			_pounce.start(_feral.current_target())
+		FeralBrain.Result.NO_TARGET:
+			_set_calm()
+		FeralBrain.Result.PURSUING:
+			pass
+
+
+## Releases this zombie into the frenzy with a seeded target (called by the
+## release command). Released is released — FERAL zombies aren't commandable
+## (can_receive_command → false) and aren't selectable (filtered in selection).
+func ignite_feral(target: Human) -> void:
+	current_state = State.FERAL
+	_feral.set_target(target)
+	modulate = FERAL_TINT
+
+
+## The pounce landed a kill — relay it as the zombie's kill signal (feeds
+## contagion in 2.5 and risers in 2.6).
+func _on_pounce_kill(human: Human) -> void:
+	zombie_killed_human.emit(human, self)
+
+
+## Pounce recovery finished. 2.2: no retarget — return to calm. (2.3 retargets
+## from the hunt pool here instead, only calming on an empty pool.)
+func _on_pounce_finished() -> void:
+	_set_calm()
+
+
+## Returns to CALM control: clears the feral target, reverts the tint, and anchors
+## the shamble where the zombie ended up.
+func _set_calm() -> void:
+	current_state = State.CALM
+	_feral.clear()
+	modulate = CALM_TINT
+	_shamble.set_anchor(global_position)
 
 
 ## BOID separation/alignment params, tuned per state (set before the forces run).

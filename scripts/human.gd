@@ -92,6 +92,12 @@ var facing_direction: Vector2 = Vector2.RIGHT
 ## the v1 incubation→conversion pipeline was removed in step 1.4.
 var is_dead: bool = false
 
+## Pounce exclusion (spec §3.5): the zombie currently mid-pounce on this human,
+## or null. While claimed, other ferals' retargeting (2.3) skips this human — the
+## single anti-pile-up rule (replaces all attacker caps). Typed Unit to avoid a
+## class dependency on Zombie.
+var _pounce_claimed_by: Unit = null
+
 # --- PATROL RUNTIME ---
 var current_waypoint_index: int = 0   ## Waypoint we're heading to (0-based)
 var patrol_direction: int = 1         ## 1 = forward, -1 = backward (PING_PONG)
@@ -298,6 +304,24 @@ func die() -> void:
 	modulate = Color(0.8, 0.2, 0.2, 1.0)   # red corpse
 	collision_layer = 0                     # corpses block nothing
 	collision_mask = 0
+
+
+# === POUNCE EXCLUSION (spec §3.5) ===
+
+## Claimed by a feral when it starts an in-flight pounce on this human.
+func claim_pounce(zombie: Unit) -> void:
+	_pounce_claimed_by = zombie
+
+
+## Released when the pounce lands or aborts.
+func release_pounce() -> void:
+	_pounce_claimed_by = null
+
+
+## True while an in-flight pounce has this human claimed — other ferals' retarget
+## (2.3) treats a claimed human as invisible.
+func is_pounce_claimed() -> bool:
+	return _pounce_claimed_by != null and is_instance_valid(_pounce_claimed_by)
 
 
 # === EDITOR VISUALS ===

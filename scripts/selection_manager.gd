@@ -185,9 +185,9 @@ func handle_click_selection() -> void:
 	var units := get_tree().get_nodes_in_group("zombies")
 	var clicked_unit: Unit = null
 	var min_distance := 30.0  # Click tolerance in pixels
-	
+
 	for unit in units:
-		if unit is Unit:
+		if unit is Zombie and (unit as Zombie).is_selectable():
 			var distance := box_start_pos.distance_to(unit.position)
 			if distance < min_distance:
 				min_distance = distance
@@ -203,9 +203,9 @@ func handle_click_selection() -> void:
 func handle_box_selection() -> void:
 	var selection_rect := get_selection_rect()
 	var units := get_tree().get_nodes_in_group("zombies")
-	
+
 	for unit in units:
-		if unit is Unit:
+		if unit is Zombie and (unit as Zombie).is_selectable():
 			if selection_rect.has_point(unit.position):
 				add_unit_to_selection(unit)
 
@@ -231,10 +231,16 @@ func handle_command(_screen_pos: Vector2) -> void:
 		return
 
 	var world_pos := get_global_mouse_position()
+	var gm := get_tree().get_first_node_in_group("game_manager")
 
-	# Move command. The v1 RMB-on-human engagement resolver is gone (step 1.5).
-	# RMB-on-human becomes the release/Pounce trigger in Phase 2.2; until then
-	# every right-click is a formation move order.
+	# RMB on a human → RELEASE the selected calm zombies at that human (spec §5.2).
+	# Otherwise → formation move order.
+	var clicked_human := _human_at(world_pos, gm)
+	if clicked_human != null:
+		_release(clicked_human)
+		return
+
+	# Move command (calm zombies only).
 	var commandable_units: Array[Unit] = []
 	for unit in selected_units:
 		if is_instance_valid(unit):
@@ -248,6 +254,40 @@ func handle_command(_screen_pos: Vector2) -> void:
 		var formation_positions := calculate_formation_positions(world_pos, commandable_units)
 		for i in range(commandable_units.size()):
 			commandable_units[i].set_move_target(formation_positions[i])
+
+
+## RELEASE (minimal, 2.2): every selected calm zombie ignites FERAL, all seeded at
+## the CLICKED human (matches player intent — "attack this one"). The proper spread
+## across a cluster near the click (one-per-human, §5.2) is 2.4. Released zombies
+## leave the selection — released is released. Then hunt-pool rules govern.
+func _release(target: Human) -> void:
+	var released := 0
+	for unit in selected_units:
+		if not is_instance_valid(unit) or not (unit is Zombie):
+			continue
+		var z := unit as Zombie
+		if not z.can_receive_command():   # already feral — skip
+			continue
+		z.ignite_feral(target)
+		released += 1
+	if released > 0:
+		print("🔥 RELEASE: ", released, " zombies → ", target.name)
+	clear_selection()
+
+
+## Nearest living human within click tolerance of `pos`, or null (release vs move).
+func _human_at(pos: Vector2, gm: Node) -> Human:
+	if gm == null:
+		return null
+	var humans: Array[Unit] = gm.neighbours_within(pos, 30.0, &"humans")
+	var best: Human = null
+	var best_dist := INF
+	for h in humans:
+		var d := pos.distance_to(h.global_position)
+		if d < best_dist:
+			best_dist = d
+			best = h
+	return best
 
 
 func add_unit_to_selection(unit: Unit) -> void:

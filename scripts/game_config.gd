@@ -45,6 +45,9 @@ var chain_scan_radius: float = 250.0
 # === POUNCE ===
 var pounce_range: float = 40.0
 var pounce_recovery: float = 1.0
+## Lunge duration (seconds). The kill registers at landing (flight end), so a
+## zombie killed mid-flight (e.g. by gunfire in 3.1) does NOT complete the kill.
+var pounce_flight_time: float = 0.2
 
 # === RISERS ===
 var rise_time: float = 2.5

@@ -38,6 +38,7 @@ class_name LevelConfig
 # === POUNCE ===
 @export var pounce_range: float = 40.0
 @export var pounce_recovery: float = 1.0
+@export var pounce_flight_time: float = 0.2
 
 # === RISERS ===
 @export var rise_time: float = 2.5
@@ -96,6 +97,7 @@ func _ready() -> void:
 
 	GameConfig.pounce_range = pounce_range
 	GameConfig.pounce_recovery = pounce_recovery
+	GameConfig.pounce_flight_time = pounce_flight_time
 
 	GameConfig.rise_time = rise_time
 
