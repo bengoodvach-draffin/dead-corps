@@ -32,7 +32,7 @@ Dead Corps v1 was a stealth-puzzle game: vision cones, patrol timing, waiting fo
 - **FERAL** — autonomous hunting. Not selectable; excluded from box select and clicks; control-group recall (1–9) returns only the calm members of the group. Visually distinct tint (calm vs feral must read at a glance).
 
 ### 3.2 Idle shamble
-Persistent behavior for ALL idle calm zombies: slow wander within `shamble_leash` (v0: 25px) of an anchor point. Anchor updates whenever a move order completes. **Deterministic:** wander pattern derived from a hash of unit ID (no live RNG). Leash and wander speed are config-tunable.
+Persistent behavior for ALL idle calm zombies: slow wander within `shamble_leash` (v0.34: 5px) of an anchor point, with a `shamble_pause` (v0.34: 3.0s, ±50% deterministic variance) dwell at each wander point so the crowd isn't in constant motion. Anchor updates whenever a move order completes. **Deterministic:** wander pattern and dwell variance derived from a hash of unit ID (no live RNG). Leash, speed, and pause are config-tunable. *(Retuned from the original 25px/20px-per-s during 2.1 playtest — the tight leash + dwell reads as a restless idle, not a roaming crowd.)*
 
 ### 3.3 Frenzy triggers (exactly two)
 1. **Release command** (player; see §5).
@@ -41,16 +41,13 @@ Persistent behavior for ALL idle calm zombies: slow wander within `shamble_leash
 NOT triggers: proximity to humans, being aimed at (fill in progress), being near fleeing humans.
 
 ### 3.4 Feral behavior
-1. **Pursue current target until:** the kill lands, or the target enters an escape zone (= target lost; pursuer halts at the zone boundary).
-2. **On kill / target loss, retarget among:**
-   - **Local scan:** living humans within 250px with LOS (includes cowering humans), and
-   - **Hunt pool:** {all humans currently pursued by any feral} ∪ {all humans in FLEEING state, anywhere on the map}.
-   - **Priority: nearest wins, full stop.** Pursued and unpursued candidates are treated identically — the feral simply takes the closest valid human. (Decided over an unpursued-first spread rule: simpler and more predictable.)
-   - **Shared kills:** if two ferals are chasing the same human and one lands the pounce, the human dies and the other feral **instantly retargets** per this rule — no waiting, no idle beat.
-   - Cowering humans are local-scan only — never in the global pool ("what's frozen waits for deliberate collection").
-   - **Mark influence** sits on top of all of this (see §5.4) — player intent overrides the spread preference.
-3. **No target + empty pool → instant calm.** Control returns on the spot. No wind-down timer (animation sells it).
-4. **No timers anywhere in the frenzy.** One engineering failsafe (not design fiction), defined as *no tangible progress*: a feral whose distance-to-target has not decreased by at least `failsafe_min_progress` (v0: 40px) over a rolling `failsafe_window` (v0: 2.0s) drops the target. Same detector pattern as cowering — robust to jitter and orbiting; should never fire in normal play.
+*(Post-playtest model, v0.34.0 — supersedes the original "pursue until kill, then nearest-wins retarget." The release is a **shove** that aims the horde; ferals then hunt opportunistically — first-come-first-serve, distributed, and directional.)*
+
+1. **Movement-vector targeting (the "bullet").** Every target choice — seeding, peeling, retargeting — ranks candidates by an *along-the-path* score, not raw distance: `score = forward + perp × feral_offaxis_penalty`, where `forward` is the candidate's distance along the feral's heading and `perp` its perpendicular offset from that heading (`feral_offaxis_penalty` v0: 2.0 — the bullet-vs-splay dial). Humans **behind** the heading are rejected — hard-skipped on a peel, and given a large but finite last-resort penalty on a post-kill retarget so a hemmed-in feral still engages rather than calming. Effect: the horde drives up the *centre* of a block and splays outward only as the central column clears, and never runs backward out of the swarm. Heading = the feral's current velocity; at release it is feral→click.
+2. **Continuous peel-off (opportunistic retarget).** A feral does **not** blindly commit to its target until the kill. On a `feral_divert_interval` (v0: 0.25s) cadence it re-scans within `chain_scan_radius` (250px, LOS) for a **fresh** straggler — alive, not pounce-claimed, and **not already pursued by another feral** — and peels onto it if its path-score is meaningfully better than the current target's (by factor `feral_divert_hysteresis`, v0: 0.8; the hysteresis kills target-jitter). Because a peeled straggler is immediately *pursued* (claimed), every other feral's scan skips it: the nearest feral peels off to handle each straggler while the bulk keeps its momentum. **Peel = one zombie per straggler**, emergent from the pursuit claim. *(This reverses the original "pursued and unpursued treated identically / nearest wins" call — the un-pursued-first preference is exactly what produces the peel-off feel. It applies to the mid-pursuit peel only, so predictability holds.)*
+3. **On kill / target loss, retarget** among the **local scan** (living humans within 250px with LOS, includes cowering) ∪ the **hunt pool** {humans pursued by any feral} ∪ {FLEEING humans anywhere} — ranked by the **same path-score** so momentum carries through the kill. Target loss = the kill lands, or the target enters an escape zone (pursuer halts at the boundary). Cowering humans are local-scan only — never in the global pool ("what's frozen waits for deliberate collection"). **Shared kills:** if two ferals chase the same human and one lands the pounce, the other **instantly retargets** per this rule — no idle beat. **Mark influence** (§5.4, unbuilt) sits on top of this — player intent reorders the menu.
+4. **No target + empty pool → instant calm.** Control returns on the spot. No wind-down timer (animation sells it).
+5. **No timers anywhere in the frenzy.** One engineering failsafe (not design fiction), defined as *no tangible progress*: a feral whose distance-to-target has not decreased by at least `failsafe_min_progress` (v0: 40px) over a rolling `failsafe_window` (v0: 2.0s) drops the target and calms. Same detector pattern as cowering — robust to jitter and orbiting. Currently doubles as the stopgap for the no-pursuit-pathing gap (ferals move straight-line and can wedge on obstacles); will rarely fire once pursuit pathing lands.
 
 Pocket isolation is emergent: the pool only ever contains humans being hunted or fleeing, and FLEEING humans only exist where violence already happened. The frenzy reaches exactly as far as the consequences of the player's actions. The only way chaos jumps to a quiet area is a runner physically dragging pursuit there — the sanctioned chaos vector.
 
@@ -139,12 +136,12 @@ Patrol routes survive purely as **positioning over time** — where humans are w
 | Ctrl+1–9 / 1–9 | Control groups (recall calm members only) |
 | R | Restart |
 
-Release is unmodified and uncancelable — its weight is carried by consequence, not input friction. Pre-click telegraphing (cursor swap + target highlight on hover) is the misclick defense. Shelved fallback if playtests produce rage-misclicks: a ~100ms hover debounce before release registers.
+Release is unmodified and uncancelable — its weight is carried by consequence, not input friction. Pre-click telegraphing is the misclick defense: **as built (v0.34.0), the single human under the cursor gets a "release here" ring** while releasable zombies are selected — no cursor swap, and deliberately *no* cluster preview (reading the 300px reach is player skill). A faint "targeted" ring also marks any human a feral is currently hunting (driven by the hunt pool), so the player can read the engagement. Both rings are drawn by the Human itself for now — interim home; they move to the `vision_renderer` readability layer in §7. Shelved fallback if playtests produce rage-misclicks: a ~100ms hover debounce before release registers.
 
 ### 5.2 Release semantics
 - All selected zombies ignite FERAL.
-- **Seeding:** all humans within `release_cluster_radius` (v0: 300px) of the click are candidates. First pass assigns **one feral per human**, nearest-pairs; remaining ferals distribute evenly across candidates. No per-human cap (the pounce-exclusion rule prevents terminal pile-ups on its own).
-- After seeding, hunt-pool rules govern everything.
+- **Seeding (bullet-vector, v0.34.0):** all humans within `release_cluster_radius` (v0: 300px) of the click are candidates. Each feral's heading is feral→click. First pass assigns **one feral per human** greedily by **path-score** (§3.4 rule 1 — humans along a feral's path beat off-axis ones); remaining ferals distribute by least-loaded, path-score tiebreak. No per-human cap (pounce-exclusion prevents terminal pile-ups). *(Superseded the original raw-nearest-pairs seeding, which splayed the horde evenly across the front rank instead of driving in.)*
+- After seeding, §3.4 feral rules govern — the continuous peel-off takes over within a frame, so seeding sets the initial spear and the hunt does the rest.
 - **One attack verb only.** There is no separate "polite attack" — surgical strikes emerge from context: release one zombie at an isolated straggler and it calms the instant the pool comes up empty after the kill. The environment decides whether a click was a scalpel or an avalanche.
 
 ### 5.3 In-storm verbs (the spectator-problem answer)
@@ -213,14 +210,16 @@ All values live in **`level_config.gd`** — a NEW per-level @tool node (name ch
 | Fear radius (global) | 250 px |
 | Fear reaction beat | 0.3 s |
 | Contagion radius | 150 px |
-| Chain scan radius | 250 px |
-| Pounce range / recovery | 40 px / 1.0 s |
+| Chain scan radius (= peel radius) | 250 px |
+| Feral divert interval / hysteresis | 0.25 s / 0.8 |
+| Feral off-axis penalty (bullet ↔ splay) | 2.0 |
+| Pounce range / recovery / flight time | 40 px / 1.0 s / 0.2 s |
 | Rise time (from pounce landing) | 2.5 s |
 | Cower: min displacement / window | 40 px / 1.2 s |
 | Combo window / burst window / kill base | 4 s / 1.5 s / 10 pts |
 | Release cluster radius | 300 px |
 | Mark radius (coordinate marks) | 300 px |
-| Shamble leash / speed | 25 px / ~20 px/s |
+| Shamble leash / speed / pause | 5 px / 7 px/s / 3.0 s (±50%) |
 | Fill front decay (only when no zombie visible) | 2× fill speed |
 | Turn speed / facing tolerance | 360°/s / 15° |
 | Failsafe: min progress / window | 40 px / 2.0 s |

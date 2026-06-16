@@ -15,7 +15,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="Dead Corps Prototype"
-run/main_scene="uid://dsmxtd3pa64hp"
+run/main_scene="uid://dsu1moflpt0m4"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
 
