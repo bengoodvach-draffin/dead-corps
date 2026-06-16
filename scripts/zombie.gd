@@ -136,10 +136,12 @@ func _tick_feral(delta: float) -> void:
 			pass
 
 
-## Releases this zombie into the frenzy with a seeded target (called by the
-## release command). Released is released — FERAL zombies aren't commandable
-## (can_receive_command → false) and aren't selectable (filtered in selection).
-func ignite_feral(target: Human) -> void:
+## Releases this zombie into the frenzy. Released is released — FERAL zombies
+## aren't commandable (can_receive_command → false) and aren't selectable (filtered
+## in selection). `target` is the release seed (§5.2); contagion (§3.3) passes none,
+## so FeralBrain._retarget() grabs the nearest reachable prey on the first feral tick
+## (and calms instantly if there's none — set_target(null) is a safe no-op).
+func ignite_feral(target: Human = null) -> void:
 	current_state = State.FERAL
 	# Drop any pending commanded move — released is released. Otherwise, when this
 	# zombie kills out and returns to CALM, _tick_calm would resume the stale move

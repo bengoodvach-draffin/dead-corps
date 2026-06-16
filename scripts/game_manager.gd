@@ -107,11 +107,24 @@ func _register_human(human: Human) -> void:
 	if not human.human_died.is_connected(_on_human_died):
 		human.human_died.connect(_on_human_died)
 
-func _on_zombie_killed_human(_human: Human, _zombie: Zombie) -> void:
-	# No-op. The v1 incubation→conversion pipeline is gone (demolition step 1.4).
-	# In v2 the Pounce delivers the kill (2.2) and the killed human rises in place
-	# via the riser pipeline (2.6), which will wire into this signal then.
-	pass
+func _on_zombie_killed_human(human: Human, zombie: Zombie) -> void:
+	# Violence contagion (spec §3.3, build-plan 2.5): a kill ignites idle zombies
+	# near the kill site. The riser pipeline (2.6) will also hook this signal.
+	# (The gunfire-death half of the trigger waits for Phase 3.)
+	_apply_contagion(human.global_position, zombie)
+
+
+## Ignites every CALM zombie within contagion_radius of the kill site into the
+## frenzy (spec §3.3). The killer is excluded; already-feral neighbours are skipped
+## by the CALM guard, so a reserve hit by sequential kills ignites once per zombie.
+## Each woken zombie self-targets via FeralBrain._retarget() on its next tick — if
+## no reachable prey remains in scan it calms again the same frame (no false frenzy).
+## Deterministic: neighbours_within returns unit_uid order, no RNG (§10).
+func _apply_contagion(kill_pos: Vector2, killer: Zombie) -> void:
+	for u in neighbours_within(kill_pos, GameConfig.contagion_radius, &"zombies", killer):
+		var z := u as Zombie
+		if z != null and z.current_state == Zombie.State.CALM:
+			z.ignite_feral()
 
 func _on_human_died(human: Human) -> void:
 	# Remove from tracking array
@@ -126,7 +139,14 @@ func _on_human_died(human: Human) -> void:
 func _on_zombie_removed(zombie: Zombie) -> void:
 	# Remove from tracking array
 	all_zombies.erase(zombie)
-	
+
+	# A still-alive zombie leaving the tree means a scene teardown/reload (e.g. the
+	# debug Reset button), not a death — don't judge the game during teardown or the
+	# draining registry spuriously reads as "all zombies eliminated". Real deaths go
+	# through die() (is_alive=false before queue_free), so they still reach the check.
+	if is_instance_valid(zombie) and zombie.is_alive:
+		return
+
 	# Check lose condition
 	check_lose_condition()
 
@@ -172,7 +192,7 @@ func check_lose_condition() -> void:
 	
 	# Count remaining zombies (including incubating corpses)
 	var remaining_zombies := get_total_zombie_count()
-	
+
 	# Player loses if all zombies dead (and no corpses) AND at least one human alive or escaped
 	if remaining_zombies == 0:
 		var total_humans_accounted_for := escaped_humans + (get_all_humans().size())

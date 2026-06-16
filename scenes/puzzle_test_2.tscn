@@ -674,7 +674,6 @@ script = ExtResource("12_joimv")
 [node name="DebugOverlay" parent="." unique_id=468344591 instance=ExtResource("13_xy8cy")]
 
 [node name="EndGameOverlay" parent="." unique_id=2000451810 instance=ExtResource("14_60iet")]
-visible = false
 
 [node name="EscapeZone" parent="." unique_id=1179168205 instance=ExtResource("15_ct5y5")]
 position = Vector2(-460, 429)
