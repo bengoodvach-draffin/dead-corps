@@ -34,6 +34,9 @@ class_name LevelConfig
 # === CONTAGION / HUNT ===
 @export var contagion_radius: float = 150.0
 @export var chain_scan_radius: float = 250.0
+@export var feral_divert_interval: float = 0.25
+@export var feral_divert_hysteresis: float = 0.8
+@export var feral_offaxis_penalty: float = 2.0
 
 # === POUNCE ===
 @export var pounce_range: float = 40.0
@@ -94,6 +97,9 @@ func _ready() -> void:
 
 	GameConfig.contagion_radius = contagion_radius
 	GameConfig.chain_scan_radius = chain_scan_radius
+	GameConfig.feral_divert_interval = feral_divert_interval
+	GameConfig.feral_divert_hysteresis = feral_divert_hysteresis
+	GameConfig.feral_offaxis_penalty = feral_offaxis_penalty
 
 	GameConfig.pounce_range = pounce_range
 	GameConfig.pounce_recovery = pounce_recovery

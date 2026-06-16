@@ -98,6 +98,16 @@ var is_dead: bool = false
 ## class dependency on Zombie.
 var _pounce_claimed_by: Unit = null
 
+## Readability rings (build-plan 2.4) — interim home; the full readability layer
+## (riser/cower/fill indicators) moves to vision_renderer in 5.1. Each is drawn as a
+## ring in _draw and toggled by a setter that queues a redraw; because they're drawn
+## in local space they track the human automatically without a per-frame redraw.
+## `_hunted` = a feral is currently pursuing me (driven by the GameManager hunt pool).
+## `_hover_highlighted` = the cursor is over me with releasable zombies selected (the
+## release misclick defense, spec §5.1).
+var _hunted: bool = false
+var _hover_highlighted: bool = false
+
 # --- PATROL RUNTIME ---
 var current_waypoint_index: int = 0   ## Waypoint we're heading to (0-based)
 var patrol_direction: int = 1         ## 1 = forward, -1 = backward (PING_PONG)
@@ -324,13 +334,52 @@ func is_pounce_claimed() -> bool:
 	return _pounce_claimed_by != null and is_instance_valid(_pounce_claimed_by)
 
 
-# === EDITOR VISUALS ===
+# === READABILITY HIGHLIGHTS (build-plan 2.4) ===
 
-## Draws patrol-path visuals in the editor only (waypoint dots + connecting
-## lines). Sentry facing arrow and swing arc visuals are deleted (§11).
+## Toggled by the GameManager hunt pool when the first/last feral starts/stops
+## pursuing me — the "targeted" ring.
+func set_hunted(value: bool) -> void:
+	if _hunted == value:
+		return
+	_hunted = value
+	queue_redraw()
+
+
+## Toggled by the SelectionManager when the cursor hovers me with releasable zombies
+## selected — the "release here" ring (misclick defense).
+func set_hover_highlighted(value: bool) -> void:
+	if _hover_highlighted == value:
+		return
+	_hover_highlighted = value
+	queue_redraw()
+
+
+# === VISUALS ===
+
+## "Targeted" ring — amber/red, drawn while a feral is hunting this human. Kept low-
+## alpha so a crowd full of them reads as ambient state, not an in-your-face overlay.
+const HUNTED_RING_RADIUS := 20.0
+const HUNTED_RING_COLOR := Color(0.95, 0.35, 0.15, 0.35)
+## "Release here" ring — white, opaque, drawn under the cursor (slightly larger so it
+## reads concentric when the hovered human is already hunted). This is the active
+## cursor telegraph, so it stays prominent.
+const HOVER_RING_RADIUS := 24.0
+const HOVER_RING_COLOR := Color(1.0, 1.0, 1.0, 0.95)
+
+
+## Runtime: the readability rings (alive humans only — corpses show nothing). In the
+## editor: the patrol-path visuals instead (units don't run AI there).
 func _draw() -> void:
 	if not Engine.is_editor_hint():
+		if is_alive:
+			if _hunted:
+				draw_arc(Vector2.ZERO, HUNTED_RING_RADIUS, 0.0, TAU, 48, HUNTED_RING_COLOR, 2.0, true)
+			if _hover_highlighted:
+				draw_arc(Vector2.ZERO, HOVER_RING_RADIUS, 0.0, TAU, 48, HOVER_RING_COLOR, 2.0, true)
 		return
+
+	# --- Editor patrol-path visuals (waypoint dots + connecting lines). Sentry
+	# facing arrow and swing arc visuals are deleted (§11). ---
 	if not patrol_enabled or patrol_waypoints.size() == 0:
 		return
 

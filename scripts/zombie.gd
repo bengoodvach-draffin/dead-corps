@@ -141,6 +141,11 @@ func _tick_feral(delta: float) -> void:
 ## (can_receive_command → false) and aren't selectable (filtered in selection).
 func ignite_feral(target: Human) -> void:
 	current_state = State.FERAL
+	# Drop any pending commanded move — released is released. Otherwise, when this
+	# zombie kills out and returns to CALM, _tick_calm would resume the stale move
+	# order and walk back to where it was last sent.
+	has_target = false
+	_was_moving = false
 	_feral.set_target(target)
 	modulate = FERAL_TINT
 

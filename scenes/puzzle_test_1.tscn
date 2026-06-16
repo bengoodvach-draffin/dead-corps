@@ -37,8 +37,12 @@ bounds_min = Vector2(-1000, -500)
 bounds_max = Vector2(1000, 500)
 
 [node name="LevelConfig" type="Node2D" parent="." unique_id=1080841229]
-position = Vector2(-2, 0)
+position = Vector2(-2, 2)
 script = ExtResource("3_x8g7u")
+chain_scan_radius = 150.0
+feral_divert_interval = null
+feral_divert_hysteresis = null
+feral_offaxis_penalty = 1.5
 metadata/_custom_type_script = "uid://dlqe4p8ushalq"
 
 [node name="Initializer" type="Node" parent="." unique_id=1515215272]
@@ -307,14 +311,46 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human4" parent="TestLevel/Level 7" unique_id=1634536967 instance=ExtResource("6_8i2yc")]
-position = Vector2(-751, 401)
+position = Vector2(58, 401)
 initial_state = 1
 defender_class = 2
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human6" parent="TestLevel/Level 7" unique_id=1174633476 instance=ExtResource("6_8i2yc")]
-position = Vector2(-750, 456)
+position = Vector2(59, 456)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human71" parent="TestLevel/Level 7" unique_id=485601543 instance=ExtResource("6_8i2yc")]
+position = Vector2(-100, 387)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human72" parent="TestLevel/Level 7" unique_id=1763502530 instance=ExtResource("6_8i2yc")]
+position = Vector2(-99, 442)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human73" parent="TestLevel/Level 7" unique_id=1650521946 instance=ExtResource("6_8i2yc")]
+position = Vector2(-669, 385)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human74" parent="TestLevel/Level 7" unique_id=520934081 instance=ExtResource("6_8i2yc")]
+position = Vector2(-668, 440)
 initial_state = 1
 defender_class = 2
 patrol_mode = 1

@@ -30,12 +30,24 @@ var _move_order_counter: int = 0
 
 @onready var camera: Camera2D = get_tree().get_first_node_in_group("camera")
 
+## The human currently under the cursor while releasable zombies are selected — gets
+## the "release here" ring (build-plan 2.4 misclick defense). Cached GameManager for
+## the per-frame hover query.
+var _hovered_human: Human = null
+var _gm_cache: Node = null
+
 func _ready() -> void:
 	set_process_input(true)
-	
+
 	# Initialize control groups
 	for i in range(1, 10):
 		control_groups[i] = []
+
+
+## Per-frame: keep the release-hover highlight in sync with the cursor (recomputed
+## each frame so it tracks both cursor and human movement). Cheap — one radius query.
+func _process(_delta: float) -> void:
+	_update_release_hover()
 
 func _input(event: InputEvent) -> void:
 	# Handle selection
@@ -125,13 +137,19 @@ func recall_control_group(group_number: int) -> void:
 	
 	if group_units.is_empty():
 		return
-	
-	# Clear current selection and select group
+
+	# Recall the CALM members only (spec §3.1) — released ferals stay in the group
+	# (they rejoin when they calm) but can't be selected while feral. "Command the
+	# calm, influence the storm."
 	clear_selection()
+	var recalled := 0
 	for unit in group_units:
+		if unit is Zombie and not (unit as Zombie).is_selectable():
+			continue
 		add_unit_to_selection(unit)
-	
-	print("Recalled control group %d: %d units" % [group_number, group_units.size()])
+		recalled += 1
+
+	print("Recalled control group %d: %d calm of %d" % [group_number, recalled, group_units.size()])
 
 ## Clears control group assignment from currently selected units
 func clear_control_group_from_selection() -> void:
@@ -237,7 +255,7 @@ func handle_command(_screen_pos: Vector2) -> void:
 	# Otherwise → formation move order.
 	var clicked_human := _human_at(world_pos, gm)
 	if clicked_human != null:
-		_release(clicked_human)
+		_release(world_pos, gm)
 		return
 
 	# Move command (calm zombies only).
@@ -256,22 +274,41 @@ func handle_command(_screen_pos: Vector2) -> void:
 			commandable_units[i].set_move_target(formation_positions[i])
 
 
-## RELEASE (minimal, 2.2): every selected calm zombie ignites FERAL, all seeded at
-## the CLICKED human (matches player intent — "attack this one"). The proper spread
-## across a cluster near the click (one-per-human, §5.2) is 2.4. Released zombies
-## leave the selection — released is released. Then hunt-pool rules govern.
-func _release(target: Human) -> void:
-	var released := 0
+## RELEASE (2.4, spec §5.2): every selected calm zombie ignites FERAL, seeded across
+## the cluster of humans near the CLICK. Candidates = living humans within
+## release_cluster_radius of click_pos (the clicked human is always one — distance ~0).
+## First pass assigns one feral per human (greedy nearest-pairs); any remaining ferals
+## distribute evenly (least-loaded human, nearest tiebreak). No per-human cap —
+## pounce-exclusion (§3.5) prevents real pile-ups. Then hunt-pool rules (§3.4) govern.
+## Released zombies leave the selection — released is released. Deterministic (§10):
+## all ordering breaks on unit_uid, no RNG.
+func _release(click_pos: Vector2, gm: Node) -> void:
+	if gm == null:
+		clear_selection()
+		return
+
+	# Candidate humans: living, within the cluster radius of the click.
+	var candidates: Array[Human] = []
+	for u in gm.neighbours_within(click_pos, GameConfig.release_cluster_radius, &"humans"):
+		var h := u as Human
+		if h != null and h.is_alive:
+			candidates.append(h)
+
+	# Ferals to seed: the selected calm zombies, in unit_uid order (determinism).
+	var ferals: Array[Zombie] = []
 	for unit in selected_units:
-		if not is_instance_valid(unit) or not (unit is Zombie):
-			continue
-		var z := unit as Zombie
-		if not z.can_receive_command():   # already feral — skip
-			continue
-		z.ignite_feral(target)
-		released += 1
-	if released > 0:
-		print("🔥 RELEASE: ", released, " zombies → ", target.name)
+		if is_instance_valid(unit) and unit is Zombie and (unit as Zombie).can_receive_command():
+			ferals.append(unit)
+	ferals.sort_custom(func(a: Zombie, b: Zombie) -> bool: return a.unit_uid < b.unit_uid)
+
+	if candidates.is_empty() or ferals.is_empty():
+		clear_selection()
+		return
+
+	var assignment := ReleaseSeeder.assign(ferals, candidates, click_pos)
+	for f in assignment:
+		(f as Zombie).ignite_feral(assignment[f])
+	print("🔥 RELEASE: ", ferals.size(), " zombies across ", candidates.size(), " human(s)")
 	clear_selection()
 
 
@@ -288,6 +325,39 @@ func _human_at(pos: Vector2, gm: Node) -> Human:
 			best_dist = d
 			best = h
 	return best
+
+
+## Updates which human shows the "release here" ring: the one under the cursor, but
+## only while the selection contains a releasable (calm) zombie — otherwise RMB is a
+## plain move and there's nothing to telegraph. Clears the prior hover on any change.
+func _update_release_hover() -> void:
+	var target: Human = null
+	if _selection_has_releasable():
+		var gm := _game_manager()
+		if gm != null:
+			target = _human_at(get_global_mouse_position(), gm)
+	if target == _hovered_human:
+		return
+	if _hovered_human != null and is_instance_valid(_hovered_human):
+		_hovered_human.set_hover_highlighted(false)
+	_hovered_human = target
+	if _hovered_human != null:
+		_hovered_human.set_hover_highlighted(true)
+
+
+## True if any selected unit is a calm zombie (so a release is possible).
+func _selection_has_releasable() -> bool:
+	for u in selected_units:
+		if is_instance_valid(u) and u is Zombie and (u as Zombie).can_receive_command():
+			return true
+	return false
+
+
+## Cached GameManager lookup for the per-frame hover query.
+func _game_manager() -> Node:
+	if _gm_cache == null or not is_instance_valid(_gm_cache):
+		_gm_cache = get_tree().get_first_node_in_group("game_manager")
+	return _gm_cache
 
 
 func add_unit_to_selection(unit: Unit) -> void:

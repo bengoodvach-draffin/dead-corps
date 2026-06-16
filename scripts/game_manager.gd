@@ -297,7 +297,11 @@ var _pursuit_counts: Dictionary = {}   ## Human → number of ferals pursuing it
 
 ## A feral started pursuing this human.
 func add_pursuit(human: Human) -> void:
-	_pursuit_counts[human] = _pursuit_counts.get(human, 0) + 1
+	var was: int = _pursuit_counts.get(human, 0)
+	_pursuit_counts[human] = was + 1
+	# First pursuer → light the "targeted" readability ring (build-plan 2.4).
+	if was == 0 and is_instance_valid(human):
+		human.set_hunted(true)
 
 
 ## A feral stopped pursuing this human (retargeted away, calmed, or died).
@@ -307,6 +311,9 @@ func remove_pursuit(human: Human) -> void:
 	var c: int = _pursuit_counts[human] - 1
 	if c <= 0:
 		_pursuit_counts.erase(human)
+		# Last pursuer gone → clear the ring.
+		if is_instance_valid(human):
+			human.set_hunted(false)
 	else:
 		_pursuit_counts[human] = c
 
@@ -320,6 +327,12 @@ func pursued_humans() -> Array[Human]:
 		if _pursuit_counts.has(h):
 			result.append(h)
 	return result
+
+
+## True if any feral is currently pursuing this human — the peel-off scan (2.4)
+## skips already-pursued humans so each straggler draws exactly one peeler.
+func is_pursued(human: Human) -> bool:
+	return _pursuit_counts.has(human)
 
 
 ## The {FLEEING} half of the hunt pool — empty until Phase 3 adds the flee state.

@@ -41,6 +41,18 @@ var fear_reaction: float = 0.3
 # === CONTAGION / HUNT ===
 var contagion_radius: float = 150.0
 var chain_scan_radius: float = 250.0
+## Peel-off (continuous opportunistic retarget): how often a pursuing feral re-scans
+## for a closer fresh straggler (seconds), and how much closer that straggler must be
+## to make it peel (fraction of the current target's distance — 0.8 = must be ≥20%
+## closer). Hysteresis prevents target jitter; the pursuit claim keeps it one-peeler-
+## per-human so the bulk keeps its momentum.
+var feral_divert_interval: float = 0.25
+var feral_divert_hysteresis: float = 0.8
+## How strongly seeding prefers humans ALONG the swarm's movement path over off-axis
+## ones (× the perpendicular offset in the path score). 0 = pure nearest (splays
+## across the front rank); higher = more bullet-like (drives up the centre, spreads
+## only once the central column is taken).
+var feral_offaxis_penalty: float = 2.0
 
 # === POUNCE ===
 var pounce_range: float = 40.0
