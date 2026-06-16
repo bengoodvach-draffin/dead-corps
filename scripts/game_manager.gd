@@ -15,6 +15,12 @@ var units_parent: Node2D
 var all_zombies: Array[Zombie] = []
 var all_humans: Array[Human] = []
 
+## Pending risers (spec §3.6, build-plan 2.6): killed humans waiting to stand back
+## up as CALM zombies. Each entry = { "corpse": Human, "pos": Vector2, "time_left":
+## float }. Filled on a kill (clock starts at the pounce landing), counted down in
+## _physics_process (fixed timestep → deterministic, §10), and raised at zero.
+var _pending_risers: Array[Dictionary] = []
+
 ## Monotonic source for unit_uid. Assigned in registration order and never
 ## reused — this is what makes the registry's query results stable-ordered (§10).
 var _next_unit_uid: int = 0
@@ -49,6 +55,12 @@ func _process(delta: float) -> void:
 	# Track game time (only while game is running)
 	if not game_ended:
 		game_time += delta
+
+
+func _physics_process(delta: float) -> void:
+	# Riser countdowns tick on the physics step (fixed timestep → deterministic).
+	if not game_ended:
+		_tick_risers(delta)
 
 func spawn_zombie(pos: Vector2) -> Zombie:
 	if not zombie_scene:
@@ -109,9 +121,44 @@ func _register_human(human: Human) -> void:
 
 func _on_zombie_killed_human(human: Human, zombie: Zombie) -> void:
 	# Violence contagion (spec §3.3, build-plan 2.5): a kill ignites idle zombies
-	# near the kill site. The riser pipeline (2.6) will also hook this signal.
+	# near the kill site.
 	# (The gunfire-death half of the trigger waits for Phase 3.)
 	_apply_contagion(human.global_position, zombie)
+
+	# Risers (spec §3.6, build-plan 2.6): the corpse stands back up CALM after
+	# rise_time, measured from this instant (= the pounce landing, where the kill
+	# signal fires). Position captured now so a freed corpse can't strand the rise.
+	_pending_risers.append({
+		"corpse": human,
+		"pos": human.global_position,
+		"time_left": GameConfig.rise_time,
+	})
+
+
+## Counts down pending risers each physics frame and raises any whose clock hit zero
+## (spec §3.6). Fixed timestep keeps timing deterministic (§10). A risen corpse is
+## freed and replaced by a fresh CALM zombie at the death spot — governed by normal
+## rules from then on (a later nearby kill's contagion may grab it; no auto-rally).
+func _tick_risers(delta: float) -> void:
+	if _pending_risers.is_empty():
+		return
+	# Iterate back-to-front so removals don't skip entries.
+	for i in range(_pending_risers.size() - 1, -1, -1):
+		var entry: Dictionary = _pending_risers[i]
+		entry.time_left -= delta
+		if entry.time_left <= 0.0:
+			_pending_risers.remove_at(i)
+			_raise(entry)
+
+
+## Raises one corpse: frees the dead human (if still valid) and spawns a CALM zombie
+## where it fell. The new zombie idle-shambles from its spawn anchor like any calm
+## unit and is fully subject to normal rules (contagion, release) from this moment.
+func _raise(entry: Dictionary) -> void:
+	var corpse: Human = entry.corpse
+	if is_instance_valid(corpse):
+		corpse.queue_free()
+	spawn_zombie(entry.pos)
 
 
 ## Ignites every CALM zombie within contagion_radius of the kill site into the
@@ -361,23 +408,22 @@ func fleeing_humans() -> Array[Human]:
 	return []
 
 
-## Gets total zombie count including dead humans.
-## DEFERRED CLEANUP (step 1.4 → 4.1): the "dead humans count as converting
-## zombies" assumption is stale now that the incubation pipeline is gone — but
-## it's harmless on this branch (no human dies between 1.4 and the Pounce in 2.2,
-## since combat is off). The win/lose conditions that call this are rebuilt to
-## spec §8 in step 4.1 (risers count toward the zombie total there); this whole
-## helper is revisited then. Left untouched in 1.4 to avoid overreaching into 4.1.
+## Gets total zombie count, including corpses about to rise (spec §3.6: risers count
+## toward the lose total so there's no false loss while bodies are standing up).
+## DEFERRED CLEANUP (step 1.4 → 4.1): the legacy dead_human_count below is stale —
+## dead humans are erased from all_humans on death (_on_human_died), so it reads 0;
+## the corpse-about-to-stand is now tracked in _pending_risers instead. Left in place
+## (harmless) until the win/lose rebuild to spec §8 in step 4.1.
 func get_total_zombie_count() -> int:
 	var zombie_count := get_all_zombies().size()
-	
-	# Count dead humans (incubating corpses)
+
+	# Count dead humans (legacy incubating-corpse path — effectively 0 now, see above).
 	var dead_human_count := 0
 	for human in get_all_humans():
 		if human.is_dead:
 			dead_human_count += 1
-	
-	return zombie_count + dead_human_count
+
+	return zombie_count + dead_human_count + _pending_risers.size()
 
 
 ## Registers manually placed units in the scene
