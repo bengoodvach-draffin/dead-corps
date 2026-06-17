@@ -161,16 +161,14 @@ func _raise(entry: Dictionary) -> void:
 	spawn_zombie(entry.pos)
 
 
-## Ignites every CALM zombie within contagion_radius of the kill site into the
-## frenzy (spec §3.3). The killer is excluded; already-feral neighbours are skipped
-## by the CALM guard, so a reserve hit by sequential kills ignites once per zombie.
-## Each woken zombie self-targets via FeralBrain._retarget() on its next tick — if
-## no reachable prey remains in scan it calms again the same frame (no false frenzy).
-## Deterministic: neighbours_within returns unit_uid order, no RNG (§10).
-## Ignites nearby CALM zombies into the frenzy (spec §3.3). `seed_target`, when given,
-## is the human each woken zombie pursues (the gunfire shooter — see report_gunfire_kill);
-## null means wake targetless and let FeralBrain retarget the nearest prey (the human-kill
-## case, where prey is right there). Either way, normal feral rules + peel-off take over.
+## Ignites every CALM zombie within contagion_radius of the kill site into the frenzy
+## (spec §3.3). The killer is excluded; already-feral neighbours are skipped by the CALM
+## guard (a reserve hit by sequential kills ignites once per zombie). Deterministic:
+## neighbours_within returns unit_uid order, no RNG (§10).
+## `seed_target`, when given, is the human each woken zombie pursues (the gunfire shooter
+## — see report_gunfire_kill); null means wake targetless and let FeralBrain retarget the
+## nearest prey (the human-kill case, where prey is right there at the kill). Either way,
+## after igniting, normal §3.4 feral rules + peel-off govern.
 func _apply_contagion(kill_pos: Vector2, killer: Zombie, seed_target: Human = null) -> void:
 	for u in neighbours_within(kill_pos, GameConfig.contagion_radius, &"zombies", killer):
 		var z := u as Zombie
@@ -222,6 +220,9 @@ func _on_zombie_removed(zombie: Zombie) -> void:
 func on_human_escaped(human: Human) -> void:
 	escaped_humans += 1
 	all_humans.erase(human)
+	# A fleeing human can be mid-pursuit when it reaches the exit (3.2+) — drop its
+	# hunt-pool entry so the freed instance doesn't linger as a stale pursuit key.
+	_pursuit_counts.erase(human)
 	human_escaped.emit()
 	print("Human escaped! Total escaped: ", escaped_humans)
 	
@@ -421,10 +422,16 @@ func is_pursued(human: Human) -> bool:
 	return _pursuit_counts.has(human)
 
 
-## The {FLEEING} half of the hunt pool — empty until Phase 3 adds the flee state.
-## (Will filter living_humans() by FLEEING then.)
+## The {FLEEING} half of the hunt pool (build-plan 3.2): living humans in the FLEEING
+## rout. Filtering living_humans() keeps the result unit_uid ordered (§10) and free of
+## dead/freed humans. Ferals retarget onto these with no LOS/distance gate, so a broken
+## human draws the hunt across the map (the "overwhelm → produces a runner to chase").
 func fleeing_humans() -> Array[Human]:
-	return []
+	var result: Array[Human] = []
+	for h in living_humans():
+		if h.current_state == Human.State.FLEEING:
+			result.append(h)
+	return result
 
 
 ## Gets total zombie count, including corpses about to rise (spec §3.6: risers count

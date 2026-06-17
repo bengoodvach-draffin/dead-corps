@@ -20,8 +20,8 @@ extends Node
 ## by a friendly, the front targets the next-nearest with a clear lane; if none are
 ## clear the gun holds hot (no shot) until a lane opens.
 ##
-## Civilians (fill_speed 0) use a reaction clock instead (built in 3.2); they
-## early-return here for now.
+## Civilians (the one unarmed class) use a pure reaction clock instead (build-plan
+## 3.2): no fill/fire — see a clear-lane zombie for civilian_reaction seconds → flee.
 
 ## Raycast blocker mask: Environment (layer 1) + Humans (layer 4). Zombies (layer 2)
 ## never block — the target is the nearest, so no zombie can screen it; excluding it
@@ -48,39 +48,45 @@ var _reached: bool = false
 ## redraw when it clears (and avoid redrawing idle humans every frame).
 var _was_drawing: bool = false
 
+## Civilian reaction clock (build-plan 3.2): seconds a clear-lane zombie has been
+## visible. At civilian_reaction it triggers the flee. Resets when sight is lost.
+var _civ_clock: float = 0.0
+
 
 func setup(owner_human: Human) -> void:
 	_owner = owner_human
 
 
-## One physics frame of the fill, for a LIVE ARMED human. Civilians (fill_speed 0)
-## return immediately — their reaction-clock variant is built in 3.2.
+## One physics frame, dispatched by class. Armed (Militia/Police/GI) run the fill
+## front + fire; the lone unarmed class (Civilian) runs a reaction clock → flee (3.2).
 func tick(delta: float) -> void:
-	var speed := _fill_speed()
-	if speed <= 0.0:
-		return
-
 	var gm := _game_manager()
 	if gm == null:
 		return
 
-	# One registry query per frame; find the nearest zombie with a clear lane and note
-	# whether anything is in range at all (screened threats keep the gun hot).
-	var in_range: Array = gm.neighbours_within(_owner.global_position, _awareness(), &"zombies")
-	var nearest_visible: Zombie = null
-	var best_d := INF
-	for u in in_range:
-		var z := u as Zombie
-		if z == null or not _has_clear_lane(z):
-			continue
-		var d := _owner.global_position.distance_to(z.global_position)
-		if d < best_d:
-			best_d = d
-			nearest_visible = z
+	var nearest_visible := _nearest_visible_zombie(gm)
+	if _owner.is_armed():
+		_tick_armed(delta, nearest_visible)
+	else:
+		_tick_civilian(delta, nearest_visible)
 
+	# Debug-line redraw: only while there's something to draw, plus one frame after.
+	var drawing := _fill > 0.0 or _target != null
+	if drawing or _was_drawing:
+		_owner.queue_redraw()
+	_was_drawing = drawing
+
+
+## Armed fill front: grow toward / fire at the nearest CLEAR-LANE zombie; cool when none
+## is visible. Humans block perception as well as the shot (spec §4.1), so a fully
+## screened zombie is "not there" for this defender — the gun cools rather than holding
+## (the peek/bait exploit is still covered: ANY visible zombie keeps it hot).
+func _tick_armed(delta: float, nearest_visible: Zombie) -> void:
+	var speed := _fill_speed()
 	if nearest_visible != null:
 		_target = nearest_visible
-		if _fill < best_d:
+		var d := _owner.global_position.distance_to(nearest_visible.global_position)
+		if _fill < d:
 			# Still filling toward the target — grow (not yet reached).
 			_reached = false
 			_fill += speed * delta
@@ -89,21 +95,49 @@ func tick(delta: float) -> void:
 			_reached = true
 			if _rotate_toward(nearest_visible, delta):
 				_fire(nearest_visible)
-	elif not in_range.is_empty():
-		# In range but no clear lane (screened by a friendly / building) — hold hot.
-		_reached = false
-		_target = null
 	else:
-		# No threat in range — decay toward zero.
 		_reached = false
 		_target = null
 		_fill = maxf(0.0, _fill - GameConfig.fill_decay_factor * speed * delta)
 
-	# Debug-line redraw: only while there's something to draw, plus one frame after.
-	var drawing := _fill > 0.0 or _target != null
-	if drawing or _was_drawing:
-		_owner.queue_redraw()
-	_was_drawing = drawing
+
+## Civilian reaction clock (spec §4.1): no fill front, no fire — while a clear-lane
+## zombie is visible, count up to civilian_reaction, then flee. The clock resets the
+## instant sight is lost (a civilian panics at a present threat, doesn't track). Drives
+## the debug line from the clock fraction so it reads like a filling defender that
+## bolts instead of firing.
+func _tick_civilian(delta: float, nearest_visible: Zombie) -> void:
+	if nearest_visible != null:
+		_target = nearest_visible
+		_civ_clock += delta
+		var d := _owner.global_position.distance_to(nearest_visible.global_position)
+		var frac := clampf(_civ_clock / GameConfig.civilian_reaction, 0.0, 1.0)
+		_fill = frac * d
+		_reached = frac >= 1.0
+		if _civ_clock >= GameConfig.civilian_reaction:
+			_owner.start_fleeing()
+	else:
+		_civ_clock = 0.0
+		_target = null
+		_fill = 0.0
+		_reached = false
+
+
+## Nearest zombie within awareness with a clear lane (environment + humans block), or
+## null. Shared by the armed front and the civilian clock — both "perceive" the same way.
+func _nearest_visible_zombie(gm: Node) -> Zombie:
+	var in_range: Array = gm.neighbours_within(_owner.global_position, _awareness(), &"zombies")
+	var best: Zombie = null
+	var best_d := INF
+	for u in in_range:
+		var z := u as Zombie
+		if z == null or not _has_clear_lane(z):
+			continue
+		var d := _owner.global_position.distance_to(z.global_position)
+		if d < best_d:
+			best_d = d
+			best = z
+	return best
 
 
 # === RENDERING ACCESSORS (read by Human._draw for the debug line, → vision_renderer in 5.1) ===

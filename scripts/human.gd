@@ -22,7 +22,8 @@ class_name Human
 enum State {
 	IDLE,    ## Standing / calm
 	SENTRY,  ## Watching (now identical to IDLE — facing behavior deleted)
-	DEAD     ## Permanent corpse (the riser pipeline raises it in step 2.6)
+	DEAD,    ## Permanent corpse (raised by the riser pipeline, step 2.6)
+	FLEEING  ## Permanent rout (3.2, §4.3): paths to the nearest exit, no fill, no recovery
 }
 
 ## Patrol modes for waypoint movement.
@@ -118,10 +119,14 @@ var patrol_pause_timer: float = 0.0   ## Countdown for the current waypoint paus
 ## Cached physics space for line-of-sight raycasts.
 var space_state: PhysicsDirectSpaceState2D
 
-## The fill front (build-plan 3.1) — armed-defender shot mechanic, a child component
-## ticked by this shell's dispatcher (mirrors the zombie component pattern). Null in
-## the editor. Civilians create it too but it no-ops until the 3.2 reaction variant.
+## The fill front (build-plan 3.1) — armed shot mechanic / civilian reaction clock, a
+## child component ticked by this shell's dispatcher (mirrors the zombie component
+## pattern). Null in the editor.
 var _fill_front: FillBehavior = null
+
+## The rout (build-plan 3.2) — steers a broken human to the nearest exit while FLEEING.
+## Null in the editor.
+var _flee: FleeBehavior = null
 
 ## Initialise the human: team, state, patrol, base unit, LOS space.
 func _ready() -> void:
@@ -146,12 +151,17 @@ func _ready() -> void:
 	# Cache the physics space for line-of-sight raycasts.
 	space_state = get_world_2d().direct_space_state
 
-	# Fill-front component (runtime only — no AI in the editor).
+	# Behavior components (runtime only — no AI in the editor).
 	if not Engine.is_editor_hint():
 		_fill_front = FillBehavior.new()
 		_fill_front.name = "FillBehavior"
 		add_child(_fill_front)
 		_fill_front.setup(self)
+
+		_flee = FleeBehavior.new()
+		_flee.name = "FleeBehavior"
+		add_child(_flee)
+		_flee.setup(self)
 
 
 ## Editor-only redraw so patrol-path visuals update while placing waypoints.
@@ -178,17 +188,23 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector2.ZERO
 		return
 
-	# Patrol movement (positioning only — no facing/swing/regroup).
-	if is_patrolling:
-		update_patrol(delta)
+	if current_state == State.FLEEING:
+		# Permanent rout (§4.3): steer to the exit. No patrol, no fill.
+		if _flee != null:
+			_flee.tick(delta)
+	else:
+		# Defending (IDLE / SENTRY): patrol positioning (no facing/swing/regroup).
+		if is_patrolling:
+			update_patrol(delta)
 
 	# Face the direction of travel (readability only).
 	if velocity.length() > 0.1:
 		facing_direction = velocity.normalized()
 
-	# Fill front (3.1): scan/aim/fire. Runs after movement-facing so an aiming
-	# defender's facing wins; a stationary one (velocity 0) is controlled purely here.
-	if _fill_front != null:
+	# Fill front (3.1): scan/aim/fire (or the civilian reaction clock). Runs after the
+	# movement-facing line so an aiming defender's facing wins; a stationary one
+	# (velocity 0) is controlled purely here. Skipped while fleeing.
+	if current_state != State.FLEEING and _fill_front != null:
 		_fill_front.tick(delta)
 
 	# Base Unit physics (movement, BOID separation).
@@ -296,8 +312,8 @@ func has_line_of_sight_to_point(point: Vector2) -> bool:
 	return space_state.intersect_ray(query).is_empty()
 
 
-## Nearest escape zone with clear line of sight, or null. (Used by the v2 rout in
-## Phase 3.4; harmless here.)
+## Nearest escape zone, or null. NO line-of-sight requirement (spec §4.3: a routed
+## human knows the exits) — used by the rout (FleeBehavior, 3.2).
 func get_nearest_escape_zone() -> Node2D:
 	var escape_zones := get_tree().get_nodes_in_group("escape_zone")
 	if escape_zones.is_empty():
@@ -308,13 +324,25 @@ func get_nearest_escape_zone() -> Node2D:
 		if not is_instance_valid(zone):
 			continue
 		# global_position — escape zones are nested scenes.
-		if not has_line_of_sight_to_point(zone.global_position):
-			continue
 		var distance := global_position.distance_to(zone.global_position)
 		if distance < nearest_distance:
 			nearest_distance = distance
 			nearest_zone = zone
 	return nearest_zone
+
+
+## Breaks this human into a permanent rout (spec §4.3) — called by the civilian
+## reaction clock (3.2) and the fear break (3.3). Cancels patrol/fill; FleeBehavior
+## steers to the nearest exit. No-op if already fleeing or dead (broken is broken).
+func start_fleeing() -> void:
+	if current_state == State.FLEEING or current_state == State.DEAD:
+		return
+	current_state = State.FLEEING
+	is_patrolling = false
+	has_target = false
+	if _flee != null:
+		_flee.begin()
+	queue_redraw()   # drop the fill-line debug viz
 
 
 # === DEATH / CONVERSION ===
@@ -430,6 +458,9 @@ func _draw() -> void:
 ## front is on, length = the current fill progress (clamped to the target's distance).
 ## Orange while filling; red once the front has reached the target (rotating to fire).
 func _draw_fill_line() -> void:
+	# Only defenders draw it; a fleeing human has no front.
+	if current_state != State.IDLE and current_state != State.SENTRY:
+		return
 	if _fill_front == null:
 		return
 	var t := _fill_front.current_target()
