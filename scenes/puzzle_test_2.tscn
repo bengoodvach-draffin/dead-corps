@@ -9,6 +9,7 @@
 [ext_resource type="PackedScene" uid="uid://brqxu82wy6h2r" path="res://scenes/human.tscn" id="7_75tbc"]
 [ext_resource type="Script" uid="uid://c5fmdp1r7ticb" path="res://scripts/vision_renderer.gd" id="8_452ff"]
 [ext_resource type="PackedScene" uid="uid://bmw8qx5r2n8pk" path="res://scenes/building.tscn" id="9_irluq"]
+[ext_resource type="Script" uid="uid://cvde25j0ujcg" path="res://scripts/wall.gd" id="10_0bfmi"]
 [ext_resource type="Script" uid="uid://cax0dih7wnxe0" path="res://scripts/selection_manager.gd" id="11_252ko"]
 [ext_resource type="Script" uid="uid://yd0ofoh8ih30" path="res://scripts/nav_baker.gd" id="12_joimv"]
 [ext_resource type="PackedScene" uid="uid://di2wxa5t7dmxv" path="res://scenes/debug_overlay.tscn" id="13_xy8cy"]
@@ -38,8 +39,10 @@ bounds_max = Vector2(1000, 500)
 [node name="LevelConfig" type="Node2D" parent="." unique_id=1080841229]
 position = Vector2(-2, 2)
 script = ExtResource("3_fsr3p")
+flee_exit_threat_bias = null
 chain_scan_radius = 150.0
 feral_offaxis_penalty = 1.5
+cower_window = 1.2
 metadata/_custom_type_script = "uid://dlqe4p8ushalq"
 
 [node name="Initializer" type="Node" parent="." unique_id=1515215272]
@@ -509,7 +512,7 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human73" parent="TestLevel/Level 7" unique_id=1346925049 instance=ExtResource("7_75tbc")]
-position = Vector2(147, -389)
+position = Vector2(-162, -379)
 initial_state = 1
 cohesion_strength = 12.0
 alignment_rate = 0.3
@@ -584,7 +587,7 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Zombie4" parent="TestLevel/Level 7" unique_id=1325715882 instance=ExtResource("6_wgxpd")]
-position = Vector2(-825, -15)
+position = Vector2(-289, -266)
 
 [node name="Zombie5" parent="TestLevel/Level 7" unique_id=1067108926 instance=ExtResource("6_wgxpd")]
 position = Vector2(-826, 25)
@@ -624,6 +627,18 @@ position = Vector2(157, 192)
 [node name="Building3" parent="TestLevel/Buildings" unique_id=1887458525 instance=ExtResource("9_irluq")]
 position = Vector2(-131, 56)
 
+[node name="Building5" parent="TestLevel/Buildings" unique_id=983809353 instance=ExtResource("9_irluq")]
+position = Vector2(-213, -192)
+building_width = 340.0
+building_height = 20.0
+
+[node name="Wall" type="Polygon2D" parent="TestLevel/Buildings" unique_id=602201568]
+position = Vector2(-217, -325)
+color = Color(0, 0, 0, 0)
+polygon = PackedVector2Array(-100, -100, 100, -100, 100, 100, -100, 100)
+script = ExtResource("10_0bfmi")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
 [node name="Escape Zones" type="Node" parent="TestLevel" unique_id=1359137202]
 
 [node name="Humans" type="Node" parent="TestLevel" unique_id=827267819]
@@ -636,6 +651,7 @@ position = Vector2(-131, 56)
 script = ExtResource("11_252ko")
 
 [node name="NavigationRegion" type="NavigationRegion2D" parent="." unique_id=257540646]
+visible = false
 navigation_polygon = SubResource("NavigationPolygon_irluq")
 script = ExtResource("12_joimv")
 agent_radius = 18.0

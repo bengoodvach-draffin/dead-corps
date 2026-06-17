@@ -23,7 +23,8 @@ enum State {
 	IDLE,    ## Standing / calm
 	SENTRY,  ## Watching (now identical to IDLE — facing behavior deleted)
 	DEAD,    ## Permanent corpse (raised by the riser pipeline, step 2.6)
-	FLEEING  ## Permanent rout (3.2, §4.3): paths to the nearest exit, no fill, no recovery
+	FLEEING, ## Permanent rout (3.2, §4.3): paths to the nearest exit, no fill, no recovery
+	COWER    ## Cornered (3.5, §4.4): frozen, classless, no fill; dies to a normal pounce
 }
 
 ## Patrol modes for waypoint movement.
@@ -92,6 +93,11 @@ var facing_direction: Vector2 = Vector2.RIGHT
 ## permanent corpse here until the riser pipeline (step 2.6) raises it in place —
 ## the v1 incubation→conversion pipeline was removed in step 1.4.
 var is_dead: bool = false
+
+## Set true when this human enters COWER (3.5) and never cleared — so a kill can still
+## tell it was cowering after die() flips the state to DEAD (the terror bonus, §6 /
+## Phase 4.2). is_cowering() is the live check.
+var was_cowering: bool = false
 
 ## Pounce exclusion (spec §3.5): the zombie currently mid-pounce on this human,
 ## or null. While claimed, other ferals' retargeting (2.3) skips this human — the
@@ -195,6 +201,13 @@ func _physics_process(delta: float) -> void:
 	# raise it in place; the v1 incubation→conversion was removed in step 1.4.)
 	if current_state == State.DEAD:
 		velocity = Vector2.ZERO
+		return
+
+	if current_state == State.COWER:
+		# Frozen but alive (§4.4): no flee, no fill — still a normal pounce target.
+		# super runs only for BOID separation, so co-cowerers huddle without overlapping.
+		velocity = Vector2.ZERO
+		super._physics_process(delta)
 		return
 
 	if current_state == State.FLEEING:
@@ -372,6 +385,31 @@ func cancel_fill() -> void:
 ## flees). The dispatcher freezes movement and skips the fill while this holds.
 func _is_breaking() -> bool:
 	return _fear != null and _fear.is_breaking()
+
+
+## Interim cower tint (a cold, helpless pale-blue) — the readable "this one's cornered"
+## cue. Proper cower readability (pose + scream) is the vision_renderer pass in 5.1.
+const COWER_TINT := Color(0.45, 0.6, 1.0, 1.0)
+
+
+## Drops this human into COWER (spec §4.4) — cornered, frozen, classless, no fill, no
+## recovery. Called by FleeBehavior's net-displacement detector (3.5). Still alive, so
+## it dies to a normal pounce; was_cowering records it for the terror bonus (4.2).
+func start_cowering() -> void:
+	if current_state == State.COWER or current_state == State.DEAD:
+		return
+	current_state = State.COWER
+	was_cowering = true
+	velocity = Vector2.ZERO
+	has_target = false
+	modulate = COWER_TINT
+	queue_redraw()   # drop the fill-line debug viz
+
+
+## Live check: is this human currently cowering? Used by FeralBrain to keep cowering
+## humans LOCAL-SCAN-ONLY in the hunt pool (§3.4 seam).
+func is_cowering() -> bool:
+	return current_state == State.COWER
 
 
 # === DEATH / CONVERSION ===

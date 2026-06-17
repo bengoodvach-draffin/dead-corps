@@ -32,6 +32,12 @@ var _agent: NavigationAgent2D = null
 var _escape_target: Vector2 = Vector2.ZERO
 var _has_escape: bool = false
 
+## Cower detector (3.5, §4.4): the anchor we measure net displacement from, and how long
+## we've stayed within cower_min_displacement of it. A full cower_window without escaping
+## that radius means we're cornered → cower.
+var _cower_ref: Vector2 = Vector2.ZERO
+var _cower_elapsed: float = 0.0
+
 
 func setup(owner_human: Human) -> void:
 	_owner = owner_human
@@ -54,6 +60,8 @@ func begin() -> void:
 		_agent.target_position = _escape_target
 	else:
 		_has_escape = false
+	_cower_ref = _owner.global_position
+	_cower_elapsed = 0.0
 
 
 ## Chooses the exit to flee to. With flee_exit_threat_bias 0 (or no perceived threat)
@@ -111,7 +119,19 @@ func _threat_direction() -> Vector2:
 ## One physics frame of the rout. Blends the nav-path direction with the zombie-repulsion
 ## bend and sets a virtual move target; the Human dispatcher's super._physics_process
 ## does the actual movement (+ BOID separation).
-func tick(_delta: float) -> void:
+func tick(delta: float) -> void:
+	# Cower detection (3.5, §4.4): a full cower_window spent within cower_min_displacement
+	# of our anchor → cornered → cower. Runs even with no exit (a halted human cowers in
+	# place). Net displacement (anchor distance), so ping-ponging in a corner still trips.
+	if _owner.global_position.distance_to(_cower_ref) >= GameConfig.cower_min_displacement:
+		_cower_ref = _owner.global_position
+		_cower_elapsed = 0.0
+	else:
+		_cower_elapsed += delta
+		if _cower_elapsed >= GameConfig.cower_window:
+			_owner.start_cowering()
+			return
+
 	if not _has_escape:
 		_owner.velocity = Vector2.ZERO
 		_owner.has_target = false

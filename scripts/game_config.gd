@@ -79,7 +79,7 @@ var rise_time: float = 2.5
 
 # === COWER ===
 var cower_min_displacement: float = 40.0
-var cower_window: float = 1.2
+var cower_window: float = 2.0
 
 # === SCORING ===
 var combo_window: float = 4.0

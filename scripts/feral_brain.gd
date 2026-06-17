@@ -195,13 +195,15 @@ func _retarget() -> bool:
 			seen[h] = true
 			candidates.append(h)
 
-	# Hunt pool — pursued ∪ fleeing, no LOS / no distance gate (cowering excluded).
+	# Hunt pool — pursued ∪ fleeing, no LOS / no distance gate. Cowering humans are
+	# EXCLUDED here (§3.4/§4.4): a silent, still cowerer is found only by ferals that can
+	# locally see it (the scan above), not drawn at from across the map via the pool.
 	for h in gm.pursued_humans():
-		if _is_candidate(h) and not seen.has(h):
+		if _is_candidate(h) and not h.is_cowering() and not seen.has(h):
 			seen[h] = true
 			candidates.append(h)
 	for h in gm.fleeing_humans():
-		if _is_candidate(h) and not seen.has(h):
+		if _is_candidate(h) and not h.is_cowering() and not seen.has(h):
 			seen[h] = true
 			candidates.append(h)
 

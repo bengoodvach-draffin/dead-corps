@@ -53,7 +53,7 @@ class_name LevelConfig
 
 # === COWER ===
 @export var cower_min_displacement: float = 40.0
-@export var cower_window: float = 1.2
+@export var cower_window: float = 2.0
 
 # === SCORING ===
 @export var combo_window: float = 4.0
