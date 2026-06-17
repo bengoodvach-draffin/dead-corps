@@ -128,6 +128,10 @@ var _fill_front: FillBehavior = null
 ## Null in the editor.
 var _flee: FleeBehavior = null
 
+## The fear break (build-plan 3.3) — counts zombies in fear_radius and breaks the human
+## when the class threshold is exceeded. Null in the editor.
+var _fear: FearDetector = null
+
 ## Initialise the human: team, state, patrol, base unit, LOS space.
 func _ready() -> void:
 	# Force onto the human team.
@@ -163,6 +167,11 @@ func _ready() -> void:
 		add_child(_flee)
 		_flee.setup(self)
 
+		_fear = FearDetector.new()
+		_fear.name = "FearDetector"
+		add_child(_fear)
+		_fear.setup(self)
+
 
 ## Editor-only redraw so patrol-path visuals update while placing waypoints.
 func _process(_delta: float) -> void:
@@ -193,8 +202,15 @@ func _physics_process(delta: float) -> void:
 		if _flee != null:
 			_flee.tick(delta)
 	else:
-		# Defending (IDLE / SENTRY): patrol positioning (no facing/swing/regroup).
-		if is_patrolling:
+		# Defending (IDLE / SENTRY). Fear is checked first — it can commit a break
+		# (cancels the fill) and, after the reaction beat, start the rout (3.3).
+		if _fear != null:
+			_fear.tick(delta)
+		if _is_breaking():
+			# Frozen during the fear reaction beat (spec §4.2: animation time, not a
+			# last-stand window) — no patrol, no fill, no shot.
+			velocity = Vector2.ZERO
+		elif is_patrolling:
 			update_patrol(delta)
 
 	# Face the direction of travel (readability only).
@@ -203,8 +219,8 @@ func _physics_process(delta: float) -> void:
 
 	# Fill front (3.1): scan/aim/fire (or the civilian reaction clock). Runs after the
 	# movement-facing line so an aiming defender's facing wins; a stationary one
-	# (velocity 0) is controlled purely here. Skipped while fleeing.
-	if current_state != State.FLEEING and _fill_front != null:
+	# (velocity 0) is controlled purely here. Skipped while fleeing or mid-break.
+	if current_state != State.FLEEING and not _is_breaking() and _fill_front != null:
 		_fill_front.tick(delta)
 
 	# Base Unit physics (movement, BOID separation).
@@ -343,6 +359,19 @@ func start_fleeing() -> void:
 	if _flee != null:
 		_flee.begin()
 	queue_redraw()   # drop the fill-line debug viz
+
+
+## Cancels the fill front (called by the fear break, 3.3, the instant it commits, so
+## no shot lands during the reaction beat). Safe if the component isn't built.
+func cancel_fill() -> void:
+	if _fill_front != null:
+		_fill_front.cancel()
+
+
+## True while a fear break has committed (during the reaction beat or the frame it
+## flees). The dispatcher freezes movement and skips the fill while this holds.
+func _is_breaking() -> bool:
+	return _fear != null and _fear.is_breaking()
 
 
 # === DEATH / CONVERSION ===

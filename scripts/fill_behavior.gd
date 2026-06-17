@@ -140,6 +140,17 @@ func _nearest_visible_zombie(gm: Node) -> Zombie:
 	return best
 
 
+## Resets the front to cold (no fill, no target, civilian clock zeroed) — called when a
+## fear break commits (3.3) so no shot lands during the reaction beat and the debug line
+## clears. The dispatcher stops ticking us once the break commits / the human flees.
+func cancel() -> void:
+	_fill = 0.0
+	_target = null
+	_reached = false
+	_civ_clock = 0.0
+	_owner.queue_redraw()
+
+
 # === RENDERING ACCESSORS (read by Human._draw for the debug line, → vision_renderer in 5.1) ===
 
 func fill_length() -> float:
