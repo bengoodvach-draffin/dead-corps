@@ -192,6 +192,10 @@ func die() -> void:
 	current_state = State.DEAD
 	velocity = Vector2.ZERO
 	modulate = Color(0.4, 0.0, 0.0)
+	# If shot mid-pounce (3.1), release the victim's exclusion claim so it isn't left
+	# permanently invisible to other ferals. No kill registers (kill is at _land only).
+	if _pounce != null and _pounce.is_active():
+		_pounce.abort()
 	# Living zombies stop being pushed by this corpse via the BOID separation skip
 	# (dead units excluded by is_alive in the registry), not collision layers.
 	await get_tree().create_timer(0.3).timeout

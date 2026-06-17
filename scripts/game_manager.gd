@@ -167,11 +167,30 @@ func _raise(entry: Dictionary) -> void:
 ## Each woken zombie self-targets via FeralBrain._retarget() on its next tick — if
 ## no reachable prey remains in scan it calms again the same frame (no false frenzy).
 ## Deterministic: neighbours_within returns unit_uid order, no RNG (§10).
-func _apply_contagion(kill_pos: Vector2, killer: Zombie) -> void:
+## Ignites nearby CALM zombies into the frenzy (spec §3.3). `seed_target`, when given,
+## is the human each woken zombie pursues (the gunfire shooter — see report_gunfire_kill);
+## null means wake targetless and let FeralBrain retarget the nearest prey (the human-kill
+## case, where prey is right there). Either way, normal feral rules + peel-off take over.
+func _apply_contagion(kill_pos: Vector2, killer: Zombie, seed_target: Human = null) -> void:
 	for u in neighbours_within(kill_pos, GameConfig.contagion_radius, &"zombies", killer):
 		var z := u as Zombie
 		if z != null and z.current_state == Zombie.State.CALM:
-			z.ignite_feral()
+			z.ignite_feral(seed_target)
+
+
+## A defender's fill front shot a zombie (build-plan 3.1). Delivers the binary kill,
+## then fires the gunfire-death half of violence contagion (spec §3.3 — the trigger
+## deferred from 2.5), SEEDING the woken zombies at the shooter. Without the seed they
+## wake targetless and instantly calm, since the ranged shooter is usually outside the
+## scan radius — so a gunshot draws the nearby horde onto the gunman. The killed zombie
+## is marked dead before the query (registry excludes it); no riser (gunfire kills a
+## zombie, not a human).
+func report_gunfire_kill(zombie: Zombie, shooter: Human) -> void:
+	if not is_instance_valid(zombie) or not zombie.is_alive:
+		return
+	var death_pos := zombie.global_position
+	zombie.take_damage(1.0)
+	_apply_contagion(death_pos, null, shooter)
 
 func _on_human_died(human: Human) -> void:
 	# Remove from tracking array

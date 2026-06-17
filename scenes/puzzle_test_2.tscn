@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" uid="uid://c8yqh3jvpxn3w" path="res://scenes/zombie.tscn" id="6_wgxpd"]
 [ext_resource type="PackedScene" uid="uid://brqxu82wy6h2r" path="res://scenes/human.tscn" id="7_75tbc"]
 [ext_resource type="Script" uid="uid://c5fmdp1r7ticb" path="res://scripts/vision_renderer.gd" id="8_452ff"]
+[ext_resource type="PackedScene" uid="uid://bmw8qx5r2n8pk" path="res://scenes/building.tscn" id="9_irluq"]
 [ext_resource type="Script" uid="uid://cax0dih7wnxe0" path="res://scripts/selection_manager.gd" id="11_252ko"]
 [ext_resource type="Script" uid="uid://yd0ofoh8ih30" path="res://scripts/nav_baker.gd" id="12_joimv"]
 [ext_resource type="PackedScene" uid="uid://di2wxa5t7dmxv" path="res://scenes/debug_overlay.tscn" id="13_xy8cy"]
@@ -83,14 +84,14 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human71" parent="TestLevel/Level 7" unique_id=485601543 instance=ExtResource("7_75tbc")]
-position = Vector2(-100, 387)
+position = Vector2(582, 397)
 initial_state = 1
 defender_class = 2
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human72" parent="TestLevel/Level 7" unique_id=1763502530 instance=ExtResource("7_75tbc")]
-position = Vector2(-99, 442)
+position = Vector2(583, 452)
 initial_state = 1
 defender_class = 2
 patrol_mode = 1
@@ -99,14 +100,14 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human73" parent="TestLevel/Level 7" unique_id=1650521946 instance=ExtResource("7_75tbc")]
-position = Vector2(-669, 385)
+position = Vector2(734, 389)
 initial_state = 1
 defender_class = 2
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human74" parent="TestLevel/Level 7" unique_id=520934081 instance=ExtResource("7_75tbc")]
-position = Vector2(-668, 440)
+position = Vector2(735, 444)
 initial_state = 1
 defender_class = 2
 patrol_mode = 1
@@ -627,33 +628,42 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Zombie4" parent="TestLevel/Level 7" unique_id=1325715882 instance=ExtResource("6_wgxpd")]
-position = Vector2(-487, -29)
+position = Vector2(-692, -27)
 
 [node name="Zombie5" parent="TestLevel/Level 7" unique_id=1067108926 instance=ExtResource("6_wgxpd")]
-position = Vector2(-488, 11)
+position = Vector2(-693, 13)
 
 [node name="Zombie6" parent="TestLevel/Level 7" unique_id=889300941 instance=ExtResource("6_wgxpd")]
-position = Vector2(-488, 48)
+position = Vector2(-693, 50)
 
 [node name="Zombie7" parent="TestLevel/Level 7" unique_id=965821525 instance=ExtResource("6_wgxpd")]
-position = Vector2(-526, -15)
+position = Vector2(-731, -13)
 
 [node name="Zombie8" parent="TestLevel/Level 7" unique_id=782569221 instance=ExtResource("6_wgxpd")]
-position = Vector2(-527, 25)
+position = Vector2(-732, 27)
 
 [node name="Zombie9" parent="TestLevel/Level 7" unique_id=1252845129 instance=ExtResource("6_wgxpd")]
-position = Vector2(-527, 62)
+position = Vector2(-732, 64)
 
 [node name="Zombie10" parent="TestLevel/Level 7" unique_id=679392699 instance=ExtResource("6_wgxpd")]
-position = Vector2(-571, -5)
+position = Vector2(-776, -3)
 
 [node name="Zombie11" parent="TestLevel/Level 7" unique_id=1505792532 instance=ExtResource("6_wgxpd")]
-position = Vector2(-572, 35)
+position = Vector2(-777, 37)
 
 [node name="Zombie12" parent="TestLevel/Level 7" unique_id=1355043991 instance=ExtResource("6_wgxpd")]
-position = Vector2(-572, 72)
+position = Vector2(-777, 74)
 
 [node name="Buildings" type="Node2D" parent="TestLevel" unique_id=985347166]
+
+[node name="Building" parent="TestLevel/Buildings" unique_id=622597274 instance=ExtResource("9_irluq")]
+position = Vector2(157, -87)
+
+[node name="Building2" parent="TestLevel/Buildings" unique_id=869429478 instance=ExtResource("9_irluq")]
+position = Vector2(157, 192)
+
+[node name="Building3" parent="TestLevel/Buildings" unique_id=1887458525 instance=ExtResource("9_irluq")]
+position = Vector2(-131, 56)
 
 [node name="Escape Zones" type="Node" parent="TestLevel" unique_id=1359137202]
 
@@ -674,6 +684,7 @@ script = ExtResource("12_joimv")
 [node name="DebugOverlay" parent="." unique_id=468344591 instance=ExtResource("13_xy8cy")]
 
 [node name="EndGameOverlay" parent="." unique_id=2000451810 instance=ExtResource("14_60iet")]
+visible = false
 
 [node name="EscapeZone" parent="." unique_id=1179168205 instance=ExtResource("15_ct5y5")]
 position = Vector2(-460, 429)

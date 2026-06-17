@@ -63,6 +63,19 @@ func tick(delta: float) -> void:
 				_target = null
 
 
+## Aborts an in-flight / recovering pounce because the OWNER died (e.g. shot mid-lunge
+## by a fill front, 3.1). Releases the victim's exclusion claim so other ferals can
+## retarget it, and goes IDLE. No kill registers — the kill only happens at _land(), so
+## a zombie killed mid-flight leaves its target alive (spec §3.5 / pounce_flight_time).
+func abort() -> void:
+	if _phase == Phase.IDLE:
+		return
+	if is_instance_valid(_target):
+		_target.release_pounce()
+	_phase = Phase.IDLE
+	_target = null
+
+
 ## Landing: the kill registers. Release the claim and kill the target, then enter
 ## recovery. If the target became invalid mid-flight (e.g. escaped), no kill.
 func _land() -> void:

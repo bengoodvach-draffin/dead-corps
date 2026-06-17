@@ -118,6 +118,11 @@ var patrol_pause_timer: float = 0.0   ## Countdown for the current waypoint paus
 ## Cached physics space for line-of-sight raycasts.
 var space_state: PhysicsDirectSpaceState2D
 
+## The fill front (build-plan 3.1) — armed-defender shot mechanic, a child component
+## ticked by this shell's dispatcher (mirrors the zombie component pattern). Null in
+## the editor. Civilians create it too but it no-ops until the 3.2 reaction variant.
+var _fill_front: FillBehavior = null
+
 ## Initialise the human: team, state, patrol, base unit, LOS space.
 func _ready() -> void:
 	# Force onto the human team.
@@ -140,6 +145,13 @@ func _ready() -> void:
 
 	# Cache the physics space for line-of-sight raycasts.
 	space_state = get_world_2d().direct_space_state
+
+	# Fill-front component (runtime only — no AI in the editor).
+	if not Engine.is_editor_hint():
+		_fill_front = FillBehavior.new()
+		_fill_front.name = "FillBehavior"
+		add_child(_fill_front)
+		_fill_front.setup(self)
 
 
 ## Editor-only redraw so patrol-path visuals update while placing waypoints.
@@ -173,6 +185,11 @@ func _physics_process(delta: float) -> void:
 	# Face the direction of travel (readability only).
 	if velocity.length() > 0.1:
 		facing_direction = velocity.normalized()
+
+	# Fill front (3.1): scan/aim/fire. Runs after movement-facing so an aiming
+	# defender's facing wins; a stationary one (velocity 0) is controlled purely here.
+	if _fill_front != null:
+		_fill_front.tick(delta)
 
 	# Base Unit physics (movement, BOID separation).
 	super._physics_process(delta)
@@ -252,6 +269,12 @@ func load_waypoints_from_children() -> void:
 	for waypoint in waypoint_nodes:
 		if waypoint is Node2D:
 			patrol_waypoints.append(waypoint.global_position)
+
+
+## True if this human is an armed class (uses the fill front + fires). Civilians are
+## the only unarmed class — they flee on fill completion (3.2) instead.
+func is_armed() -> bool:
+	return defender_class != DefenderClass.CIVILIAN
 
 
 # === LINE OF SIGHT (buildings block) ===
@@ -376,6 +399,7 @@ func _draw() -> void:
 				draw_arc(Vector2.ZERO, HUNTED_RING_RADIUS, 0.0, TAU, 48, HUNTED_RING_COLOR, 2.0, true)
 			if _hover_highlighted:
 				draw_arc(Vector2.ZERO, HOVER_RING_RADIUS, 0.0, TAU, 48, HOVER_RING_COLOR, 2.0, true)
+			_draw_fill_line()
 		return
 
 	# --- Editor patrol-path visuals (waypoint dots + connecting lines). Sentry
@@ -399,3 +423,24 @@ func _draw() -> void:
 		if next_index >= 0:
 			var next_wp := patrol_waypoints[next_index] - global_position
 			draw_line(current_wp, next_wp, path_color, 2.0)
+
+
+## Debug fill-line rendering (build-plan 3.1 — the front can't be tuned blind; interim
+## home, moves to vision_renderer in 5.1). A line from the human toward the zombie the
+## front is on, length = the current fill progress (clamped to the target's distance).
+## Orange while filling; red once the front has reached the target (rotating to fire).
+func _draw_fill_line() -> void:
+	if _fill_front == null:
+		return
+	var t := _fill_front.current_target()
+	if t == null or not is_instance_valid(t):
+		return
+	var length := _fill_front.fill_length()
+	if length <= 0.0:
+		return
+	var to := t.global_position - global_position   # local delta (the node is unrotated)
+	if to == Vector2.ZERO:
+		return
+	var seg_len := minf(length, to.length())
+	var col := Color(1.0, 0.3, 0.2) if _fill_front.is_reached() else Color(1.0, 0.85, 0.2)
+	draw_line(Vector2.ZERO, to.normalized() * seg_len, col, 2.0)
