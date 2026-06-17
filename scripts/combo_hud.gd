@@ -87,7 +87,8 @@ func _build_ui() -> void:
 
 	# Bank "+amount" pop, near the combo readout.
 	_bank_label = Label.new()
-	_bank_label.add_theme_font_size_override("font_size", 30)
+	_bank_label.add_theme_font_size_override("font_size", 48)   # big — the bank is the payoff
+	_bank_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.15))   # gold
 	_bank_label.position = Vector2(210.0, 14.0)
 	_bank_label.modulate = Color(1.0, 1.0, 1.0, 0.0)
 	add_child(_bank_label)
@@ -105,9 +106,9 @@ func _pop(label: Label) -> void:
 func _on_banked(amount: int, _pot: int, _multiplier: int) -> void:
 	var view_w := get_viewport().get_visible_rect().size.x
 	_bank_label.text = "+%d" % amount
-	_bank_label.position = Vector2(view_w - 240.0, 48.0)
-	_bank_label.modulate = Color(0.45, 1.0, 0.45, 1.0)
+	_bank_label.position = Vector2(view_w - 260.0, 52.0)
+	_bank_label.modulate = Color(1.0, 1.0, 1.0, 1.0)   # full opacity; gold comes from font_color
 	var t := create_tween()
 	t.set_parallel(true)
-	t.tween_property(_bank_label, "position:y", 16.0, 0.6)
-	t.tween_property(_bank_label, "modulate:a", 0.0, 0.6)
+	t.tween_property(_bank_label, "position:y", 18.0, 0.7)
+	t.tween_property(_bank_label, "modulate:a", 0.0, 0.7)

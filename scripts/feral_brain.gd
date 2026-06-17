@@ -91,7 +91,9 @@ func tick(delta: float) -> Result:
 	if dist <= GameConfig.pounce_range and not _target.is_pounce_claimed():
 		return Result.READY_TO_POUNCE
 
-	_owner.step_toward(_target.global_position, GameConfig.zombie_speed)
+	# Nav-pathed pursuit — routes around buildings/walls toward the prey (the final
+	# ~pounce_range closes straight-line, handled by the range check above).
+	_owner.nav_move_toward(_target.global_position, GameConfig.zombie_speed)
 	return Result.PURSUING
 
 

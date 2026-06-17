@@ -108,8 +108,9 @@ func _physics_process(delta: float) -> void:
 func _tick_calm(delta: float) -> void:
 	if has_target:
 		# Commanded move at the chase speed (§9 zombie_speed). Read live from config
-		# (robust to LevelConfig push order) — same speed as feral pursuit.
-		if step_toward(target_position, GameConfig.zombie_speed, 5.0):
+		# (robust to LevelConfig push order) — same speed as feral pursuit. Nav-pathed
+		# so the move routes around buildings/walls instead of stalling on them.
+		if nav_move_toward(target_position, GameConfig.zombie_speed):
 			has_target = false
 		_was_moving = true
 	else:
@@ -165,6 +166,27 @@ func _set_calm() -> void:
 	_feral.clear()
 	modulate = CALM_TINT
 	_shamble.set_anchor(global_position)
+
+
+## Moves toward `point` along the navmesh (around buildings/walls) at `speed`, returning
+## true once within arrive_dist of the FINAL point. Used by calm commanded moves and
+## feral pursuit (zombie pathing); pounce flight stays straight-line (in-range lunge).
+## Drives the NavigationAgent2D (avoidance off — deterministic); falls back to a straight
+## line if the agent is missing or the path isn't ready yet.
+func nav_move_toward(point: Vector2, speed: float, arrive_dist: float = 5.0) -> bool:
+	if global_position.distance_to(point) <= arrive_dist:
+		velocity = Vector2.ZERO
+		return true
+	if nav_agent == null:
+		return step_toward(point, speed, arrive_dist)
+	nav_agent.target_position = point
+	var dir := nav_agent.get_next_path_position() - global_position
+	if dir.length() < 0.01:
+		dir = point - global_position   # path not ready / next ≈ here → straight line
+	if dir.length() > 0.01:
+		velocity = dir.normalized() * speed
+		move_and_slide()
+	return false
 
 
 ## BOID separation/alignment params, tuned per state (set before the forces run).

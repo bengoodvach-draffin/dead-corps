@@ -178,6 +178,8 @@ func _ready() -> void:
 		add_child(_fear)
 		_fear.setup(self)
 
+		_add_class_label()
+
 
 ## Editor-only redraw so patrol-path visuals update while placing waypoints.
 func _process(_delta: float) -> void:
@@ -320,6 +322,29 @@ func load_waypoints_from_children() -> void:
 ## the only unarmed class — they flee on fill completion (3.2) instead.
 func is_armed() -> bool:
 	return defender_class != DefenderClass.CIVILIAN
+
+
+## Stamps a class letter on the unit so the roster reads at a glance: M/P/G for the
+## armed classes; civilians stay blank (they're the bulk). Runtime only.
+func _add_class_label() -> void:
+	var letter := ""
+	match defender_class:
+		DefenderClass.MILITIA:
+			letter = "M"
+		DefenderClass.POLICE:
+			letter = "P"
+		DefenderClass.GI:
+			letter = "G"
+	if letter == "":
+		return
+	var label := Label.new()
+	label.text = letter
+	label.add_theme_font_size_override("font_size", 16)
+	label.add_theme_color_override("font_color", Color.WHITE)
+	label.position = Vector2(-5.0, -11.0)   # roughly centred on the ~24px unit
+	label.z_index = 10                       # above the body
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE   # don't eat selection clicks
+	add_child(label)
 
 
 # === LINE OF SIGHT (buildings block) ===
@@ -540,5 +565,6 @@ func _draw_fill_line() -> void:
 	if to == Vector2.ZERO:
 		return
 	var seg_len := minf(length, to.length())
-	var col := Color(1.0, 0.3, 0.2) if _fill_front.is_reached() else Color(1.0, 0.85, 0.2)
+	# Half-transparent so a field of fill lines reads as ambient, not in-your-face.
+	var col := Color(1.0, 0.3, 0.2, 0.5) if _fill_front.is_reached() else Color(1.0, 0.85, 0.2, 0.5)
 	draw_line(Vector2.ZERO, to.normalized() * seg_len, col, 2.0)

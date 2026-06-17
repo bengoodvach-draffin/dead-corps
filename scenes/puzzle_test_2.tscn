@@ -455,13 +455,13 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human5" parent="TestLevel/Level 7" unique_id=1346925049 instance=ExtResource("7_75tbc")]
-position = Vector2(-744, -204)
+position = Vector2(-745, -290)
 initial_state = 1
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human77" parent="TestLevel/Level 7" unique_id=502029967 instance=ExtResource("7_75tbc")]
-position = Vector2(-743, -149)
+position = Vector2(-744, -235)
 initial_state = 1
 patrol_mode = 1
 patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
@@ -469,13 +469,13 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human78" parent="TestLevel/Level 7" unique_id=1388837837 instance=ExtResource("7_75tbc")]
-position = Vector2(-807, -189)
+position = Vector2(-808, -275)
 initial_state = 1
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human79" parent="TestLevel/Level 7" unique_id=1662098579 instance=ExtResource("7_75tbc")]
-position = Vector2(-806, -134)
+position = Vector2(-807, -220)
 initial_state = 1
 patrol_mode = 1
 patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
@@ -483,7 +483,7 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human80" parent="TestLevel/Level 7" unique_id=1139135141 instance=ExtResource("7_75tbc")]
-position = Vector2(-731, -259)
+position = Vector2(-740, -176)
 initial_state = 1
 defender_class = 1
 patrol_mode = 1
@@ -492,7 +492,7 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human81" parent="TestLevel/Level 7" unique_id=1466917842 instance=ExtResource("7_75tbc")]
-position = Vector2(-810, -259)
+position = Vector2(-819, -176)
 initial_state = 1
 defender_class = 1
 patrol_mode = 1
@@ -501,13 +501,13 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human82" parent="TestLevel/Level 7" unique_id=1961149042 instance=ExtResource("7_75tbc")]
-position = Vector2(-626, -162)
+position = Vector2(-627, -248)
 initial_state = 1
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human83" parent="TestLevel/Level 7" unique_id=110038738 instance=ExtResource("7_75tbc")]
-position = Vector2(-625, -107)
+position = Vector2(-626, -193)
 initial_state = 1
 patrol_mode = 1
 patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
@@ -515,13 +515,13 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human84" parent="TestLevel/Level 7" unique_id=672388259 instance=ExtResource("7_75tbc")]
-position = Vector2(-689, -147)
+position = Vector2(-690, -233)
 initial_state = 1
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human85" parent="TestLevel/Level 7" unique_id=965115023 instance=ExtResource("7_75tbc")]
-position = Vector2(-688, -92)
+position = Vector2(-689, -178)
 initial_state = 1
 patrol_mode = 1
 patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
@@ -529,7 +529,7 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human86" parent="TestLevel/Level 7" unique_id=107819186 instance=ExtResource("7_75tbc")]
-position = Vector2(-613, -217)
+position = Vector2(-622, -134)
 initial_state = 1
 defender_class = 1
 patrol_mode = 1
@@ -538,7 +538,7 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Human87" parent="TestLevel/Level 7" unique_id=1024506189 instance=ExtResource("7_75tbc")]
-position = Vector2(-692, -217)
+position = Vector2(-701, -134)
 initial_state = 1
 defender_class = 1
 patrol_mode = 1
