@@ -59,6 +59,7 @@ class_name LevelConfig
 @export var combo_window: float = 4.0
 @export var burst_window: float = 1.5
 @export var kill_base: int = 10
+@export var combo_tier_size: int = 5
 
 # === RELEASE / MARK ===
 @export var release_cluster_radius: float = 300.0
@@ -122,6 +123,7 @@ func _ready() -> void:
 	GameConfig.combo_window = combo_window
 	GameConfig.burst_window = burst_window
 	GameConfig.kill_base = kill_base
+	GameConfig.combo_tier_size = combo_tier_size
 
 	GameConfig.release_cluster_radius = release_cluster_radius
 	GameConfig.mark_radius = mark_radius

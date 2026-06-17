@@ -85,6 +85,10 @@ var cower_window: float = 2.0
 var combo_window: float = 4.0
 var burst_window: float = 1.5
 var kill_base: int = 10
+## Kills per base-value tier (spec §6.1, V2 tiered base): each kill adds
+## kill_base × ceil(chain_position / combo_tier_size) to the pot — kills 1–5 worth
+## kill_base, 6–10 worth 2×, etc. Rewards chain LENGTH; the multiplier stays the rare lever.
+var combo_tier_size: int = 5
 
 # === RELEASE / MARK ===
 var release_cluster_radius: float = 300.0

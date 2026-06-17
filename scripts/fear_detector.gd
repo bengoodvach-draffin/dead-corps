@@ -44,8 +44,13 @@ func tick(delta: float) -> void:
 	if gm == null:
 		return
 
-	# Count living zombies (any state) within the fear radius — no LOS (spec §4.2).
-	var count: int = gm.neighbours_within(_owner.global_position, GameConfig.fear_radius, &"zombies").size()
+	# Count living zombies (any state) within the fear radius, BUILDING-LOS gated (a
+	# solid building blocks dread; friendly humans don't — fear isn't a shot). A zombie
+	# behind a wall doesn't count; one in the open or emerging from cover does (§4.2 ambush).
+	var count := 0
+	for u in gm.neighbours_within(_owner.global_position, GameConfig.fear_radius, &"zombies"):
+		if _has_los(u):
+			count += 1
 	if count > _threshold():
 		# Break commits this instant: cancel the fill so no shot lands during the beat.
 		_committed = true
@@ -55,6 +60,16 @@ func tick(delta: float) -> void:
 
 func _threshold() -> int:
 	return GameConfig.fear_threshold[_owner.defender_class]
+
+
+## True if no building blocks the line from this human to `zombie` (mask 1 = environment
+## only — humans do NOT block fear). global_position-based; excludes self and the target.
+func _has_los(zombie: Unit) -> bool:
+	var space := _owner.get_world_2d().direct_space_state
+	var query := PhysicsRayQueryParameters2D.create(_owner.global_position, zombie.global_position)
+	query.collision_mask = 1
+	query.exclude = [_owner, zombie]
+	return space.intersect_ray(query).is_empty()
 
 
 ## Lazily resolves the GameManager (the unit registry). Cached after first use.

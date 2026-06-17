@@ -89,6 +89,7 @@ The leap survives as the kill delivery. There is no HP, no damage values, no att
 ### 4.2 Breaking: the fear radius
 Independent of the fill, checked continuously:
 - If the count of zombies — **any state: calm, feral, or risen** — within the global `fear_radius` (v0: 250px) exceeds the class threshold N, the human **flees** after a short reaction beat (`fear_reaction`, v0: 0.3s). **The break is committed the instant the threshold trips:** the fill cancels immediately and the fill line disappears — no shot can land during the reaction beat. The beat is animation time, not a last-stand window.
+- **LOS gating (revised 2026-06-17):** the count is **building-LOS gated** — a solid building/wall blocks dread, so a zombie behind one doesn't count; one in the open or emerging from cover within the radius does. Humans do **not** block fear (it's dread, not a shot). (Supersedes the earlier "fear count is non-LOS" call — through-a-building breaks read as a bug.)
 - Civilians: N = 0 — any zombie inside their fear radius breaks them. Civilians therefore have two flee paths: the fill (seen at distance) and the fear count (ambushed up close, e.g., a zombie emerging from behind cover). Both kept deliberately.
 
 ### 4.3 Fleeing = permanent rout

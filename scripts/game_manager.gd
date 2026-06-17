@@ -15,6 +15,10 @@ var units_parent: Node2D
 var all_zombies: Array[Zombie] = []
 var all_humans: Array[Human] = []
 
+## Combo / pot scoring (build-plan 4.2). Created in _ready; fed pounce kills from
+## _on_zombie_killed_human; finalized at game end. The ComboHUD + end screen read it.
+var combo: ComboSystem = null
+
 ## Pending risers (spec §3.6, build-plan 2.6): killed humans waiting to stand back
 ## up as CALM zombies. Each entry = { "corpse": Human, "pos": Vector2, "time_left":
 ## float }. Filled on a kill (clock starts at the pounce landing), counted down in
@@ -45,6 +49,14 @@ func _ready() -> void:
 		units_parent.name = "Units"
 		add_child(units_parent)
 	
+	# Scoring (4.2): the combo system + its runtime HUD. Combo first so the HUD finds it.
+	combo = ComboSystem.new()
+	combo.name = "ComboSystem"
+	add_child(combo)
+	var hud := ComboHUD.new()
+	hud.name = "ComboHUD"
+	add_child(hud)
+
 	# CRITICAL FIX: Register manually placed units
 	# When users manually place zombies/humans in the editor, they need to be tracked
 	await get_tree().process_frame  # Wait for all nodes to be ready
@@ -133,6 +145,11 @@ func _on_zombie_killed_human(human: Human, zombie: Zombie) -> void:
 		"pos": human.global_position,
 		"time_left": GameConfig.rise_time,
 	})
+
+	# Scoring (spec §6.1, build-plan 4.2): a pounce kill feeds the combo (gunfire deaths
+	# don't reach here — they're the player's losses, not scored).
+	if combo != null:
+		combo.register_kill(human)
 
 
 ## Counts down pending risers each physics frame and raises any whose clock hit zero
@@ -230,43 +247,37 @@ func on_human_escaped(human: Human) -> void:
 	check_win_condition()
 
 
-## Checks if all humans are dead/escaped (player wins)
-## Emits game_won signal with scoring data
+## Win (spec §8): no humans remain on the map — all dead/converted or fled. A live
+## human is one that's still valid and not a corpse; cowering humans are alive, so they
+## count here and must be pounced to end the level (no special case — it just falls out).
 func check_win_condition() -> void:
-	# Don't check if game already ended
 	if game_ended:
 		return
-	
-	# Count remaining LIVE humans (exclude dead/incubating ones)
-	var remaining_live_humans := 0
+
+	var remaining_humans := 0
 	for human in all_humans:
 		if is_instance_valid(human) and not human.is_dead:
-			remaining_live_humans += 1
-	
-	if remaining_live_humans == 0:
+			remaining_humans += 1
+
+	if remaining_humans == 0:
 		game_ended = true
-		var final_zombie_count := get_total_zombie_count()  # Includes corpses
-		print("Victory! All humans dealt with! (%d zombies, %d escaped)" % [final_zombie_count, escaped_humans])
+		if combo != null:
+			combo.finalize()   # bank any in-progress chain before the end screen reads it
+		print("Victory! All humans dealt with! (%d zombies, %d escaped)" % [get_total_zombie_count(), escaped_humans])
 		game_won.emit()
 
 
-## Checks if all zombies are dead while humans remain (player loses)
-## Emits game_lost signal
+## Lose (spec §8): the zombie total reaches zero, with risers counting (get_total_zombie_count).
 func check_lose_condition() -> void:
-	# Don't check if game already ended
 	if game_ended:
 		return
-	
-	# Count remaining zombies (including incubating corpses)
-	var remaining_zombies := get_total_zombie_count()
 
-	# Player loses if all zombies dead (and no corpses) AND at least one human alive or escaped
-	if remaining_zombies == 0:
-		var total_humans_accounted_for := escaped_humans + (get_all_humans().size())
-		if total_humans_accounted_for > 0 or escaped_humans > 0:
-			game_ended = true
-			print("Defeat! All zombies eliminated!")
-			game_lost.emit()
+	if get_total_zombie_count() == 0:
+		game_ended = true
+		if combo != null:
+			combo.finalize()   # bank any in-progress chain before the end screen reads it
+		print("Defeat! All zombies eliminated!")
+		game_lost.emit()
 
 func setup_test_scenario() -> void:
 	"""Spawn a simple test scenario with a few zombies and humans"""
@@ -434,22 +445,10 @@ func fleeing_humans() -> Array[Human]:
 	return result
 
 
-## Gets total zombie count, including corpses about to rise (spec §3.6: risers count
-## toward the lose total so there's no false loss while bodies are standing up).
-## DEFERRED CLEANUP (step 1.4 → 4.1): the legacy dead_human_count below is stale —
-## dead humans are erased from all_humans on death (_on_human_died), so it reads 0;
-## the corpse-about-to-stand is now tracked in _pending_risers instead. Left in place
-## (harmless) until the win/lose rebuild to spec §8 in step 4.1.
+## Total zombies for the lose condition (spec §8): living zombies + corpses about to
+## rise. Risers count, so there's no false loss in the gap between a kill and the rise.
 func get_total_zombie_count() -> int:
-	var zombie_count := get_all_zombies().size()
-
-	# Count dead humans (legacy incubating-corpse path — effectively 0 now, see above).
-	var dead_human_count := 0
-	for human in get_all_humans():
-		if human.is_dead:
-			dead_human_count += 1
-
-	return zombie_count + dead_human_count + _pending_risers.size()
+	return get_all_zombies().size() + _pending_risers.size()
 
 
 ## Registers manually placed units in the scene
