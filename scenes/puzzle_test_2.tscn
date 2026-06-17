@@ -15,11 +15,11 @@
 [ext_resource type="PackedScene" uid="uid://cpxw4y8m7n5pk" path="res://scenes/end_game_overlay.tscn" id="14_60iet"]
 [ext_resource type="PackedScene" uid="uid://bvx8qw2m7n5pk" path="res://scenes/escape_zone.tscn" id="15_ct5y5"]
 
-[sub_resource type="NavigationPolygon" id="NavigationPolygon_7qxpg"]
-vertices = PackedVector2Array(988, 491, -988, 491, -988, -485, 988, -485)
-polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3)])
+[sub_resource type="NavigationPolygon" id="NavigationPolygon_irluq"]
+vertices = PackedVector2Array(225, 285, 982, 485, -982, 485, 89, 285, 225, 6, 691, -239, 827, -239, 225, 99, 89, 99, 827, -425, 982, -479, -982, -479, 691, -425, 225, -180, -63, 149, -63, -37, -199, 149, -199, -37, 89, 6, 89, -180)
+polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3), PackedInt32Array(4, 5, 6, 7, 8), PackedInt32Array(6, 9, 10, 1), PackedInt32Array(11, 10, 9, 12), PackedInt32Array(5, 4, 13), PackedInt32Array(6, 1, 0, 7), PackedInt32Array(14, 15, 8, 3), PackedInt32Array(14, 3, 2, 16), PackedInt32Array(16, 2, 11, 17), PackedInt32Array(18, 4, 8), PackedInt32Array(18, 8, 15), PackedInt32Array(19, 18, 15), PackedInt32Array(11, 12, 5, 13, 19), PackedInt32Array(17, 11, 19, 15)])
 cell_size = 4.0
-agent_radius = 12.0
+agent_radius = 18.0
 
 [node name="Main" type="Node2D" unique_id=151308185]
 position = Vector2(3, 0)
@@ -508,6 +508,30 @@ defender_class = 1
 cohesion_strength = 12.0
 alignment_rate = 0.3
 
+[node name="Human73" parent="TestLevel/Level 7" unique_id=1346925049 instance=ExtResource("7_75tbc")]
+position = Vector2(147, -389)
+initial_state = 1
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human74" parent="TestLevel/Level 7" unique_id=579077176 instance=ExtResource("7_75tbc")]
+position = Vector2(152, -344)
+initial_state = 1
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human75" parent="TestLevel/Level 7" unique_id=1829193747 instance=ExtResource("7_75tbc")]
+position = Vector2(203, -394)
+initial_state = 1
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human76" parent="TestLevel/Level 7" unique_id=1099582102 instance=ExtResource("7_75tbc")]
+position = Vector2(208, -349)
+initial_state = 1
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
 [node name="Human64" parent="TestLevel/Level 7" unique_id=1007115283 instance=ExtResource("7_75tbc")]
 position = Vector2(393, -86)
 initial_state = 1
@@ -560,36 +584,39 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Zombie4" parent="TestLevel/Level 7" unique_id=1325715882 instance=ExtResource("6_wgxpd")]
-position = Vector2(-692, -27)
+position = Vector2(-825, -15)
 
 [node name="Zombie5" parent="TestLevel/Level 7" unique_id=1067108926 instance=ExtResource("6_wgxpd")]
-position = Vector2(-693, 13)
+position = Vector2(-826, 25)
 
 [node name="Zombie6" parent="TestLevel/Level 7" unique_id=889300941 instance=ExtResource("6_wgxpd")]
-position = Vector2(-693, 50)
+position = Vector2(-826, 62)
 
 [node name="Zombie7" parent="TestLevel/Level 7" unique_id=965821525 instance=ExtResource("6_wgxpd")]
-position = Vector2(-731, -13)
+position = Vector2(-864, -1)
 
 [node name="Zombie8" parent="TestLevel/Level 7" unique_id=782569221 instance=ExtResource("6_wgxpd")]
-position = Vector2(-732, 27)
+position = Vector2(-865, 39)
 
 [node name="Zombie9" parent="TestLevel/Level 7" unique_id=1252845129 instance=ExtResource("6_wgxpd")]
-position = Vector2(-732, 64)
+position = Vector2(-865, 76)
 
 [node name="Zombie10" parent="TestLevel/Level 7" unique_id=679392699 instance=ExtResource("6_wgxpd")]
-position = Vector2(-776, -3)
+position = Vector2(-909, 9)
 
 [node name="Zombie11" parent="TestLevel/Level 7" unique_id=1505792532 instance=ExtResource("6_wgxpd")]
-position = Vector2(-777, 37)
+position = Vector2(-910, 49)
 
 [node name="Zombie12" parent="TestLevel/Level 7" unique_id=1355043991 instance=ExtResource("6_wgxpd")]
-position = Vector2(-777, 74)
+position = Vector2(-910, 86)
 
 [node name="Buildings" type="Node2D" parent="TestLevel" unique_id=985347166]
 
 [node name="Building" parent="TestLevel/Buildings" unique_id=622597274 instance=ExtResource("9_irluq")]
 position = Vector2(157, -87)
+
+[node name="Building4" parent="TestLevel/Buildings" unique_id=1535714533 instance=ExtResource("9_irluq")]
+position = Vector2(759, -332)
 
 [node name="Building2" parent="TestLevel/Buildings" unique_id=869429478 instance=ExtResource("9_irluq")]
 position = Vector2(157, 192)
@@ -609,9 +636,9 @@ position = Vector2(-131, 56)
 script = ExtResource("11_252ko")
 
 [node name="NavigationRegion" type="NavigationRegion2D" parent="." unique_id=257540646]
-visible = false
-navigation_polygon = SubResource("NavigationPolygon_7qxpg")
+navigation_polygon = SubResource("NavigationPolygon_irluq")
 script = ExtResource("12_joimv")
+agent_radius = 18.0
 
 [node name="DebugOverlay" parent="." unique_id=468344591 instance=ExtResource("13_xy8cy")]
 

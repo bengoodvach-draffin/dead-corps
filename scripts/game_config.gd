@@ -38,6 +38,19 @@ var civilian_reaction: float = 0.75
 var fear_radius: float = 250.0
 var fear_reaction: float = 0.3
 
+# === FLEE / HERDING (build-plan 3.4) ===
+## A fleeing human nav-paths to the nearest exit; its route bends away from zombies
+## within flee_repel_radius. flee_repel_strength is THE herdability dial — how hard the
+## bend pushes vs the goal pull (low = punches to the exit ignoring your wall; high =
+## easily herded, can be shoved backward into a dead end → cower).
+var flee_repel_radius: float = 180.0
+var flee_repel_strength: float = 1.5
+## Threat-aware exit choice: how strongly a broken human avoids picking an exit that's
+## BEHIND the horde that scared it (so it flees away from the danger, not through it).
+## Scores each exit by distance × (1 + bias × alignment-with-threat). 0 = OFF (pure
+## nearest-exit, no threat consideration).
+var flee_exit_threat_bias: float = 1.5
+
 # === CONTAGION / HUNT ===
 var contagion_radius: float = 150.0
 var chain_scan_radius: float = 250.0

@@ -31,6 +31,11 @@ class_name LevelConfig
 @export var fear_radius: float = 250.0
 @export var fear_reaction: float = 0.3
 
+# === FLEE / HERDING ===
+@export var flee_repel_radius: float = 180.0
+@export var flee_repel_strength: float = 1.5
+@export var flee_exit_threat_bias: float = 1.5
+
 # === CONTAGION / HUNT ===
 @export var contagion_radius: float = 150.0
 @export var chain_scan_radius: float = 250.0
@@ -94,6 +99,10 @@ func _ready() -> void:
 
 	GameConfig.fear_radius = fear_radius
 	GameConfig.fear_reaction = fear_reaction
+
+	GameConfig.flee_repel_radius = flee_repel_radius
+	GameConfig.flee_repel_strength = flee_repel_strength
+	GameConfig.flee_exit_threat_bias = flee_exit_threat_bias
 
 	GameConfig.contagion_radius = contagion_radius
 	GameConfig.chain_scan_radius = chain_scan_radius
