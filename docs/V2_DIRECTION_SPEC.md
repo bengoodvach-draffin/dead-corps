@@ -163,13 +163,14 @@ Release is unmodified and uncancelable — its weight is carried by consequence,
 ## 6. SCORING
 
 ### 6.1 Combo (pot model)
-- Every kill adds **`kill_base` (v0: 10) points to the combo pot** and refreshes the **combo window** (v0: 4s, flat, from last kill).
-- A kill within **`burst_window` (v0: 1.5s)** of the previous kill: **multiplier +1**.
-- A **terror kill** (victim was COWERING): **additional +1 multiplier — stacks with the burst increment** (a terror kill inside the burst window = +2 total). Confirmed.
+*(Revised 2026-06-17 to a V2 TIERED-base model. The original flat `kill_base`-per-kill made the window worthless for score — only the burst multiplier paid, so kills 1.5–4s apart banked the same as kills strung far apart. Tiered base makes chain LENGTH pay, so the window now drives score; the multiplier stays the rare, high-impact lever.)*
+- Each kill adds a **TIERED base** to the combo pot: **`kill_base × ceil(chain_position / combo_tier_size)`** (v0: 10 / 5 → kills 1–5 worth 10 each, 6–10 worth 20, 11–15 worth 30, …). Longer chains pay progressively more per kill. Each kill also refreshes the **combo window** (v0: 4s, flat, from last kill).
+- **Multiplier** (per chain, starts ×1, kept rare): a kill within **`burst_window` (v0: 1.5s)** of the previous → **+1**; a **terror kill** (victim was COWERING) → **+1 more, stacks** (terror inside the burst window = +2).
 - **Window expires → level total += pot × multiplier; pot resets to 0, multiplier resets to 1.**
 - Property (chosen deliberately): the multiplier held when the combo dies applies to the whole pot — late bursts retroactively inflate earlier kills in the chain. Maximum greed.
-- Window = forgiveness; increment = greed. The window keeps chains alive across chases; the burst increment makes corralling-for-simultaneity the optimal play. Stringing kills out is strictly inferior by construction.
-- Rejected on record: freeze-while-hunting (rewarded continuity over intensity; enabled slow-rolling), tier-decaying windows (shelved).
+- Window = forgiveness; **tiered base = the chain-length reward; multiplier = greed/simultaneity.** Keeping the chain alive is now strictly better than stringing kills out (length escalates the base), and corralling-for-simultaneity stacks the multiplier on top.
+- **Scored event = pounce kills only.** A zombie's death by gunfire is the player's own loss, not scored. Score lands at the kill, not the rise.
+- Rejected on record: **flat `kill_base` per kill** (the window did nothing for score — replaced by tiered base); freeze-while-hunting (rewarded continuity over intensity; enabled slow-rolling); tier-decaying windows (shelved).
 
 ### 6.2 Other scoring
 - **Survivor counting:** kept as an **end-screen stat only** ("4 escaped" = lost converts = the gap to a full-clear mastery run). Worth zero points. The old 25pts-per-surviving-zombie rule is dead — it punished the core fantasy.
@@ -218,8 +219,9 @@ All values live in **`level_config.gd`** — a NEW per-level @tool node (name ch
 | Feral off-axis penalty (bullet ↔ splay) | 2.0 |
 | Pounce range / recovery / flight time | 40 px / 1.0 s / 0.2 s |
 | Rise time (from pounce landing) | 2.5 s |
-| Cower: min displacement / window | 40 px / 1.2 s |
-| Combo window / burst window / kill base | 4 s / 1.5 s / 10 pts |
+| Cower: min displacement / window | 40 px / 2.0 s |
+| Combo: window / burst / kill base / tier size | 4 s / 1.5 s / 10 pts / 5 kills |
+| Flee herding: repel radius / strength / exit-threat bias | 180 px / 1.5 / 1.5 |
 | Release cluster radius | 300 px |
 | Mark radius (coordinate marks) | 300 px |
 | Shamble leash / speed / pause | 5 px / 7 px/s / 3.0 s (±50%) |

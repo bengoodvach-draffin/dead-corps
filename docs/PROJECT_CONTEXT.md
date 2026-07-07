@@ -1,14 +1,14 @@
 # Dead Corps — Project Context
 
-**Current version:** v0.30.0 · **Branch:** v2-poc · **Engine:** Godot 4.6 / GDScript · **Location:** Amsterdam, NL
+**Current version:** v0.43.0 · **Branch:** v2-poc · **Engine:** Godot 4.6 / GDScript · **Location:** Amsterdam, NL
 
 Technical state, per-script purpose table, known issues, and quick-reference values. For design intent, zombie/defender specs, and the decision log, see `GAME_DESIGN_DOCUMENT.md`. For working rules, see the root `CLAUDE.md`. For the full feature history, see `archive/` changelogs and GDD §2.
 
 ---
 
-## ⚠️ STALE BELOW — v2-poc Phase 1 demolition is COMPLETE (v0.30.0)
+## ⚠️ STALE BELOW — v2-poc Phases 1–4 COMPLETE (v0.43.0)
 
-`V2_DIRECTION_SPEC.md` is the authoritative core-loop design (locked pending PoC validation); `V2_POC_BUILD_PLAN.md` tracks implementation. On branch `v2-poc`, **Phase 0 (foundations) and Phase 1 (demolition) are done** — the v1 stealth systems (morale, alerts, vision cones, tunnel vision, HP/grapple melee, leap, Spec Ops, the incubation pipeline) have been **removed from the code**. Added: GameConfig/LevelConfig, the GameManager unit registry, DetHash, a hard escape-zone barrier (EscapeBarrier layer 4), and `is_alive`-based liveness.
+`V2_DIRECTION_SPEC.md` is the authoritative core-loop design; `V2_POC_BUILD_PLAN.md` tracks implementation. On branch `v2-poc`, **Phases 0–4 are done (v0.43.0) — the M1 core loop is feature-complete.** The v1 stealth systems (morale, alerts, vision cones, tunnel vision, HP/grapple melee, leap, Spec Ops, the incubation pipeline) were removed, then built on the new substrate: **predation** (feral/Pounce/contagion/risers), **defense** (fill front/fear break/rout+herding/cower), **win/lose** (§8), **combo scoring** (§6), and **nav pathing** for zombies + humans. Substrate: GameConfig/LevelConfig, the GameManager unit registry, DetHash, the EscapeBarrier (layer 4), `is_alive` liveness, and the **dispatcher-shell + behavior-component** architecture.
 
 **So the "Current state", the Scripts table, and the Known Issues below describe the PRE-demolition v1 codebase and are now substantially STALE.** They are kept for historical reference and bug-archaeology only. For the *current* architecture, read **CLAUDE.md → "Architecture at a glance"** (kept in sync). This document gets a full v1→v2 rewrite once the PoC validates and the v2 systems are stable — deferred deliberately because Phases 2–7 will churn it heavily.
 

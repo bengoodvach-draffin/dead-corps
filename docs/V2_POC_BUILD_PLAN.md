@@ -45,6 +45,8 @@ Strip per the spec-§11 audit. Sequenced so each commit passes the parse gate; a
 
 ## Phase 2 — Predation core (zombie side)
 
+**✅ COMPLETE (2.1–2.6, through v0.36.0).** Refinements vs the steps below: feral targeting became the **peel-off + movement-vector "bullet" model** (`FeralTargeting.path_score`, shared by seeding + pursuit); 2.5 contagion **seeds the shooter** on a gunfire-death (else woken zombies, with the shooter far, just calm); zombie movement is now **nav-pathed** (calm moves + feral pursuit — done in the v0.43.0 visual/pathing pass).
+
 - **2.1 Idle shamble** — all idle calm zombies wander within `shamble_leash` of their anchor; anchor updates on move-order completion; deterministic via 0.3's hash jitter.
 - **2.2 FERAL + the Pounce (against unarmed humans)** — FERAL state, pursuit, lunge at `pounce_range`, **kill registers at landing** (a mid-flight death cancels the kill — define the flight window in seconds), 1.0s recovery, **pounce exclusion** (an in-flight target is invisible to all other ferals' retargeting). Includes a *minimal* release (RMB-on-human → selected zombies ignite, nearest seeding) purely so ferals can be triggered for testing.
 - **2.3 Retargeting + the hunt pool** — local 250px LOS scan ∪ pool ({pursued} ∪ {FLEEING anywhere}); plain nearest wins; shared-kill instant retarget; cowering humans local-scan-only; **no target + empty pool → instant calm on the spot**; the no-progress failsafe (40px / 2.0s rolling window, same detector pattern as cower).
@@ -58,6 +60,8 @@ Strip per the spec-§11 audit. Sequenced so each commit passes the parse gate; a
 
 ## Phase 3 — Defense (human side)
 
+**✅ COMPLETE (3.1–3.5, through v0.41.0).** Refinements vs the steps below: the fill is **humans-block-LOS** for the shot *and* perception (a screened zombie doesn't keep the gun hot — cool-when-not-visible); the **fear count is building-LOS gated** (not the original non-LOS — dread doesn't pass through a wall); the rout is **nav-pathed** with a **threat-aware exit** pick (won't commit to an exit *behind* the horde); `cower_window` is **2.0s** (was 1.2); cower tints the unit pale-blue (interim cue → 5.1).
+
 - **3.1 The radial fill front (armed classes)** — 360° LOS-gated awareness circle; front expands at class fill speed while any zombie is in range; fires at the first zombie the front reaches (LOS checked at fire time); reset-on-fire; decay (2× speed) only when no zombie is visible; **rotation gates the shot** (`turn_speed`, ~15° tolerance; front holds during rotation); face nearest zombie between shots. **Ships with its debug fill-line rendering** — this system cannot be tuned blind. Zombie death by gunfire feeds contagion (closes 2.5).
 - **3.2 Civilian variant** — fill is a pure reaction clock (~0.75s); completion = flee, not fire.
 - **3.3 Fear radius + the break** — continuous count of zombies (any state) within global `fear_radius`; over class threshold N → committed break (fill cancels instantly, line vanishes, no shot can land), `fear_reaction` beat, then flee. Civilians N=0 (their second, ambush flee path — deliberate).
@@ -69,6 +73,8 @@ Strip per the spec-§11 audit. Sequenced so each commit passes the parse gate; a
 ---
 
 ## Phase 4 — Loop closure
+
+**✅ COMPLETE (4.1–4.2, v0.42.0).** Refinement vs 4.2 below: scoring uses a **V2 tiered base** (`kill_base × ceil(chain_position / combo_tier_size)`) so chain LENGTH pays, with the multiplier kept **rare** (burst + terror, stacking) — the original flat-pot made the window worthless for score. Combo HUD (`ComboHUD`) + end-screen rewrite built; win/lose cleaned to §8. Scored event = pounce kills only (gunfire deaths don't score).
 
 - **4.1 Win/lose (spec §8)** — win: no humans on the map (cowerers must be collected); lose: zombie total zero, risers counting.
 - **4.2 Combo scoring + end screen** — pot model (`kill_base` per kill, 4s window, +1 multiplier per `burst_window` chain, +1 for terror kills, stacking; bank pot × multiplier on window expiry); combo meter HUD (pot, multiplier, draining window, popping increments); end screen: score, level timer (display-only), escaped count (stat, zero points).
