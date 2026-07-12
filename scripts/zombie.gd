@@ -218,6 +218,13 @@ func die() -> void:
 	# permanently invisible to other ferals. No kill registers (kill is at _land only).
 	if _pounce != null and _pounce.is_active():
 		_pounce.abort()
+	# Release the PURSUIT claim too (A1): a feral killed mid-chase (routine since gunfire,
+	# 3.1) must free its target from the hunt pool. Otherwise that straggler stays
+	# is_pursued() forever — no other feral peels onto it and its hunted ring never clears,
+	# silently degrading the peel-off model exactly when a defender is thinning the chasers.
+	# clear() is null-safe and also used by _set_calm, so it's safe on any death path.
+	if _feral != null:
+		_feral.clear()
 	# Living zombies stop being pushed by this corpse via the BOID separation skip
 	# (dead units excluded by is_alive in the registry), not collision layers.
 	await get_tree().create_timer(0.3).timeout

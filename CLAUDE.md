@@ -62,6 +62,9 @@ scripts/                   # all GDScript
 scenes/                    # all .tscn (units, levels, overlays)
 audio/                     # audio assets (system in progress, not yet doc-synced)
 docs/
+  WORK_QUEUE.md            # ⭐ THE current prioritized to-do (fixes → features → Phase 5/6/7) — start here for "what next"
+  V2_REVIEW_2026-07-02.md  # architecture-review findings (bugs A1–A5, spec deviations B1–B6) at file:line
+  HANDOVER_2026-07-02.md   # the review's batch queue + Ben's rulings + the doc-sync batch
   V2_DIRECTION_SPEC.md     # THE PREDATOR PIVOT — authoritative core-loop design; supersedes GDD §3/§6/parts of §11
   V2_POC_BUILD_PLAN.md     # the agreed phased implementation order for this branch (v2-poc)
   V2_IMPLEMENTER_GUIDE.md  # invariants checklist, delegation map, ticket discipline — read before executing any build-plan step
@@ -131,6 +134,8 @@ This describes the codebase **as it exists now on `v2-poc` — Phases 0–4 comp
 ---
 
 ## Current focus
+
+**➡️ For the current prioritized to-do, read `docs/WORK_QUEUE.md`** (mirrored in the `v2-work-queue` memory). As of 2026-07-12 (a friends' playtest + the 2026-07-02 architecture review), the immediate work is a batch of ruled bug fixes (A1 pursuit-claim leak → A2 stop-to-fire → B3) plus small playtest features (release magnetism, corpse commands), *before* resuming the Phase 5→6→7 build below.
 
 **Building the v2 PoC validation slice** (spec §12) — built 2D-first. Roster: Civilian, Militia, Police, GI. **No specials** (Fat/Costume excluded; re-audit post-validation), no Spec Ops, no pressure systems. Milestones: **M1** — core loop without the Mark; **M2** — add the Mark + LMB fill-line inspect.
 
