@@ -45,7 +45,10 @@ There is no separate "logical world space" to project from — the game was buil
 
 ### Accepted visual fictions (deliberate, not bugs)
 
-1. **Range circles render as screen circles** on diamond ground. In a "true" iso world they'd be ellipses. This is common in shipped iso games and is *more* readable, not less. An optional cosmetic pass (draw ranges as 2:1 ellipses in `vision_renderer`) is **parked** — do not build it in this migration.
+1. **Range indicators render as screen circles; feet decals render as ovals.** The rule (clarified 2026-07-12 off Ben's review question): a drawn shape must truthfully show what it represents.
+   - *Decals* (selection ring, hover ring, hunted marker — "this unit, standing here") carry no gameplay area → draw them as 2:1 under-feet **ellipses** so they read as painted on the ground (Stage 6).
+   - *Range indicators* (fear, contagion, release magnetism — "the mechanic reaches to here") encode a gameplay area that, per Decision A, genuinely IS a screen-space circle (`neighbours_within` measures plain screen distance) → they must be drawn as **circles**. A 2:1 oval would lie: a defender above the oval's top edge would look safe while standing inside the actual radius. Pretty-but-wrong indicators are forbidden.
+   - Making ranges *actually* elliptical (anisotropic distance metric + compressed vertical speeds) is the projected-world architecture Decision A rejects; it would invalidate every tuned §9 value. **Not parked — rejected.**
 2. **Screen-vertical movement covers the same px/sec as horizontal**, though the tile art implies it is "farther" in world terms. Imperceptible in play; changing it would anisotropize every speed and radius and break the tuned feel. **Forbidden.**
 
 ### Explicitly forbidden in this migration
@@ -56,15 +59,35 @@ There is no separate "logical world space" to project from — the game was buil
 
 ## 3. Headline decision B — scale: art scales down to the world, not the world up to the art
 
-The current world: unit collision radius 12 px, bodies ~20×30 px, map 2000×1000, fear radius 250, camera zoom 0.5–2.5 targeting "~60 px units at 1080p" (`camera_controller.gd:46`). Native art: 128–192 px character frames, 128 px-wide tiles.
+The current world: unit collision radius 12 px, bodies ~20×30 px, map 2000×1000, fear radius 250, camera zoom 0.5–2.5 targeting "~60 px units at 1080p" (`camera_controller.gd:46`).
 
-**Recommendation (firm): a single visual constant `ART_SCALE = 0.25`, applied only to sprite and tile scale.** A 128 px character becomes ~32 px in world units (slightly larger than today's 30 px box — correct); 192 px "large" zombies become 48 px; floor diamonds become 32×16 world px, so a character stands about one tile wide — exactly the creator's intended character:tile ratio, preserved because both scale by the same constant.
+**Measured art dimensions (2026-07-12, from the actual files in `art/raw/` — supersedes the store-page numbers):** the 128×128 character *frame* is mostly transparent padding. The *figure* inside is far smaller:
+- CityZombie 1, Idle S: opaque box **27w × 39h** px (feet at frame y≈91).
+- Survivor, Idle S: opaque box **20w × 47h** px.
+- Ground tile: 128×256 frame, opaque region 128w × 80h = a **128×64 floor diamond + ~16 px thickness skirt** below.
+- Cars/large props: 256×512 frames, 4 directions (E/N/S/W) only.
 
-Why not scale the world ×4 to native art size: it means editing ~40 GameConfig values, every hand-placed position in every scene, **and** the survey found many hardcoded pixel constants *outside* GameConfig that would each be a silent-miss risk — click tolerance 30 (`selection_manager.gd:205`), move-jitter 15 (`:437`), formation spacing 40 (`:398-454`), knockback 8 (`unit.gd:156`), hunted ring 20 / hover 24 (`human.gd:504-510`), flee `LOOKAHEAD=40` (`flee_behavior.gd:25`), nav `bake_cell_size=4`, `agent_radius=12/18/30`. One missed constant = a subtle balance bug that could poison the M1 verdict. `ART_SCALE` touches none of them.
+**Recommendation: a single visual constant `ART_SCALE`, applied only to sprite and tile scale — provisional value ≈ 0.75, frozen only after a calibration scene (see below).** At 0.75 the figures render ~29–35 px tall — matching today's 30 px placeholder, so every tuned proportion (fear 250 ≈ 8 body-heights, collision r=12 vs ~20 px body width) is preserved by eye as well as by math. Floor diamonds become 96×48. Characters and tiles must share the ONE scale — splitting them would desync people against doors/cars and break the artist's proportions.
+
+⚠️ **History of this number, kept as a warning:** this plan originally recommended 0.25, derived from the store page's "128 px frames" — reasoning from *frame* size, not *figure* size. Measurement proved that wrong by ~3×. This is also the strongest argument for the art-scales-to-world architecture itself: under the world-scales-to-art alternative, that same error would have meant a world rebuilt ×4 too large and a full re-tune to unwind. Under `ART_SCALE`, the error cost changing one number.
+
+Why not scale the world up to native art size: it means editing ~40 GameConfig values, every hand-placed position in every scene, **and** the survey found many hardcoded pixel constants *outside* GameConfig that would each be a silent-miss risk — click tolerance 30 (`selection_manager.gd:205`), move-jitter 15 (`:437`), formation spacing 40 (`:398-454`), knockback 8 (`unit.gd:156`), hunted ring 20 / hover 24 (`human.gd:504-510`), flee `LOOKAHEAD=40` (`flee_behavior.gd:25`), nav `bake_cell_size=4`, `agent_radius=12/18/30`. One missed constant = a subtle balance bug that could poison the M1 verdict. `ART_SCALE` touches none of them.
+
+**Calibration + freeze protocol (the real lock-in risk lives here):**
+1. Stage 1 builds a throwaway **calibration scene**: one animated character + a patch of floor tiles + one building + a 250 px-radius circle drawn around the character (the fear radius, for proportion judgement), viewed at zoom 0.5 / 1.0 / 2.5.
+2. Ben eyeballs and adjusts `ART_SCALE` until it reads right. Cheap: it is one number.
+3. **`ART_SCALE` FREEZES before Stage 4 (the first painted `TileMapLayer`).** After levels are painted, changing the scale moves every tile relative to the fixed gameplay geometry (buildings, positions, radii) → repainting every level. Before Stage 4 it is free to change; after, it is expensive. Treat the freeze as a gate.
+
+**Future art swaps (design for this now — Ben raised it 2026-07-12):** `ART_SCALE` is *this source's* conversion factor, not "the game's scale." What actually freezes at the gate are the **world visual metrics**: standard figure ≈ 30 world px, tile grid = 96×48 world px. Any future art source gets its own factor normalizing it to those metrics (new pack draws people 60 px tall → its factor is 0.5); sources can coexist. Implementation requirements this imposes:
+- The Stage 1 generator's **manifest is per-source/per-character** (native figure height, feet-y in frame, clip names); `UnitVisual` reads scale + feet offset from generated metadata — never hardcode 0.75 on nodes. Swapping art = new manifest entries + regenerate, zero scene surgery.
+- Painted levels survive a tile-art swap **only if** new tiles are normalized to the frozen 96×48 grid (a texture-scale setting on the new tileset). The *grid itself* is the expensive thing to change post-painting (repaint every level) — changing look-density later is a deliberate gate re-open, art labor only, gameplay immune either way.
 
 Rendering-quality notes for the implementer:
 - `ART_SCALE` lives in `game_config.gd` (it is a visual constant, but §9's "nothing hardcodes a tunable" rule applies in spirit).
-- At effective texture scales of 0.125–0.625 (sprite scale × camera zoom 0.5–2.5), minification needs **mipmaps enabled on import** and **linear filtering for these HD assets**. The project default is nearest (`project.godot:93` — pixel-art setting); override per-import-preset for the HD art rather than flipping the project default. Verify quality at min zoom in Stage 1.
+- At ~0.75, effective texture scale spans 0.375 (zoom 0.5, minification — needs **mipmaps on import**) to 1.875 (zoom 2.5, upscaling — mild softness on the HD art; judge in the calibration scene). **Linear filtering** for all this art; the project default is nearest (`project.godot:93` — pixel-art setting), so override per-import-preset rather than flipping the default.
+- `AnimatedSprite2D.offset` (feet origin) is in **texture space, applied before scale** — compute offsets from native-frame coordinates (e.g. feet at y≈91 of 128), not world px. Encode once in `UnitVisual`.
+- Non-integer scale + linear filtering is fine; with nearest it would shimmer in motion — a second reason for the linear override.
+- Prefer the packs' **spritesheet strips** (e.g. `2D HD Zombie pack 1/Spritesheets`, 1920×128 per clip-direction) over the individual-frame folders where both exist: thousands fewer files to import and fewer textures at runtime. The individual-frame tree (`Character\Clip\Direction\frame`, with angle-coded filenames like `Idle_270_001` — S = 270°) is the fallback and the naming source of truth for the Stage 1 tool.
 
 ---
 
@@ -106,9 +129,9 @@ Steps:
 
 Goal: raw PNGs → committed, engine-ready `SpriteFrames` resources, produced by script (36 characters × 15 anims × 8 dirs is far too much to hand-author, even for our subset).
 
-1. Directory layout:
-   - `art/raw/` — extracted packs, **gitignored** (multi-GB, license says don't redistribute; Ben keeps the archives).
-   - `art/units/`, `art/tiles/`, `art/fx/` — the curated subset actually used, committed.
+1. Directory layout (created 2026-07-12; **the entire `/art/` tree is gitignored** because the GitHub repo is *public* and the itch license forbids redistributing the assets — committing any PNG would publish it. Ben keeps the purchased archives as the backup of record; if the repo ever goes private, the curated folders may be tracked again):
+   - `art/raw/` — extracted packs as downloaded. Contains a `.gdignore` so Godot never imports the thousands of unused PNGs (editor-scan speed).
+   - `art/units/`, `art/tiles/`, `art/fx/` — the curated subset actually used; imported by Godot, still not committed while the repo is public.
 2. Import presets: linear filter + mipmaps for the HD art (see §3). Verify `.import` files are committed.
 3. Write `tools/build_sprite_frames.gd` (an `EditorScript` or `@tool` script): given a sheet + a manifest (frame size, clips, direction row-order), emits one `.tres` `SpriteFrames` per character with animations named `<clip>_<dir>` (e.g. `run_ne`, `die_s`). Direction suffixes: `e, ne, n, nw, w, sw, s, se`.
 4. Run it for the PoC roster; commit the `.tres` files.
@@ -224,8 +247,8 @@ Not a separate stage so much as: **Phase 6 proceeds as planned, authored with th
 
 ## 14. Open questions for Ben
 
-1. **Approve decision A** (presentation-only iso, no coordinate transform, circles stay circles)?
-2. **Approve decision B** (`ART_SCALE = 0.25`, world/tunables untouched)?
+1. **Approve decision A** — ✅ APPROVED by Ben 2026-07-12 (with the decal-oval / range-circle clarification in §2).
+2. **Approve decision B** (`ART_SCALE` architecture, world/tunables untouched; value ≈0.75 provisional, frozen via the §3 calibration protocol before Stage 4)?
 3. **Sequencing:** iso Stages 0–4 before Phase 6 (recommended, §4), or M1 verdict first on placeholders?
 4. **Purchase:** the full bundle ($64.99) up front — approved? (Stage 0 needs the files; see §5.)
 5. Shadow or no-shadow character variants? (Baked shadows look good on flat-lit iso tiles and cost nothing; recommend **with shadows**.)
