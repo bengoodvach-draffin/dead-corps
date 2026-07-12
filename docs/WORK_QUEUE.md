@@ -30,8 +30,8 @@
 Small, ruled, high-impact. Suggested PATCH bumps (or one v0.43.1 batch — Ben's call).
 
 1. **A1 — feral pursuit-claim leak (HIGHEST).** `zombie.gd die()` aborts the pounce but never calls `_feral.clear()`, so a feral shot mid-chase never releases its pursuit claim → its straggler stays "pursued" forever, no feral peels onto it, and the hunted ring sticks. Corrupts the peel-off model the PoC exists to validate. **Fix:** add `_feral.clear()` in `die()` before the corpse-linger await.
-2. **A2 — stop-to-fire.** A *moving* armed defender wipes its aim rotation each frame → can't fire >~21° off its travel direction. **Fix (ruled):** while the fill front is in the *reached* state, the human halts (patrol suspends, velocity zeroes, aim owns facing); movement resumes after the shot. Fear-break must still preempt. Natural moment to restructure `human.gd _physics_process` into a match dispatcher.
-3. **B3 — cowerers block firing lanes.** `start_cowering()` doesn't zero `collision_layer` like `die()` does. One line.
+2. **A2 — stop-to-fire.** ✅ CODE LANDED 2026-07-12 (UNTESTED — pre-emptive). A *moving* armed defender wipes its aim rotation each frame → can't fire >~21° off its travel direction. Fix: `human.gd` dispatcher halts an armed defender while `_fill_front.is_reached()` so aim owns facing; resumes on fire. **Only manifests for a moving armed defender — no patrols exist yet, so it can't occur today; test deferred until patrols return** (test steps in the `phase3-test-criteria` memory). Dispatcher `match`-restructure deferred to Tier 5 (Phase 5).
+3. **B3 — cowerers block firing lanes.** ✅ DONE 2026-07-12. `start_cowering()` now zeroes `collision_layer` (mirrors `die()`) so a cowerer no longer screens armed defenders' shots (spec §4.1).
 
 ## Tier 2 — Small feature + the immersion fix
 4. **Release magnetism (#1).** Click pins to nearest human within a new `release_aim_radius` (~100px); fall through to a calm move order when no human is in range. Small, high-relief, ready.

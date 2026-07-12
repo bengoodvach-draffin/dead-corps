@@ -225,6 +225,17 @@ func _physics_process(delta: float) -> void:
 			# Frozen during the fear reaction beat (spec §4.2: animation time, not a
 			# last-stand window) — no patrol, no fill, no shot.
 			velocity = Vector2.ZERO
+		elif is_armed() and _fill_front != null and _fill_front.is_reached():
+			# Stop-to-fire (A2): once the front has reached its target, halt so the aim
+			# rotation owns facing — a MOVING defender would otherwise overwrite the turn
+			# each frame (the facing = velocity line below) and never complete it off-axis.
+			# has_target/velocity are cleared so super() won't drive a move; patrol resumes
+			# automatically once the shot fires and the front resets (is_reached → false).
+			# NOTE: only manifests for a MOVING armed defender (i.e. patrol). No patrols
+			# exist yet, so this is pre-emptive and UNTESTED — deferred test lives in the
+			# phase3-test-criteria memory; re-run it when patrols return.
+			has_target = false
+			velocity = Vector2.ZERO
 		elif is_patrolling:
 			update_patrol(delta)
 
@@ -427,6 +438,11 @@ func start_cowering() -> void:
 	was_cowering = true
 	velocity = Vector2.ZERO
 	has_target = false
+	# Drop off the Humans collision layer so a cowerer no longer blocks armed defenders'
+	# firing lanes (B3, spec §4.1: corpses AND cowerers don't screen shots) — mirrors die().
+	# Layer only: the pounce is claim/range-based (still kills a cowerer) and huddle
+	# separation is registry-based, so neither depends on this.
+	collision_layer = 0
 	modulate = COWER_TINT
 	queue_redraw()   # drop the fill-line debug viz
 
