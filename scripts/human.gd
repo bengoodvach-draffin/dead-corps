@@ -99,6 +99,17 @@ var is_dead: bool = false
 ## Phase 4.2). is_cowering() is the live check.
 var was_cowering: bool = false
 
+## Corpse commands (build-plan 6a): set true when this human is killed and queued to rise
+## (GameManager.mark_pending_rise). While it holds AND the human is dead, this corpse is a
+## SELECTABLE, commandable body — the player can queue it a click that GameManager._raise
+## re-resolves (release-or-move) when it stands. Cleared implicitly when the corpse frees.
+var is_pending_rise: bool = false
+
+## The queued-rise click, mirrored from the riser entry PURELY for the interim _draw line
+## (the entry in GameManager is the source of truth, so a freed corpse can't strand it).
+var _queued_rise_pos: Vector2 = Vector2.ZERO
+var _has_queued_rise: bool = false
+
 ## Pounce exclusion (spec §3.5): the zombie currently mid-pounce on this human,
 ## or null. While claimed, other ferals' retargeting (2.3) skips this human — the
 ## single anti-pile-up rule (replaces all attacker caps). Typed Unit to avoid a
@@ -458,6 +469,30 @@ func is_cowering() -> bool:
 	return current_state == State.COWER
 
 
+# === CORPSE COMMANDS (build-plan 6a) ===
+
+## Marks this dead human as a pending-rise corpse — makes it selectable/commandable.
+## Called by GameManager when the kill is queued into the riser pipeline.
+func mark_pending_rise() -> void:
+	is_pending_rise = true
+	queue_redraw()
+
+
+## True while this is a selectable corpse: dead AND still counting down to rise. Selection
+## (click/box) includes these alongside calm zombies; a move/release order is STORED and
+## re-resolved when it stands (GameManager._raise).
+func is_selectable_corpse() -> bool:
+	return is_pending_rise and not is_alive
+
+
+## Mirrors the queued rise-click for the interim debug line (source of truth is the riser
+## entry in GameManager). Called from SelectionManager via GameManager.queue_rise_order.
+func set_queued_rise(pos: Vector2) -> void:
+	_queued_rise_pos = pos
+	_has_queued_rise = true
+	queue_redraw()
+
+
 # === DEATH / CONVERSION ===
 
 ## Kills this human: notify GameManager, enter DEAD (incubating corpse).
@@ -541,6 +576,8 @@ func _draw() -> void:
 			if _hover_highlighted:
 				draw_arc(Vector2.ZERO, HOVER_RING_RADIUS, 0.0, TAU, 48, HOVER_RING_COLOR, 2.0, true)
 			_draw_fill_line()
+		elif is_selectable_corpse():
+			_draw_corpse_cues()
 		return
 
 	# --- Editor patrol-path visuals (waypoint dots + connecting lines). Sentry
@@ -589,3 +626,15 @@ func _draw_fill_line() -> void:
 	# Half-transparent so a field of fill lines reads as ambient, not in-your-face.
 	var col := Color(1.0, 0.3, 0.2, 0.5) if _fill_front.is_reached() else Color(1.0, 0.85, 0.2, 0.5)
 	draw_line(Vector2.ZERO, to.normalized() * seg_len, col, 2.0)
+
+
+## Interim corpse-command cues (build-plan 6a; → vision_renderer 5.1): a sickly-green ring
+## marking a body as commandable-before-it-rises, plus a faint line to its queued destination.
+## (The selection ring itself is the base Unit selection_indicator, shown on select().)
+const CORPSE_MARKER_RADIUS := 14.0
+const CORPSE_CUE_COLOR := Color(0.55, 0.9, 0.4, 0.55)   # "will rise / commandable" green
+
+func _draw_corpse_cues() -> void:
+	draw_arc(Vector2.ZERO, CORPSE_MARKER_RADIUS, 0.0, TAU, 24, CORPSE_CUE_COLOR, 1.5, true)
+	if _has_queued_rise:
+		draw_line(Vector2.ZERO, _queued_rise_pos - global_position, CORPSE_CUE_COLOR, 1.5)

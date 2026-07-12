@@ -37,7 +37,7 @@ bounds_min = Vector2(-1000, -500)
 bounds_max = Vector2(1000, 500)
 
 [node name="LevelConfig" type="Node2D" parent="." unique_id=1080841229]
-position = Vector2(-2, 2)
+position = Vector2(-3, 3)
 script = ExtResource("3_fsr3p")
 zombie_speed = 170.0
 chain_scan_radius = 150.0

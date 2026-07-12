@@ -210,7 +210,16 @@ func handle_click_selection() -> void:
 			if distance < min_distance:
 				min_distance = distance
 				clicked_unit = unit
-	
+
+	# Corpse commands (6a): pending-rise corpses are selectable too — pick the nearest.
+	var gm := _game_manager()
+	if gm != null:
+		for corpse in gm.rising_corpses():
+			var d := box_start_pos.distance_to((corpse as Node2D).position)
+			if d < min_distance:
+				min_distance = d
+				clicked_unit = corpse
+
 	if clicked_unit:
 		if Input.is_key_pressed(KEY_SHIFT):
 			toggle_unit_selection(clicked_unit)
@@ -226,6 +235,13 @@ func handle_box_selection() -> void:
 		if unit is Zombie and (unit as Zombie).is_selectable():
 			if selection_rect.has_point(unit.position):
 				add_unit_to_selection(unit)
+
+	# Corpse commands (6a): sweep pending-rise corpses in alongside calm zombies.
+	var gm := _game_manager()
+	if gm != null:
+		for corpse in gm.rising_corpses():
+			if selection_rect.has_point((corpse as Node2D).position):
+				add_unit_to_selection(corpse)
 
 func get_selection_rect() -> Rect2:
 	var min_x: float = min(box_start_pos.x, box_current_pos.x)
@@ -251,6 +267,14 @@ func handle_command(_screen_pos: Vector2) -> void:
 	var world_pos := get_global_mouse_position()
 	var gm := get_tree().get_first_node_in_group("game_manager")
 
+	# Corpse commands (6a): store this click on any selected pending-rise corpse — it's
+	# re-resolved (release-or-move) when the corpse stands (GameManager._raise). A release-
+	# click queues an attack-at-rise; a ground-click queues a move-at-rise.
+	if gm != null:
+		for unit in selected_units:
+			if is_instance_valid(unit) and unit is Human and (unit as Human).is_selectable_corpse():
+				gm.queue_rise_order(unit, world_pos)
+
 	# RMB on a human → RELEASE the selected calm zombies at that human (spec §5.2).
 	# Otherwise → formation move order.
 	var clicked_human := _human_at(world_pos, gm)
@@ -260,15 +284,11 @@ func handle_command(_screen_pos: Vector2) -> void:
 		_release(clicked_human.global_position, gm)
 		return
 
-	# Move command (calm zombies only).
+	# Move command (calm zombies only — corpses were queued above; nothing else is selectable).
 	var commandable_units: Array[Unit] = []
 	for unit in selected_units:
-		if is_instance_valid(unit):
-			if unit is Zombie:
-				if (unit as Zombie).can_receive_command():
-					commandable_units.append(unit)
-			else:
-				commandable_units.append(unit)
+		if is_instance_valid(unit) and unit is Zombie and (unit as Zombie).can_receive_command():
+			commandable_units.append(unit)
 
 	if not commandable_units.is_empty():
 		var formation_positions := calculate_formation_positions(world_pos, commandable_units)
@@ -392,6 +412,29 @@ func clear_selection() -> void:
 
 func get_selected_units() -> Array[Unit]:
 	return selected_units
+
+
+## True if `unit` is in the current selection. GameManager checks this at rise (6a) to
+## decide whether to auto-select the risen zombie.
+func is_selected(unit: Node) -> bool:
+	return unit in selected_units
+
+
+## Applies a risen zombie's queued order (build-plan 6a), called by GameManager._raise. The
+## stored click is re-resolved through the SAME rule as a live RMB: a living human within
+## release_aim_radius → ignite feral toward it (attack-at-rise); otherwise → a calm move.
+## If it stays calm AND the corpse was still selected, keep the zombie in the selection.
+func apply_rise_order(zombie: Zombie, entry: Dictionary, was_selected: bool) -> void:
+	if entry.get("has_queued_click", false):
+		var gm := _game_manager()
+		var pos: Vector2 = entry["queued_click"]
+		var human := _human_at(pos, gm)
+		if human != null:
+			zombie.ignite_feral(human)   # reclick landed on prey → released (feral)
+		else:
+			zombie.set_move_target(pos)  # reclick on empty ground → calm move
+	if was_selected and zombie.is_selectable():
+		add_unit_to_selection(zombie)
 
 
 ## Calculates formation positions for a group of units

@@ -41,6 +41,9 @@ var game_time: float = 0.0
 ## Whether the game has ended (prevents multiple end screens)
 var game_ended: bool = false
 
+## Cached SelectionManager (corpse commands, 6a) — for auto-select + rise-order handoff.
+var _selection_mgr: Node = null
+
 func _ready() -> void:
 	# Find or create units parent
 	units_parent = get_tree().get_first_node_in_group("units_parent")
@@ -144,7 +147,12 @@ func _on_zombie_killed_human(human: Human, zombie: Zombie) -> void:
 		"corpse": human,
 		"pos": human.global_position,
 		"time_left": GameConfig.rise_time,
+		# Corpse commands (6a): a queued click, re-resolved (release-or-move) when it rises.
+		"queued_click": Vector2.ZERO,
+		"has_queued_click": false,
 	})
+	# The corpse is now a selectable, commandable body until it stands (6a).
+	human.mark_pending_rise()
 
 	# Scoring (spec §6.1, build-plan 4.2): a pounce kill feeds the combo (gunfire deaths
 	# don't reach here — they're the player's losses, not scored).
@@ -178,14 +186,59 @@ func _raise(entry: Dictionary) -> void:
 	# freed instance BEFORE the is_instance_valid guard below can run — that was the captured
 	# crash (game_manager.gd:175). Read untyped, then guard.
 	var corpse = entry.corpse
+	var sel := _selection_manager()
+	# Auto-select (6a): if the corpse was still selected, the risen zombie should inherit that
+	# selection so control carries across the rise. Note it BEFORE freeing, and drop the
+	# about-to-be-invalid corpse ref from the selection.
+	var was_selected := false
 	if is_instance_valid(corpse):
+		if sel != null:
+			was_selected = sel.is_selected(corpse)
+			if was_selected:
+				sel.remove_unit_from_selection(corpse)
 		corpse.queue_free()
 	else:
 		# Diagnostic (rule 2 — confirm the trigger on replication): a corpse freed before it
 		# could rise. Log the spot so we can tell an escape-rim race (pos AT an exit) from a
 		# benign scene reset. The rise still proceeds from the captured pos (§3.6 intent).
 		push_warning("⚠️ _raise: corpse already freed before rise at %s (escape-rim race?)" % entry.pos)
-	spawn_zombie(entry.pos)
+	var zombie := spawn_zombie(entry.pos)
+	# 6a: replay the queued click (release-or-move) on the fresh zombie, and re-select it if
+	# it stayed calm (a reclick that lands on prey ignites it feral → released, not selected).
+	if zombie != null and sel != null:
+		sel.apply_rise_order(zombie, entry, was_selected)
+
+
+## The selectable corpses (build-plan 6a): valid pending-rise humans, unit_uid-ordered (§10)
+## for a stable selection order. SelectionManager includes these alongside calm zombies.
+func rising_corpses() -> Array:
+	var out: Array = []
+	for entry in _pending_risers:
+		var c = entry.corpse
+		if is_instance_valid(c) and (c as Human).is_selectable_corpse():
+			out.append(c)
+	out.sort_custom(func(a, b): return a.unit_uid < b.unit_uid)
+	return out
+
+
+## Stores a queued click on the corpse's riser entry (build-plan 6a). The order lives on the
+## ENTRY (not the corpse node) so a freed corpse can't strand it; _raise re-resolves it
+## (release-or-move) when the zombie stands. Mirrors it onto the corpse for the debug line.
+func queue_rise_order(corpse: Human, click_pos: Vector2) -> void:
+	for entry in _pending_risers:
+		if entry.corpse == corpse:
+			entry["queued_click"] = click_pos
+			entry["has_queued_click"] = true
+			if is_instance_valid(corpse):
+				corpse.set_queued_rise(click_pos)
+			return
+
+
+## Lazily resolves the SelectionManager (corpse commands, 6a). Cached after first use.
+func _selection_manager() -> Node:
+	if _selection_mgr == null or not is_instance_valid(_selection_mgr):
+		_selection_mgr = get_tree().get_first_node_in_group("selection_manager")
+	return _selection_mgr
 
 
 ## Ignites every CALM zombie within contagion_radius of the kill site into the frenzy

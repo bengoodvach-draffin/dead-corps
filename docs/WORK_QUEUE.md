@@ -35,11 +35,12 @@ Small, ruled, high-impact. Suggested PATCH bumps (or one v0.43.1 batch — Ben's
 
 ## Tier 2 — Small feature + the immersion fix
 4. **Release magnetism (#1).** ✅ DONE 2026-07-12. New `release_aim_radius` knob (default 100px, in GameConfig + LevelConfig); `_human_at` uses it so RMB within that radius of a human = a release pinned to the nearest one (pin-and-aim: seeds from the human's position); outside it = a calm move order. **Bonus:** every LevelConfig `@export` now carries a `##` doc-comment → shows as an inspector rollover tooltip.
-5. **Point 1 — humans phase through calm zombies.** Ben tests the deter knob first; if steering-only isn't enough, add body collision (small — units currently have *no* unit-unit collision, BOID only). Optional **guard mode** later if strong intentional walls prove wanted.
+5. **Point 1 — humans phase through calm zombies.** ⏸️ PARKED 2026-07-12 — Ben couldn't replicate the phase-through in play, so no action for now. If it resurfaces: tune the deter knob (`flee_repel_strength`/`radius`); if steering-only isn't enough, add body collision (units currently have *no* unit-unit collision, BOID only). Optional **guard mode** later for strong intentional walls.
 
 ## Tier 3 — Bigger playtest features
-6. **Corpse commands (3.2).** Order a body before it rises; it rises already walking there. Net-new selectable corpse entity (risers are today just DEAD humans counting down in `game_manager._pending_risers`). *Blocked on A/B/C.*
-7. **Select-all-non-feral hotkey (3.1).** Grabs the whole controllable set (calm + corpses). Small; builds on #6.
+6. **Corpse commands (3.2).** Order a body before it rises. Model: the queued order is a stored **click**, re-resolved at rise via the live release-or-move rule (`release_aim_radius`) — human near → rises feral & attacks; else → rises calm & moves. A selected corpse's risen zombie auto-selects (if calm). **6a DONE 2026-07-12** (selectable corpses + store-click + resolve-at-rise + auto-select + interim cues). **6b PENDING:** control-group assignment on the entry (rise into group N).
+8. **Zombie move-queue / shift-click waypoints.** Shift-click chains multiple move orders for the selected calm reserve, so you set up a route (stage the next encounter, round a corner) without mid-action micro — the pro-flow half of playtest point #3. Calm moves already nav-path, so it also eases the "stuck on corners / micro to avoid enemies" complaint. **Cap: queued moves only — no loops/branches/patrol-editing** (that would drag back toward the planning game the pivot fled). *(Restored 2026-07-12 — was dropped when the corner-stuck half of point #3 was cut.)*
+7. **Select-all-non-feral hotkey (3.1).** ⏸️ PARKED — only ever a soft "maybe / catch-all"; corpse commands (#6) may make it unnecessary. Revisit if grabbing risers still feels fiddly after #6.
 
 ## Tier 4 — Housekeeping bug batch (any time, one commit)
 - **A4** teardown "Defeat!" (extend the reset-guard to skip `not is_alive` exits).
