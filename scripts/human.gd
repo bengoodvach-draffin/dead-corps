@@ -206,10 +206,13 @@ func _physics_process(delta: float) -> void:
 		return
 
 	if current_state == State.COWER:
-		# Frozen but alive (§4.4): no flee, no fill — still a normal pounce target.
-		# super runs only for BOID separation, so co-cowerers huddle without overlapping.
+		# Frozen but alive (§4.4): no flee, no fill, NO MOVEMENT — still a normal pounce
+		# target. We deliberately DON'T call super here: its BOID separation moves the unit
+		# via move_and_collide, so a passing/huddling crowd would shove the cowerer around
+		# ("cowerer ran away"). Other units still flow around it — their own separation
+		# pushes THEM off the cowerer (it stays in the registry). Trade-off: two humans
+		# cowering at the same spot may overlap — acceptable (§4.4 "huddle together").
 		velocity = Vector2.ZERO
-		super._physics_process(delta)
 		return
 
 	if current_state == State.FLEEING:
@@ -245,8 +248,10 @@ func _physics_process(delta: float) -> void:
 
 	# Fill front (3.1): scan/aim/fire (or the civilian reaction clock). Runs after the
 	# movement-facing line so an aiming defender's facing wins; a stationary one
-	# (velocity 0) is controlled purely here. Skipped while fleeing or mid-break.
-	if current_state != State.FLEEING and not _is_breaking() and _fill_front != null:
+	# (velocity 0) is controlled purely here. Only in the defending states — NOT while
+	# fleeing, mid-break, or cowering. (A cower triggered THIS frame flips FLEEING→COWER
+	# inside _flee.tick above; without the state gate the fill would run once on a cowerer.)
+	if (current_state == State.IDLE or current_state == State.SENTRY) and not _is_breaking() and _fill_front != null:
 		_fill_front.tick(delta)
 
 	# Base Unit physics (movement, BOID separation).

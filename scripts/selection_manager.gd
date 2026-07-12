@@ -255,7 +255,9 @@ func handle_command(_screen_pos: Vector2) -> void:
 	# Otherwise → formation move order.
 	var clicked_human := _human_at(world_pos, gm)
 	if clicked_human != null:
-		_release(world_pos, gm)
+		# Pin-and-aim (release magnetism #1): seed the release at the PINNED human's
+		# position, not the raw click — so a near-miss behaves exactly like clicking on it.
+		_release(clicked_human.global_position, gm)
 		return
 
 	# Move command (calm zombies only).
@@ -312,11 +314,13 @@ func _release(click_pos: Vector2, gm: Node) -> void:
 	clear_selection()
 
 
-## Nearest living human within click tolerance of `pos`, or null (release vs move).
+## Nearest living human within release_aim_radius of `pos`, or null (release vs move).
+## The radius is the release-magnetism knob (#1): a click this close to a human is a
+## release pinned to the nearest one; a direct click is just the degenerate case.
 func _human_at(pos: Vector2, gm: Node) -> Human:
 	if gm == null:
 		return null
-	var humans: Array[Unit] = gm.neighbours_within(pos, 30.0, &"humans")
+	var humans: Array[Unit] = gm.neighbours_within(pos, GameConfig.release_aim_radius, &"humans")
 	var best: Human = null
 	var best_dist := INF
 	for h in humans:

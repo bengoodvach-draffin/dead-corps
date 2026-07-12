@@ -43,6 +43,7 @@ zombie_speed = 170.0
 chain_scan_radius = 150.0
 feral_offaxis_penalty = 1.5
 cower_window = 1.2
+release_aim_radius = 50.0
 metadata/_custom_type_script = "uid://dlqe4p8ushalq"
 
 [node name="Initializer" type="Node" parent="." unique_id=1515215272]

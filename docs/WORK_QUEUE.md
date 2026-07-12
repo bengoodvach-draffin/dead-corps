@@ -34,7 +34,7 @@ Small, ruled, high-impact. Suggested PATCH bumps (or one v0.43.1 batch — Ben's
 3. **B3 — cowerers block firing lanes.** ✅ DONE 2026-07-12. `start_cowering()` now zeroes `collision_layer` (mirrors `die()`) so a cowerer no longer screens armed defenders' shots (spec §4.1).
 
 ## Tier 2 — Small feature + the immersion fix
-4. **Release magnetism (#1).** Click pins to nearest human within a new `release_aim_radius` (~100px); fall through to a calm move order when no human is in range. Small, high-relief, ready.
+4. **Release magnetism (#1).** ✅ DONE 2026-07-12. New `release_aim_radius` knob (default 100px, in GameConfig + LevelConfig); `_human_at` uses it so RMB within that radius of a human = a release pinned to the nearest one (pin-and-aim: seeds from the human's position); outside it = a calm move order. **Bonus:** every LevelConfig `@export` now carries a `##` doc-comment → shows as an inspector rollover tooltip.
 5. **Point 1 — humans phase through calm zombies.** Ben tests the deter knob first; if steering-only isn't enough, add body collision (small — units currently have *no* unit-unit collision, BOID only). Optional **guard mode** later if strong intentional walls prove wanted.
 
 ## Tier 3 — Bigger playtest features

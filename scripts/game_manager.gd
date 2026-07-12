@@ -172,9 +172,19 @@ func _tick_risers(delta: float) -> void:
 ## where it fell. The new zombie idle-shambles from its spawn anchor like any calm
 ## unit and is fully subject to normal rules (contagion, release) from this moment.
 func _raise(entry: Dictionary) -> void:
-	var corpse: Human = entry.corpse
+	# UNTYPED read: entry.corpse may be a previously-freed instance (e.g. a human freed by
+	# an escape-zone entry the same frame its pounce landed, or a scene reset). A TYPED
+	# local (`var corpse: Human = ...`) validates the object on assignment and crashes on a
+	# freed instance BEFORE the is_instance_valid guard below can run — that was the captured
+	# crash (game_manager.gd:175). Read untyped, then guard.
+	var corpse = entry.corpse
 	if is_instance_valid(corpse):
 		corpse.queue_free()
+	else:
+		# Diagnostic (rule 2 — confirm the trigger on replication): a corpse freed before it
+		# could rise. Log the spot so we can tell an escape-rim race (pos AT an exit) from a
+		# benign scene reset. The rise still proceeds from the captured pos (§3.6 intent).
+		push_warning("⚠️ _raise: corpse already freed before rise at %s (escape-rim race?)" % entry.pos)
 	spawn_zombie(entry.pos)
 
 

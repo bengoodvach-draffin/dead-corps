@@ -92,6 +92,9 @@ var combo_tier_size: int = 5
 
 # === RELEASE / MARK ===
 var release_cluster_radius: float = 300.0
+## Release magnetism (build-plan #1): an RMB within this radius (px) of a human counts
+## as a RELEASE, pinned to the nearest human; outside it, RMB is a plain calm move order.
+var release_aim_radius: float = 100.0
 var mark_radius: float = 300.0
 
 # === IDLE SHAMBLE ===
