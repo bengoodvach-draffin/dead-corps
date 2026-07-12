@@ -150,6 +150,8 @@ func _on_zombie_killed_human(human: Human, zombie: Zombie) -> void:
 		# Corpse commands (6a): a queued click, re-resolved (release-or-move) when it rises.
 		"queued_click": Vector2.ZERO,
 		"has_queued_click": false,
+		# Corpse commands (6b): a queued control group (-1 = none) the risen zombie joins.
+		"queued_group": -1,
 	})
 	# The corpse is now a selectable, commandable body until it stands (6a).
 	human.mark_pending_rise()
@@ -231,6 +233,16 @@ func queue_rise_order(corpse: Human, click_pos: Vector2) -> void:
 			entry["has_queued_click"] = true
 			if is_instance_valid(corpse):
 				corpse.set_queued_rise(click_pos)
+			return
+
+
+## Records a control group on the corpse's riser entry (build-plan 6b). The risen zombie
+## joins that group on rise (apply_rise_order) — stored on the ENTRY, not the corpse node,
+## so a corpse ref never goes stale in a control group.
+func queue_rise_group(corpse: Human, group_number: int) -> void:
+	for entry in _pending_risers:
+		if entry.corpse == corpse:
+			entry["queued_group"] = group_number
 			return
 
 

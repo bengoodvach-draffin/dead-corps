@@ -112,13 +112,22 @@ func assign_control_group(group_number: int) -> void:
 		if is_instance_valid(old_unit):
 			old_unit.clear_control_group_number()
 
-	# Clear old group assignments for these units
+	# Zombies join the group now; a selected CORPSE instead records the group on its riser
+	# entry (6b) so the risen zombie joins on rise — putting the corpse node in the group
+	# would leave a stale ref when it frees. Old assignments clear only for the units we keep.
+	var gm := _game_manager()
+	var valid_units: Array = []
 	for unit in selected_units:
-		if is_instance_valid(unit):
-			remove_unit_from_all_groups(unit)
+		if not is_instance_valid(unit):
+			continue
+		if unit is Human and (unit as Human).is_selectable_corpse():
+			if gm != null:
+				gm.queue_rise_group(unit, group_number)
+			unit.set_control_group_number(group_number)   # show the number on the corpse now (6b)
+			continue
+		remove_unit_from_all_groups(unit)
+		valid_units.append(unit)
 
-	# Set new group (only valid units)
-	var valid_units: Array = selected_units.filter(func(u): return is_instance_valid(u))
 	control_groups[group_number] = valid_units
 
 	# Update visual numbers on units
@@ -433,8 +442,23 @@ func apply_rise_order(zombie: Zombie, entry: Dictionary, was_selected: bool) -> 
 			zombie.ignite_feral(human)   # reclick landed on prey → released (feral)
 		else:
 			zombie.set_move_target(pos)  # reclick on empty ground → calm move
+	# 6b: join the queued control group, if any — works whether it rose calm or feral (a
+	# feral member becomes selectable again once it calms, like any released group member).
+	var group: int = entry.get("queued_group", -1)
+	if group >= 0:
+		_join_control_group(zombie, group)
 	if was_selected and zombie.is_selectable():
 		add_unit_to_selection(zombie)
+
+
+## Adds a risen zombie to a control group (build-plan 6b) without disturbing existing members
+## and stamps its group number. Used by apply_rise_order for a corpse that was tagged to a group.
+func _join_control_group(unit: Node, group_number: int) -> void:
+	var g: Array = control_groups.get(group_number, [])
+	if unit not in g:
+		g.append(unit)
+		control_groups[group_number] = g
+	unit.set_control_group_number(group_number)
 
 
 ## Calculates formation positions for a group of units

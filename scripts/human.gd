@@ -628,13 +628,12 @@ func _draw_fill_line() -> void:
 	draw_line(Vector2.ZERO, to.normalized() * seg_len, col, 2.0)
 
 
-## Interim corpse-command cues (build-plan 6a; → vision_renderer 5.1): a sickly-green ring
-## marking a body as commandable-before-it-rises, plus a faint line to its queued destination.
-## (The selection ring itself is the base Unit selection_indicator, shown on select().)
-const CORPSE_MARKER_RADIUS := 14.0
-const CORPSE_CUE_COLOR := Color(0.55, 0.9, 0.4, 0.55)   # "will rise / commandable" green
+## Interim corpse-command cue (build-plan 6a; → vision_renderer 5.1): a faint line to the
+## queued destination. The persistent "commandable" marker RING was removed — under the
+## corpse's red modulate it rendered as a red circle around every corpse. Selection still
+## shows the base Unit selection_indicator; proper corpse readability is the Phase 5 pass.
+const CORPSE_CUE_COLOR := Color(0.55, 0.9, 0.4, 0.55)
 
 func _draw_corpse_cues() -> void:
-	draw_arc(Vector2.ZERO, CORPSE_MARKER_RADIUS, 0.0, TAU, 24, CORPSE_CUE_COLOR, 1.5, true)
 	if _has_queued_rise:
 		draw_line(Vector2.ZERO, _queued_rise_pos - global_position, CORPSE_CUE_COLOR, 1.5)
