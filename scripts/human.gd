@@ -105,10 +105,9 @@ var was_cowering: bool = false
 ## re-resolves (release-or-move) when it stands. Cleared implicitly when the corpse frees.
 var is_pending_rise: bool = false
 
-## The queued-rise click, mirrored from the riser entry PURELY for the interim _draw line
-## (the entry in GameManager is the source of truth, so a freed corpse can't strand it).
-var _queued_rise_pos: Vector2 = Vector2.ZERO
-var _has_queued_rise: bool = false
+## The queued-rise ROUTE, mirrored from the riser entry PURELY for the interim _draw line
+## (the entry in GameManager is the source of truth, so a freed corpse can't strand it). (#8)
+var _queued_route: Array = []
 
 ## Pounce exclusion (spec §3.5): the zombie currently mid-pounce on this human,
 ## or null. While claimed, other ferals' retargeting (2.3) skips this human — the
@@ -485,11 +484,10 @@ func is_selectable_corpse() -> bool:
 	return is_pending_rise and not is_alive
 
 
-## Mirrors the queued rise-click for the interim debug line (source of truth is the riser
-## entry in GameManager). Called from SelectionManager via GameManager.queue_rise_order.
-func set_queued_rise(pos: Vector2) -> void:
-	_queued_rise_pos = pos
-	_has_queued_rise = true
+## Mirrors the queued rise-route for the interim debug line (source of truth is the riser
+## entry in GameManager). Called from GameManager.set_rise_route / queue_rise_waypoint. (#8)
+func set_queued_route(route: Array) -> void:
+	_queued_route = route.duplicate()
 	queue_redraw()
 
 
@@ -635,5 +633,10 @@ func _draw_fill_line() -> void:
 const CORPSE_CUE_COLOR := Color(0.55, 0.9, 0.4, 0.55)
 
 func _draw_corpse_cues() -> void:
-	if _has_queued_rise:
-		draw_line(Vector2.ZERO, _queued_rise_pos - global_position, CORPSE_CUE_COLOR, 1.5)
+	if _queued_route.is_empty():
+		return
+	var prev := Vector2.ZERO
+	for p in _queued_route:
+		var lp: Vector2 = (p as Vector2) - global_position
+		draw_line(prev, lp, CORPSE_CUE_COLOR, 1.5)
+		prev = lp

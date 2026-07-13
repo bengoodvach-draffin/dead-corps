@@ -36,6 +36,11 @@ var _move_order_counter: int = 0
 var _hovered_human: Human = null
 var _gm_cache: Node = null
 
+## The fixed clicked waypoints of the current group route, for the interim viz (#8). Appended
+## on shift+RMB; cleared by a plain command or a new selection. Fixed coords → the drawn line
+## stays put (it does NOT recompute from live unit positions each frame).
+var _group_route: Array[Vector2] = []
+
 func _ready() -> void:
 	set_process_input(true)
 
@@ -48,6 +53,7 @@ func _ready() -> void:
 ## each frame so it tracks both cursor and human movement). Cheap — one radius query.
 func _process(_delta: float) -> void:
 	_update_release_hover()
+	queue_redraw()   # keep the group-route viz anchored as the selection moves (#8)
 
 func _input(event: InputEvent) -> void:
 	# Handle selection
@@ -69,6 +75,24 @@ func _input(event: InputEvent) -> void:
 func _draw() -> void:
 	if is_box_selecting:
 		draw_selection_box()
+	_draw_group_route()
+
+
+## Draws the group-route viz (#8): dots at each shift-clicked waypoint, lines between — the
+## actual clicked path (one line, which is the averaged centre line for free). Fixed coords,
+## so it doesn't wander as the units move; cleared on a plain command / new selection. Drawn in
+## SelectionManager's space (untransformed = world), so the stored world points are used directly.
+func _draw_group_route() -> void:
+	if _group_route.is_empty():
+		return
+	var col := Color(1.0, 1.0, 1.0, 0.5)
+	var prev: Vector2 = _group_route[0]
+	draw_circle(prev, 4.0, col)
+	for i in range(1, _group_route.size()):
+		var p: Vector2 = _group_route[i]
+		draw_line(prev, p, col, 2.0)
+		draw_circle(p, 4.0, col)
+		prev = p
 
 ## Handles control group hotkey inputs (Ctrl+1-9, 1-9, Ctrl+0)
 func handle_control_group_input(event: InputEventKey) -> void:
@@ -275,34 +299,51 @@ func handle_command(_screen_pos: Vector2) -> void:
 
 	var world_pos := get_global_mouse_position()
 	var gm := get_tree().get_first_node_in_group("game_manager")
-
-	# Corpse commands (6a): store this click on any selected pending-rise corpse — it's
-	# re-resolved (release-or-move) when the corpse stands (GameManager._raise). A release-
-	# click queues an attack-at-rise; a ground-click queues a move-at-rise.
-	if gm != null:
-		for unit in selected_units:
-			if is_instance_valid(unit) and unit is Human and (unit as Human).is_selectable_corpse():
-				gm.queue_rise_order(unit, world_pos)
-
-	# RMB on a human → RELEASE the selected calm zombies at that human (spec §5.2).
-	# Otherwise → formation move order.
+	var append := Input.is_key_pressed(KEY_SHIFT)   # shift+RMB = queue a waypoint/attack (#8)
 	var clicked_human := _human_at(world_pos, gm)
-	if clicked_human != null:
-		# Pin-and-aim (release magnetism #1): seed the release at the PINNED human's
-		# position, not the raw click — so a near-miss behaves exactly like clicking on it.
-		_release(clicked_human.global_position, gm)
+
+	# Partition the selection into commandable calm zombies and pending-rise corpses.
+	var calm_zombies: Array[Unit] = []
+	var corpses: Array[Unit] = []
+	for u in selected_units:
+		if not is_instance_valid(u):
+			continue
+		if u is Zombie and (u as Zombie).can_receive_command():
+			calm_zombies.append(u)
+		elif u is Human and (u as Human).is_selectable_corpse():
+			corpses.append(u)
+
+	if append:
+		# SHIFT — extend the route. On an enemy it's an ATTACK terminal (deferred to the end of
+		# the route, "attacking is another waypoint"); on ground it's a move waypoint. The click
+		# is recorded for the fixed viz line either way.
+		_group_route.append(world_pos)
+		if clicked_human != null:
+			for z in calm_zombies:
+				(z as Zombie).queued_attack = clicked_human   # fires when its move route ends
+		elif not calm_zombies.is_empty():
+			var slots := calculate_formation_positions(world_pos, calm_zombies)
+			for i in range(calm_zombies.size()):
+				calm_zombies[i].queue_move(slots[i])
+		if gm != null:
+			for c in corpses:
+				gm.queue_rise_waypoint(c, world_pos)   # last waypoint → reclicked at rise
 		return
 
-	# Move command (calm zombies only — corpses were queued above; nothing else is selectable).
-	var commandable_units: Array[Unit] = []
-	for unit in selected_units:
-		if is_instance_valid(unit) and unit is Zombie and (unit as Zombie).can_receive_command():
-			commandable_units.append(unit)
-
-	if not commandable_units.is_empty():
-		var formation_positions := calculate_formation_positions(world_pos, commandable_units)
-		for i in range(commandable_units.size()):
-			commandable_units[i].set_move_target(formation_positions[i])
+	# PLAIN — single command; REPLACES any queued route/attack, and clears the viz line.
+	_group_route.clear()
+	if gm != null:
+		for c in corpses:
+			gm.set_rise_route(c, world_pos)
+	if clicked_human != null:
+		# Immediate release now (attack, forget the route). Pin-and-aim (magnetism #1).
+		_release(clicked_human.global_position, gm)
+		return
+	if not calm_zombies.is_empty():
+		var slots := calculate_formation_positions(world_pos, calm_zombies)
+		for i in range(calm_zombies.size()):
+			calm_zombies[i].set_move_target(slots[i])
+			(calm_zombies[i] as Zombie).queued_attack = null
 
 
 ## RELEASE (2.4, spec §5.2): every selected calm zombie ignites FERAL, seeded across
@@ -417,6 +458,7 @@ func clear_selection() -> void:
 		if is_instance_valid(unit):
 			unit.deselect()
 	selected_units.clear()
+	_group_route.clear()   # a new/cleared selection drops the route viz (#8)
 	selection_changed.emit(selected_units)
 
 func get_selected_units() -> Array[Unit]:
@@ -434,14 +476,22 @@ func is_selected(unit: Node) -> bool:
 ## release_aim_radius → ignite feral toward it (attack-at-rise); otherwise → a calm move.
 ## If it stays calm AND the corpse was still selected, keep the zombie in the selection.
 func apply_rise_order(zombie: Zombie, entry: Dictionary, was_selected: bool) -> void:
-	if entry.get("has_queued_click", false):
+	var route: Array = entry.get("queued_route", [])
+	if not route.is_empty():
 		var gm := _game_manager()
-		var pos: Vector2 = entry["queued_click"]
-		var human := _human_at(pos, gm)
+		# The LAST waypoint is re-resolved release-or-move ("attacking is another waypoint"):
+		# prey there → walk the earlier moves, THEN attack it (queued_attack); else it's a move.
+		var last: Vector2 = route[route.size() - 1]
+		var human := _human_at(last, gm)
+		var move_count := route.size()
 		if human != null:
-			zombie.ignite_feral(human)   # reclick landed on prey → released (feral)
-		else:
-			zombie.set_move_target(pos)  # reclick on empty ground → calm move
+			move_count -= 1
+			zombie.queued_attack = human
+		for i in range(move_count):
+			if i == 0:
+				zombie.set_move_target(route[i])
+			else:
+				zombie.queue_move(route[i])
 	# 6b: join the queued control group, if any — works whether it rose calm or feral (a
 	# feral member becomes selectable again once it calms, like any released group member).
 	var group: int = entry.get("queued_group", -1)

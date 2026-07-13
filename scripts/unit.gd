@@ -144,10 +144,38 @@ func clamp_position_to_bounds() -> void:
 		velocity.y = 0
 
 
-## Commands this unit to move to a world position (bounds-clamped).
+## Queued waypoints (build-plan #8): move targets after target_position, walked in order.
+## Populated by shift+RMB (queue_move); a plain move (set_move_target) clears it. Capped so
+## accidental shift-spam can't grow it unbounded. Calm zombies execute it (Zombie._tick_calm
+## pops the next on arrival); humans never queue, so this stays empty for them.
+const MAX_WAYPOINTS := 32
+var move_queue: Array[Vector2] = []
+
+
+## Commands this unit to move to a world position (bounds-clamped). A plain move REPLACES any
+## queued route (#8).
 func set_move_target(target: Vector2) -> void:
 	target_position = WorldBounds.clamp_to_bounds(target)
 	has_target = true
+	move_queue.clear()
+
+
+## Appends a waypoint (bounds-clamped, capped) and starts moving if idle. Shift+RMB path (#8).
+func queue_move(point: Vector2) -> void:
+	if move_queue.size() >= MAX_WAYPOINTS:
+		return
+	move_queue.append(WorldBounds.clamp_to_bounds(point))
+	if not has_target:
+		_advance_move_queue()
+
+
+## Pops the next queued waypoint into target_position. False if the queue was empty (#8).
+func _advance_move_queue() -> bool:
+	if move_queue.is_empty():
+		return false
+	target_position = move_queue.pop_front()
+	has_target = true
+	return true
 
 
 ## V2 binary kill entry. No HP — any lethal event (gunfire in 3.1, the Pounce in

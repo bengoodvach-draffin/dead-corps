@@ -248,7 +248,7 @@ Not a separate stage so much as: **Phase 6 proceeds as planned, authored with th
 ## 14. Open questions for Ben
 
 1. **Approve decision A** — ✅ APPROVED by Ben 2026-07-12 (with the decal-oval / range-circle clarification in §2).
-2. **Approve decision B** (`ART_SCALE` architecture, world/tunables untouched; value ≈0.75 provisional, frozen via the §3 calibration protocol before Stage 4)?
+2. **Approve decision B** — ✅ APPROVED by Ben 2026-07-12 (post-hard-review form: `ART_SCALE` architecture, ≈0.75 provisional, calibration + freeze protocol, per-source manifest for future swaps).
 3. **Sequencing:** iso Stages 0–4 before Phase 6 (recommended, §4), or M1 verdict first on placeholders?
 4. **Purchase:** the full bundle ($64.99) up front — approved? (Stage 0 needs the files; see §5.)
 5. Shadow or no-shadow character variants? (Baked shadows look good on flat-lit iso tiles and cost nothing; recommend **with shadows**.)

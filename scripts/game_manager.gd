@@ -147,9 +147,9 @@ func _on_zombie_killed_human(human: Human, zombie: Zombie) -> void:
 		"corpse": human,
 		"pos": human.global_position,
 		"time_left": GameConfig.rise_time,
-		# Corpse commands (6a): a queued click, re-resolved (release-or-move) when it rises.
-		"queued_click": Vector2.ZERO,
-		"has_queued_click": false,
+		# Corpse commands (6a/#8): a queued ROUTE, re-resolved (release-or-move on the FIRST
+		# waypoint) when it rises; [] = no order.
+		"queued_route": [],
 		# Corpse commands (6b): a queued control group (-1 = none) the risen zombie joins.
 		"queued_group": -1,
 	})
@@ -223,16 +223,27 @@ func rising_corpses() -> Array:
 	return out
 
 
-## Stores a queued click on the corpse's riser entry (build-plan 6a). The order lives on the
-## ENTRY (not the corpse node) so a freed corpse can't strand it; _raise re-resolves it
-## (release-or-move) when the zombie stands. Mirrors it onto the corpse for the debug line.
-func queue_rise_order(corpse: Human, click_pos: Vector2) -> void:
+## Replaces the corpse's rise route with a single waypoint (plain RMB, build-plan 6a/#8). The
+## route lives on the ENTRY (not the corpse node) so a freed corpse can't strand it; _raise
+## re-resolves it (release-or-move on the first waypoint) at rise. Mirrors it for the viz.
+func set_rise_route(corpse: Human, point: Vector2) -> void:
 	for entry in _pending_risers:
 		if entry.corpse == corpse:
-			entry["queued_click"] = click_pos
-			entry["has_queued_click"] = true
+			entry["queued_route"] = [point]
 			if is_instance_valid(corpse):
-				corpse.set_queued_rise(click_pos)
+				corpse.set_queued_route(entry["queued_route"])
+			return
+
+
+## Appends a waypoint to the corpse's rise route (shift+RMB, #8), respecting the cap.
+func queue_rise_waypoint(corpse: Human, point: Vector2) -> void:
+	for entry in _pending_risers:
+		if entry.corpse == corpse:
+			var route: Array = entry["queued_route"]
+			if route.size() < Unit.MAX_WAYPOINTS:
+				route.append(point)   # Array is by-ref → the entry updates in place
+				if is_instance_valid(corpse):
+					corpse.set_queued_route(route)
 			return
 
 

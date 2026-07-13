@@ -41,6 +41,17 @@ var _pounce: PounceBehavior = null     ## the lunge / kill-at-landing / recovery
 ## anchor can reset to the arrival point the moment a move completes (spec §3.2).
 var _was_moving: bool = false
 
+## Deferred attack (#8): a human to release toward once the current move route finishes —
+## "attacking is another waypoint". Set by a shift+RMB on an enemy while moves are queued;
+## fires in _tick_calm when the queue empties. Cleared by a plain move and on ignite.
+var queued_attack: Human = null
+
+## Guards the nav-arrival "is_navigation_finished" check (#8 stuck fix): only trust the agent's
+## finished flag once its path for the CURRENT target has actually loaded (a real next-path
+## direction has appeared). Otherwise a stale finished flag from the previous target would make
+## the unit "arrive" instantly and skip the new waypoint. Reset whenever the target changes.
+var _nav_path_ready: bool = false
+
 ## Placeholder calm/feral tint for testability — the proper readability layer
 ## (calm/feral colors, riser/cower) is built in 2.4 / 5.1.
 const CALM_TINT := Color(1, 1, 1, 1)
@@ -111,9 +122,19 @@ func _tick_calm(delta: float) -> void:
 		# (robust to LevelConfig push order) — same speed as feral pursuit. Nav-pathed
 		# so the move routes around buildings/walls instead of stalling on them.
 		if nav_move_toward(target_position, GameConfig.zombie_speed):
-			has_target = false
+			# Arrived — walk to the next queued waypoint if any, else stop (idle-shamble). (#8)
+			if not _advance_move_queue():
+				has_target = false
 		_was_moving = true
 	else:
+		# Route finished (or none) — if an attack was queued for the end, go feral now (#8:
+		# "attacking is another waypoint" — the release waits until the moves are done).
+		if queued_attack != null:
+			var h := queued_attack
+			queued_attack = null
+			if is_instance_valid(h) and h.is_alive:
+				ignite_feral(h)
+			return
 		if _was_moving:
 			_shamble.set_anchor(global_position)
 			_was_moving = false
@@ -149,6 +170,8 @@ func ignite_feral(target: Human = null) -> void:
 	# order and walk back to where it was last sent.
 	has_target = false
 	_was_moving = false
+	move_queue.clear()      # released is released — drop any queued route (#8)
+	queued_attack = null    # and any deferred attack
 	_feral.set_target(target)
 	modulate = FERAL_TINT
 
@@ -168,24 +191,46 @@ func _set_calm() -> void:
 	_shamble.set_anchor(global_position)
 
 
-## Moves toward `point` along the navmesh (around buildings/walls) at `speed`, returning
-## true once within arrive_dist of the FINAL point. Used by calm commanded moves and
-## feral pursuit (zombie pathing); pounce flight stays straight-line (in-range lunge).
-## Drives the NavigationAgent2D (avoidance off — deterministic); falls back to a straight
-## line if the agent is missing or the path isn't ready yet.
+## Moves toward `point` along the navmesh (around buildings/walls) at `speed`, returning true
+## once the target is reached. Used by calm commanded moves + feral pursuit (pounce flight is
+## separate). Drives the NavigationAgent2D (avoidance off — deterministic).
+##
+## Arrival (#8 stuck fix): the agent's target_desired_distance, NOT a tight 5px — the agent
+## stops giving path guidance once inside that band, so insisting on 5px left crowded / near-
+## terrain units grinding into walls forever. Falls back to is_navigation_finished() (once the
+## path has loaded) so a waypoint tucked BEHIND terrain arrives at the nearest reachable point
+## and the caller advances. When no path direction is available yet, it holds still for a frame
+## rather than straight-lining into terrain (the old fallback dragged stuck units deeper in).
 func nav_move_toward(point: Vector2, speed: float, arrive_dist: float = 5.0) -> bool:
-	if global_position.distance_to(point) <= arrive_dist:
+	if nav_agent == null:
+		if global_position.distance_to(point) <= arrive_dist:
+			velocity = Vector2.ZERO
+			return true
+		return step_toward(point, speed, arrive_dist)
+
+	# Only (re)set the target when it changes — resetting every frame churns the path solve.
+	if nav_agent.target_position != point:
+		nav_agent.target_position = point
+		_nav_path_ready = false
+
+	# Reached the target's neighbourhood (closes the stuck band + tolerates crowding).
+	if global_position.distance_to(point) <= nav_agent.target_desired_distance:
 		velocity = Vector2.ZERO
 		return true
-	if nav_agent == null:
-		return step_toward(point, speed, arrive_dist)
-	nav_agent.target_position = point
+
 	var dir := nav_agent.get_next_path_position() - global_position
-	if dir.length() < 0.01:
-		dir = point - global_position   # path not ready / next ≈ here → straight line
 	if dir.length() > 0.01:
+		_nav_path_ready = true
 		velocity = dir.normalized() * speed
 		move_and_slide()
+	else:
+		velocity = Vector2.ZERO   # path not ready — wait, don't straight-line into terrain
+
+	# Behind-terrain / blocked target: once the path has loaded, trust the agent's own arrival
+	# at the nearest reachable point so the route advances instead of sticking.
+	if _nav_path_ready and nav_agent.is_navigation_finished():
+		velocity = Vector2.ZERO
+		return true
 	return false
 
 
