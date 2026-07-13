@@ -36,13 +36,13 @@ class_name Building
 @export var is_enterable: bool = false
 
 ## Width of the building in pixels
-@export_range(20, 1000, 10) var building_width: float = 100:
+@export_range(20, 5000, 10) var building_width: float = 100:
 	set(value):
 		building_width = value
 		update_size_from_properties()
 
 ## Height of the building in pixels
-@export_range(20, 1000, 10) var building_height: float = 150:
+@export_range(20, 5000, 10) var building_height: float = 150:
 	set(value):
 		building_height = value
 		update_size_from_properties()

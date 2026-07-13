@@ -64,30 +64,35 @@ script = ExtResource("8_eb1x8")
 [node name="Grounds" type="Node" parent="TestLevel" unique_id=1919347183]
 
 [node name="Ground 1" type="Polygon2D" parent="TestLevel/Grounds" unique_id=922269539]
+z_index = -1
 position = Vector2(-2731, 658)
 scale = Vector2(0.9801489, 0.6009627)
 color = Color(0.20392157, 0.30588236, 0.20392157, 1)
 polygon = PackedVector2Array(-6289.86, -1733.8845, -4592.159, -1733.8845, -4592.159, -455.93506, -6289.86, -455.93506)
 
 [node name="Ground 2" type="Polygon2D" parent="TestLevel/Grounds" unique_id=1221933826]
+z_index = -1
 position = Vector2(-4473, 941.00836)
 scale = Vector2(0.4362859, 1.2662421)
 color = Color(0.20392157, 0.30588236, 0.20392157, 1)
 polygon = PackedVector2Array(-6323.834, -1754.0155, -4416.828, -1754.0155, -4416.828, -439.89087, -6323.834, -439.89087)
 
 [node name="Ground 3" type="Polygon2D" parent="TestLevel/Grounds" unique_id=566342643]
+z_index = -1
 position = Vector2(-3685, -797)
 scale = Vector2(0.4362859, 0.28382176)
 color = Color(0.20392157, 0.30588236, 0.20392157, 1)
 polygon = PackedVector2Array(-6222.9844, -1701.7722, -4462.67, -1701.7722, -4462.67, -433.3706, -6222.9844, -433.3706)
 
 [node name="Ground 4" type="Polygon2D" parent="TestLevel/Grounds" unique_id=596487277]
+z_index = -1
 position = Vector2(-3685.0002, 99)
 scale = Vector2(0.4362859, 0.28382176)
 color = Color(0.20392157, 0.30588236, 0.20392157, 1)
 polygon = PackedVector2Array(-6222.9844, -1701.7722, -4462.67, -1701.7722, -4462.67, -433.3706, -6222.9844, -433.3706)
 
 [node name="Ground 5" type="Polygon2D" parent="TestLevel/Grounds" unique_id=1748200128]
+z_index = -1
 position = Vector2(2023.9999, 947.5323)
 scale = Vector2(1.2220826, 1.2810732)
 color = Color(0.20392157, 0.30588236, 0.20392157, 1)
@@ -95,9 +100,10 @@ polygon = PackedVector2Array(-6264.716, -1738.8018, -4431.7793, -1738.8018, -443
 
 [node name="Buildings" type="Node2D" parent="TestLevel" unique_id=985347166]
 
-[node name="Building" parent="TestLevel/Buildings" unique_id=1477176879 instance=ExtResource("9_e3ked")]
-position = Vector2(-7675, -374.00006)
-scale = Vector2(0.9801489, 0.6009627)
+[node name="Building" parent="TestLevel/Buildings" unique_id=1238611686 instance=ExtResource("9_e3ked")]
+position = Vector2(-8418, -383)
+building_width = 1000.0
+building_height = 20.0
 
 [node name="Level 7" type="Node2D" parent="TestLevel" unique_id=2031917393]
 
@@ -702,31 +708,31 @@ cohesion_strength = 12.0
 alignment_rate = 0.3
 
 [node name="Zombie4" parent="TestLevel/Level 7" unique_id=1325715882 instance=ExtResource("6_w3d7j")]
-position = Vector2(-856, 338)
+position = Vector2(-8731, 160)
 
 [node name="Zombie5" parent="TestLevel/Level 7" unique_id=1067108926 instance=ExtResource("6_w3d7j")]
-position = Vector2(-860, 383)
+position = Vector2(-8735, 205)
 
 [node name="Zombie6" parent="TestLevel/Level 7" unique_id=889300941 instance=ExtResource("6_w3d7j")]
-position = Vector2(-860, 420)
+position = Vector2(-8735, 242)
 
 [node name="Zombie7" parent="TestLevel/Level 7" unique_id=965821525 instance=ExtResource("6_w3d7j")]
-position = Vector2(-898, 357)
+position = Vector2(-8773, 179)
 
 [node name="Zombie8" parent="TestLevel/Level 7" unique_id=782569221 instance=ExtResource("6_w3d7j")]
-position = Vector2(-899, 397)
+position = Vector2(-8774, 219)
 
 [node name="Zombie9" parent="TestLevel/Level 7" unique_id=1252845129 instance=ExtResource("6_w3d7j")]
-position = Vector2(-899, 434)
+position = Vector2(-8774, 256)
 
 [node name="Zombie10" parent="TestLevel/Level 7" unique_id=679392699 instance=ExtResource("6_w3d7j")]
-position = Vector2(-943, 367)
+position = Vector2(-8818, 189)
 
 [node name="Zombie11" parent="TestLevel/Level 7" unique_id=1505792532 instance=ExtResource("6_w3d7j")]
-position = Vector2(-944, 407)
+position = Vector2(-8819, 229)
 
 [node name="Zombie12" parent="TestLevel/Level 7" unique_id=1355043991 instance=ExtResource("6_w3d7j")]
-position = Vector2(-944, 444)
+position = Vector2(-8819, 266)
 
 [node name="Escape Zones" type="Node" parent="TestLevel" unique_id=1359137202]
 
@@ -751,12 +757,12 @@ agent_radius = 18.0
 visible = false
 
 [node name="EscapeZone" parent="." unique_id=1179168205 instance=ExtResource("15_uqu48")]
-position = Vector2(-666, 658)
+position = Vector2(-3363, -744)
 
 [node name="EscapeZone2" parent="." unique_id=160926733 instance=ExtResource("15_uqu48")]
-position = Vector2(973, 2)
+position = Vector2(-3603, 304)
 zone_size = Vector2(50, 1000)
 
 [node name="EscapeZone3" parent="." unique_id=1759555624 instance=ExtResource("15_uqu48")]
-position = Vector2(-501, -471)
+position = Vector2(-3339, -872)
 zone_size = Vector2(1000, 50)
