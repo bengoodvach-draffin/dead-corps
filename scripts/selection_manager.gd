@@ -239,7 +239,9 @@ func handle_click_selection() -> void:
 
 	for unit in units:
 		if unit is Zombie and (unit as Zombie).is_selectable():
-			var distance := box_start_pos.distance_to(unit.position)
+			# global_position — units nested under offset parents (e.g. an encounter
+			# container) have local coords nowhere near the click (Tier-4 cluster fix).
+			var distance := box_start_pos.distance_to(unit.global_position)
 			if distance < min_distance:
 				min_distance = distance
 				clicked_unit = unit
@@ -248,7 +250,7 @@ func handle_click_selection() -> void:
 	var gm := _game_manager()
 	if gm != null:
 		for corpse in gm.rising_corpses():
-			var d := box_start_pos.distance_to((corpse as Node2D).position)
+			var d := box_start_pos.distance_to((corpse as Node2D).global_position)
 			if d < min_distance:
 				min_distance = d
 				clicked_unit = corpse
@@ -266,14 +268,14 @@ func handle_box_selection() -> void:
 
 	for unit in units:
 		if unit is Zombie and (unit as Zombie).is_selectable():
-			if selection_rect.has_point(unit.position):
+			if selection_rect.has_point(unit.global_position):
 				add_unit_to_selection(unit)
 
 	# Corpse commands (6a): sweep pending-rise corpses in alongside calm zombies.
 	var gm := _game_manager()
 	if gm != null:
 		for corpse in gm.rising_corpses():
-			if selection_rect.has_point((corpse as Node2D).position):
+			if selection_rect.has_point((corpse as Node2D).global_position):
 				add_unit_to_selection(corpse)
 
 func get_selection_rect() -> Rect2:
@@ -359,11 +361,13 @@ func _release(click_pos: Vector2, gm: Node) -> void:
 		clear_selection()
 		return
 
-	# Candidate humans: living, within the cluster radius of the click.
+	# Candidate humans: living, within the cluster radius of the click. Sheltered
+	# humans are excluded (buildings spec §6.1 — not valid targets behind walls;
+	# release-at-the-building becomes the siege verb in step 3).
 	var candidates: Array[Human] = []
 	for u in gm.neighbours_within(click_pos, GameConfig.release_cluster_radius, &"humans"):
 		var h := u as Human
-		if h != null and h.is_alive:
+		if h != null and h.is_alive and not h.is_sheltered():
 			candidates.append(h)
 
 	# Ferals to seed: the selected calm zombies, in unit_uid order (determinism).
@@ -387,6 +391,8 @@ func _release(click_pos: Vector2, gm: Node) -> void:
 ## Nearest living human within release_aim_radius of `pos`, or null (release vs move).
 ## The radius is the release-magnetism knob (#1): a click this close to a human is a
 ## release pinned to the nearest one; a direct click is just the degenerate case.
+## Sheltered humans never pin (buildings spec §6.1) — a click near them is a plain
+## move order until step 3 makes the occupied BUILDING the release target.
 func _human_at(pos: Vector2, gm: Node) -> Human:
 	if gm == null:
 		return null
@@ -394,6 +400,8 @@ func _human_at(pos: Vector2, gm: Node) -> Human:
 	var best: Human = null
 	var best_dist := INF
 	for h in humans:
+		if (h as Human).is_sheltered():
+			continue
 		var d := pos.distance_to(h.global_position)
 		if d < best_dist:
 			best_dist = d

@@ -53,6 +53,8 @@ func _ready() -> void:
 	# Editor: visual only — never build barrier bodies (CLAUDE.md @tool rule).
 	if Engine.is_editor_hint():
 		return
+	# One-time wiring: FleeBehavior's entry check and the exit set (§9) find doors here.
+	add_to_group("shelter_doors")
 	_create_barriers()
 
 
@@ -89,3 +91,28 @@ func _make_barrier(body_name: String, layer: int) -> StaticBody2D:
 func _draw() -> void:
 	# Placeholder: the door leaf as a flat rect spanning the gap.
 	draw_rect(Rect2(-door_width * 0.5, -thickness * 0.5, door_width, thickness), door_color)
+
+
+# === STATE QUERIES (steps 3–4 slot in here) ===
+
+## Depth beyond the wall band still counted as "crossing" the doorway (unit radius-ish,
+## so a human's centre trips the entry the moment its body is in the gap).
+const ENTRY_MARGIN := 8.0
+
+## True until breached. Step 3 (door_integrity / pounding) makes this real; until
+## then every door is permanently intact.
+func is_intact() -> bool:
+	return true
+
+
+## The lock (§4.2): true while a feral is inside the engagement arc — an engaged
+## door admits no humans. Step 4 makes this real; until then every door admits.
+func is_locked() -> bool:
+	return false
+
+
+## True if `point` (global) is inside the doorway gap — the §6.1 entry test. Local
+## X spans the gap, local Y crosses the wall band.
+func contains_point(point: Vector2) -> bool:
+	var local := to_local(point)
+	return absf(local.x) <= door_width * 0.5 and absf(local.y) <= thickness * 0.5 + ENTRY_MARGIN

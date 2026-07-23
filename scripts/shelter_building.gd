@@ -21,9 +21,12 @@ class_name ShelterBuilding
 ## Wall nodes placed inside the footprint; interior doorways are plain gaps
 ## between them (no interior door mechanics in v1, §3).
 ##
-## STEP-1 SCOPE: geometry + doors only. Occupancy (SHELTERED), shelter spots,
-## breach state and exit-set membership arrive in later slice-1 steps — this node
-## is their future home.
+## OCCUPANCY + SPOTS (step 2, spec §6): this node owns the shelter claims — one
+## owner per mechanic. Fleeing humans entering a door call claim_spot(); armed
+## entrants take GuardSpots in authored scene order, civilians take ShelterSpots
+## deepest-first (nav-distance from their entry door), overflow shares the
+## deepest spot with DetHash jitter (the huddle). Unbounded capacity (§6.2).
+## Still to come: breach state (step 3), exit-set churn (step 4).
 
 ## Colour of the generated perimeter walls.
 @export var wall_color: Color = Color(0.4, 0.4, 0.4, 1):
@@ -49,6 +52,16 @@ var _body: StaticBody2D
 var _cols: Array = []          ## pooled CollisionPolygon2D, one per wall quad
 var _wall_quads: Array = []    ## Array[PackedVector2Array], local space
 
+## Occupancy (step 2, §6): sheltered humans, and which human claims which spot.
+## Overflow entrants share the deepest spot without a claim entry.
+var _occupants: Array = []
+var _spot_claims: Dictionary = {}   ## ShelterSpot -> the claiming human
+var _warned_no_spots: bool = false
+
+## DetHash salt + spread (px) for the overflow huddle around the deepest spot (§6.2).
+const OVERFLOW_SALT := 7301
+const OVERFLOW_SPREAD := 22.0
+
 
 func _ready() -> void:
 	# Give a freshly-added building a default footprint so it's visible and reshapeable.
@@ -59,6 +72,8 @@ func _ready() -> void:
 		])
 	# NavBaker carves the wall quads (not the footprint) out of the mesh.
 	add_to_group("nav_obstacle")
+	if not Engine.is_editor_hint():
+		add_to_group("shelter_buildings")
 	_sync()
 
 
@@ -75,6 +90,131 @@ func doors() -> Array:
 		if child is Door:
 			result.append(child)
 	return result
+
+
+# === OCCUPANCY + SPOT CLAIMS (step 2, spec §6.2) ===
+
+## True while at least one living human shelters here. Step 3's release-at-the-
+## building targeting and slice 2's armory both key off this.
+func is_occupied() -> bool:
+	for h in _occupants:
+		if is_instance_valid(h) and h.is_alive:
+			return true
+	return false
+
+
+## Registers `human` as an occupant and returns the global position it should hold.
+## Armed → first free GuardSpot in authored scene order; civilians (and armed with
+## no free GuardSpot) → free ShelterSpots deepest-first from `entry_door`;
+## overflow → the deepest spot + DetHash jitter (the huddle). Deterministic:
+## arrival order is claim order (humans tick in registry order), scene order and
+## nav distances are fixed. `human` is dynamically typed — no Human class
+## dependency in this script.
+func claim_spot(human: Node2D, entry_door: Node2D) -> Vector2:
+	if not _occupants.has(human):
+		_occupants.append(human)
+		# Signals up: free the claim + occupancy when the occupant dies.
+		if human.has_signal("human_died") and not human.human_died.is_connected(_on_occupant_died):
+			human.human_died.connect(_on_occupant_died)
+
+	var door_pos: Vector2 = entry_door.global_position if entry_door != null else global_position
+
+	if human.is_armed():
+		for spot in _spots(true):
+			if _spot_free(spot):
+				_spot_claims[spot] = human
+				return spot.global_position
+
+	var shelter_sorted := _shelter_spots_deepest_first(door_pos)
+	for spot in shelter_sorted:
+		if _spot_free(spot):
+			_spot_claims[spot] = human
+			return spot.global_position
+
+	# Overflow (§6.2): share the deepest spot, DetHash spread — the huddle.
+	var pool: Array = shelter_sorted if not shelter_sorted.is_empty() else _spots(true)
+	if not pool.is_empty():
+		return pool[0].global_position + DetHash.offset(human.unit_uid, OVERFLOW_SALT, OVERFLOW_SPREAD)
+
+	# No spots authored at all — huddle at the footprint centre so entrants still
+	# clear the doorway. Authored markers are the intended setup (§6.2).
+	if not _warned_no_spots:
+		_warned_no_spots = true
+		push_warning("ShelterBuilding '%s' has no ShelterSpot children — entrants huddle at the centre." % name)
+	return _footprint_centre() + DetHash.offset(human.unit_uid, OVERFLOW_SALT, OVERFLOW_SPREAD)
+
+
+## Frees a human's claim + occupancy (death now; the breach-flush in step 6).
+func release_occupant(human: Node2D) -> void:
+	_occupants.erase(human)
+	for spot in _spot_claims.keys():
+		if _spot_claims[spot] == human:
+			_spot_claims.erase(spot)
+			break
+
+
+func _on_occupant_died(human: Node2D) -> void:
+	release_occupant(human)
+
+
+## A spot is free if unclaimed, or its claimant is gone/dead (claims outlive
+## nothing — a dead occupant's spot re-opens for later entrants).
+func _spot_free(spot: Node2D) -> bool:
+	if not _spot_claims.has(spot):
+		return true
+	var claimant = _spot_claims[spot]
+	return not is_instance_valid(claimant) or not claimant.is_alive
+
+
+## Spot children of one kind, in scene order (guard claiming order is authored).
+func _spots(guard: bool) -> Array:
+	var result := []
+	for child in get_children():
+		if child is ShelterSpot and child.is_guard == guard:
+			result.append(child)
+	return result
+
+
+## Plain shelter spots sorted deepest-first: nav-distance from the entry door,
+## descending; scene order breaks ties. Recomputed per claim (few spots, and the
+## ordering depends on which door the entrant used).
+func _shelter_spots_deepest_first(door_pos: Vector2) -> Array:
+	var entries := []
+	var index := 0
+	for spot in _spots(false):
+		entries.append({"spot": spot, "dist": _nav_distance(door_pos, spot.global_position), "order": index})
+		index += 1
+	entries.sort_custom(func(a, b):
+		if a.dist != b.dist:
+			return a.dist > b.dist
+		return a.order < b.order)
+	var result := []
+	for e in entries:
+		result.append(e.spot)
+	return result
+
+
+## Nav-path length between two global points (spec §6.2 "deepest" is nav-distance,
+## so interior walls count). Falls back to straight-line if no path resolves.
+func _nav_distance(from_pos: Vector2, to_pos: Vector2) -> float:
+	var map := get_world_2d().navigation_map
+	var path := NavigationServer2D.map_get_path(map, from_pos, to_pos, true)
+	if path.size() < 2:
+		return from_pos.distance_to(to_pos)
+	var total := 0.0
+	for i in range(path.size() - 1):
+		total += path[i].distance_to(path[i + 1])
+	return total
+
+
+## Average of the footprint's points, in global space (the no-spots fallback).
+func _footprint_centre() -> Vector2:
+	if polygon.is_empty():
+		return global_position
+	var sum := Vector2.ZERO
+	for p in polygon:
+		sum += p
+	return global_transform * (sum / polygon.size())
 
 
 ## Rebuilds everything from the current polygon + doors.

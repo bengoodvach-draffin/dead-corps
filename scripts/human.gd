@@ -24,7 +24,11 @@ enum State {
 	SENTRY,  ## Watching (now identical to IDLE — facing behavior deleted)
 	DEAD,    ## Permanent corpse (raised by the riser pipeline, step 2.6)
 	FLEEING, ## Permanent rout (3.2, §4.3): paths to the nearest exit, no fill, no recovery
-	COWER    ## Cornered (3.5, §4.4): frozen, classless, no fill; dies to a normal pounce
+	COWER,   ## Cornered (3.5, §4.4): frozen, classless, no fill; dies to a normal pounce
+	## Inside a ShelterBuilding (buildings spec §6.1): entered a door while FLEEING;
+	## holds a claimed spot; out of the hunt pool; cower suspended. Exits: breach-
+	## flush (step 6), death, level end — never voluntary.
+	SHELTERED
 }
 
 ## Patrol modes for waypoint movement.
@@ -225,7 +229,18 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector2.ZERO
 		return
 
-	if current_state == State.FLEEING:
+	if current_state == State.SHELTERED:
+		# Sheltered (buildings spec §6.1): walk to the claimed spot, then hold. The
+		# cower detector is suspended (it only runs in the FLEEING tick — the §6.1
+		# "auto-cower inside" bug can't exist). FEAR IS SUSPENDED TOO: dread cannot
+		# penetrate an intact shelter, and a human standing IN the door gap sits
+		# inside the DoorLOS body where outward rays leak (hit_from_inside) — with
+		# fear live that leak caused a 60Hz break→re-enter loop. The §8.1 flush
+		# re-arms fear at breach (step 6); a breached door can't re-shelter, so the
+		# loop is impossible there. No patrol; no fill (door-watch is step 5).
+		if _flee != null:
+			_flee.tick_sheltered(delta)
+	elif current_state == State.FLEEING:
 		# Permanent rout (§4.3): steer to the exit. No patrol, no fill.
 		if _flee != null:
 			_flee.tick(delta)
@@ -375,48 +390,66 @@ func _add_class_label() -> void:
 
 # === LINE OF SIGHT (buildings + intact doors block) ===
 
-## True if no building or intact door blocks the straight line from this human to `target`.
+## True if no building or intact door blocks the straight line from this human to
+## `target`. global_position — the old local-position rays cast from the wrong spot
+## for units under offset parents (Tier-4 cluster fix).
 func has_line_of_sight_to(target: Unit) -> bool:
-	var query := PhysicsRayQueryParameters2D.create(position, target.position)
+	var query := PhysicsRayQueryParameters2D.create(global_position, target.global_position)
 	query.collision_mask = 17           # Environment (1) + intact-door "DoorLOS" blockers (16)
 	query.exclude = [self, target]
 	return space_state.intersect_ray(query).is_empty()
 
 
 ## True if no building or intact door blocks the straight line from this human to
-## `point` (e.g. an escape zone).
+## `point` (a world-space coordinate, e.g. an escape zone).
 func has_line_of_sight_to_point(point: Vector2) -> bool:
-	var query := PhysicsRayQueryParameters2D.create(position, point)
+	var query := PhysicsRayQueryParameters2D.create(global_position, point)
 	query.collision_mask = 17           # Environment (1) + intact-door "DoorLOS" blockers (16)
 	query.exclude = [self]
 	return space_state.intersect_ray(query).is_empty()
 
 
-## Nearest escape zone, or null. NO line-of-sight requirement (spec §4.3: a routed
-## human knows the exits) — used by the rout (FleeBehavior, 3.2).
+## THE unified exit set (buildings spec §9): escape zones ∪ shelter doors that are
+## intact and unlocked — one set, no class preferences. A broken human runs to
+## whatever safety is closest. Membership churn (engaged doors dropping out,
+## breached buildings leaving forever) arrives with steps 3–4 via is_locked() /
+## is_intact() going live.
+func get_exit_set() -> Array[Node2D]:
+	var exits: Array[Node2D] = []
+	for zone in get_tree().get_nodes_in_group("escape_zone"):
+		if is_instance_valid(zone):
+			exits.append(zone)
+	for door in get_tree().get_nodes_in_group("shelter_doors"):
+		if is_instance_valid(door) and door.is_intact() and not door.is_locked():
+			exits.append(door)
+	return exits
+
+
+## Nearest exit (escape zone or shelter door), or null. NO line-of-sight requirement
+## (spec §4.3: a routed human knows the exits) — used by the rout (FleeBehavior, 3.2).
 func get_nearest_escape_zone() -> Node2D:
-	var escape_zones := get_tree().get_nodes_in_group("escape_zone")
-	if escape_zones.is_empty():
-		return null
-	var nearest_zone: Node2D = null
+	var nearest_exit: Node2D = null
 	var nearest_distance := INF
-	for zone in escape_zones:
-		if not is_instance_valid(zone):
-			continue
-		# global_position — escape zones are nested scenes.
-		var distance := global_position.distance_to(zone.global_position)
+	for exit in get_exit_set():
+		# global_position — exits are nested scenes / building children.
+		var distance := global_position.distance_to(exit.global_position)
 		if distance < nearest_distance:
 			nearest_distance = distance
-			nearest_zone = zone
-	return nearest_zone
+			nearest_exit = exit
+	return nearest_exit
 
 
 ## Breaks this human into a permanent rout (spec §4.3) — called by the civilian
 ## reaction clock (3.2) and the fear break (3.3). Cancels patrol/fill; FleeBehavior
 ## steers to the nearest exit. No-op if already fleeing or dead (broken is broken).
+## From SHELTERED this is the flush (buildings spec §8.1, wired fully in step 6):
+## occupancy is released — a flushed human is out, the building forgets it.
 func start_fleeing() -> void:
 	if current_state == State.FLEEING or current_state == State.DEAD:
 		return
+	if current_state == State.SHELTERED and _shelter_building != null:
+		_shelter_building.release_occupant(self)
+		_shelter_building = null
 	current_state = State.FLEEING
 	is_patrolling = false
 	has_target = false
@@ -451,6 +484,7 @@ func start_cowering() -> void:
 		return
 	current_state = State.COWER
 	was_cowering = true
+	print("🔍 COWER: %s cornered at %s" % [name, global_position.round()])
 	velocity = Vector2.ZERO
 	has_target = false
 	# Drop off the Humans collision layer so a cowerer no longer blocks armed defenders'
@@ -466,6 +500,45 @@ func start_cowering() -> void:
 ## humans LOCAL-SCAN-ONLY in the hunt pool (§3.4 seam).
 func is_cowering() -> bool:
 	return current_state == State.COWER
+
+
+# === SHELTER (buildings spec §6, slice-1 step 2) ===
+
+## The ShelterBuilding this human occupies while SHELTERED (dynamically typed — no
+## class dependency). Read by step 3+ (BREACHING prey-proxy, flush routing).
+var _shelter_building: Node2D = null
+
+
+## Enters SHELTERED — the §6.1 transition, only reachable from FLEEING (crossing an
+## intact, unlocked door; FleeBehavior detects the crossing). Atomically: leaves
+## FLEEING (→ out of the fleeing pool; pursuers drop via FeralBrain's sheltered
+## check, draining the pursued pool), suspends the cower detector (not ticked in
+## SHELTERED), claims a spot and walks to it. Blocks the win by simply remaining
+## alive on the map (§6.1) — no extra wiring.
+func enter_shelter(building: Node2D, door: Node2D) -> void:
+	if current_state != State.FLEEING:
+		return
+	current_state = State.SHELTERED
+	has_target = false
+	velocity = Vector2.ZERO
+	_shelter_building = building
+	var spot: Vector2 = building.claim_spot(self, door)
+	if _flee != null:
+		_flee.begin_sheltered(spot)
+	print("🔍 SHELTER: %s entered %s via %s → spot %s" % [name, building.name, door.name, spot])
+	queue_redraw()   # drop any lingering line viz
+
+
+## Live check: sheltered humans are not valid feral targets (§6.1, state-excluded —
+## walls deny LOS anyway) and can't be release-pinned (SelectionManager). Step 3
+## turns pursuers of an entrant into besiegers; today they retarget or calm.
+func is_sheltered() -> bool:
+	return current_state == State.SHELTERED
+
+
+## The occupied building, or null (step 3+ reads this as the siege prey-proxy).
+func shelter_building() -> Node2D:
+	return _shelter_building
 
 
 # === CORPSE COMMANDS (build-plan 6a) ===

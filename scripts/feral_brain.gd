@@ -169,14 +169,20 @@ func _is_forward(h: Human, heading: Vector2) -> bool:
 
 ## The CURRENT target stays valid while alive — even if another feral has claimed
 ## it mid-pounce (we keep pursuing and retarget only when it actually dies).
+## A target that enters a ShelterBuilding is LOST (buildings spec §6.1 — sheltered
+## humans leave the hunt pool): the pursuer retargets or calms. Step 3 turns this
+## loss into BREACHING instead.
 func _target_valid() -> bool:
-	return _target != null and is_instance_valid(_target) and _target.is_alive
+	return _target != null and is_instance_valid(_target) and _target.is_alive \
+		and not _target.is_sheltered()
 
 
-## A NEW retarget candidate must be alive AND not under an in-flight pounce — the
-## exclusion rule that spreads the horde (§3.5).
+## A NEW retarget candidate must be alive, not under an in-flight pounce (the
+## exclusion rule that spreads the horde, §3.5), and not sheltered (state-excluded
+## for safety — walls deny LOS anyway; buildings spec §6.1).
 func _is_candidate(h: Human) -> bool:
-	return h != null and is_instance_valid(h) and h.is_alive and not h.is_pounce_claimed()
+	return h != null and is_instance_valid(h) and h.is_alive \
+		and not h.is_pounce_claimed() and not h.is_sheltered()
 
 
 ## Picks the nearest valid candidate from local scan ∪ hunt pool. Returns true if

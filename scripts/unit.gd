@@ -85,8 +85,9 @@ var _game_manager: Node = null
 
 
 func _ready() -> void:
-	# Unit starts stationary at its own position.
-	target_position = position
+	# Unit starts stationary at its own position (world space — target_position is
+	# always global; local coords diverge under offset parents).
+	target_position = global_position
 	clamp_position_to_bounds()
 	update_selection_visual()
 
@@ -102,10 +103,12 @@ func _physics_process(delta: float) -> void:
 	clamp_position_to_bounds()
 
 
-## Moves toward target_position, stopping within 5px.
+## Moves toward target_position (world space), stopping within 5px. global_position —
+## a unit under an offset parent would otherwise steer against the wrong frame
+## (Tier-4 cluster fix).
 func move_to_target(_delta: float) -> void:
-	var direction := (target_position - position).normalized()
-	var distance := position.distance_to(target_position)
+	var direction := (target_position - global_position).normalized()
+	var distance := global_position.distance_to(target_position)
 	if distance > 5.0:
 		velocity = direction * move_speed
 		move_and_slide()
@@ -128,7 +131,9 @@ func step_toward(point: Vector2, speed: float, arrive_dist: float = 2.0) -> bool
 	return false
 
 
-## Keeps the unit's edge (not centre) inside the world bounds.
+## Keeps the unit's edge (not centre) inside the world bounds. global_position —
+## the bounds are world-space, so clamping local coords under an offset parent
+## would pin the unit to the wrong rectangle (Tier-4 cluster fix).
 func clamp_position_to_bounds() -> void:
 	var bounds_min: Vector2 = WorldBounds.world_bounds_min
 	var bounds_max: Vector2 = WorldBounds.world_bounds_max
@@ -136,11 +141,11 @@ func clamp_position_to_bounds() -> void:
 	var max_x := bounds_max.x - unit_radius
 	var min_y := bounds_min.y + unit_radius
 	var max_y := bounds_max.y - unit_radius
-	position.x = clamp(position.x, min_x, max_x)
-	position.y = clamp(position.y, min_y, max_y)
-	if position.x == min_x or position.x == max_x:
+	global_position.x = clamp(global_position.x, min_x, max_x)
+	global_position.y = clamp(global_position.y, min_y, max_y)
+	if global_position.x == min_x or global_position.x == max_x:
 		velocity.x = 0
-	if position.y == min_y or position.y == max_y:
+	if global_position.y == min_y or global_position.y == max_y:
 		velocity.y = 0
 
 

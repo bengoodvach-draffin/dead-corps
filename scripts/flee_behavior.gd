@@ -38,6 +38,14 @@ var _has_escape: bool = false
 var _cower_ref: Vector2 = Vector2.ZERO
 var _cower_elapsed: float = 0.0
 
+## Shelter (buildings spec §6, step 2): the claimed spot this human walks to while
+## SHELTERED, and the level's shelter doors (cached once — static per level).
+## Arrival slack is ABOVE Unit's ~5px stop so the walker settles instead of orbiting.
+const SPOT_ARRIVE: float = 8.0
+var _spot_target: Vector2 = Vector2.ZERO
+var _doors_cache: Array = []
+var _doors_cached: bool = false
+
 
 func setup(owner_human: Human) -> void:
 	_owner = owner_human
@@ -58,16 +66,19 @@ func begin() -> void:
 		_escape_target = zone.global_position
 		_has_escape = true
 		_agent.target_position = _escape_target
+		print("🔍 FLEE: %s → exit %s at %s" % [_owner.name, zone.name, _escape_target.round()])
 	else:
 		_has_escape = false
 	_cower_ref = _owner.global_position
 	_cower_elapsed = 0.0
 
 
-## Chooses the exit to flee to. With flee_exit_threat_bias 0 (or no perceived threat)
-## it's the plain nearest exit. Otherwise each exit is scored by distance × (1 + bias ×
-## alignment-with-threat), so exits BEHIND the breaking horde are penalised and the
-## human flees away from the danger instead of straight through it. Committed once.
+## Chooses the exit to flee to, from THE unified exit set (escape zones ∪ open
+## shelter doors, buildings spec §9). With flee_exit_threat_bias 0 (or no perceived
+## threat) it's the plain nearest exit. Otherwise each exit is scored by distance ×
+## (1 + bias × alignment-with-threat), so exits BEHIND the breaking horde are
+## penalised and the human flees away from the danger instead of straight through
+## it. Committed once.
 func _pick_escape_zone() -> Node2D:
 	var bias := GameConfig.flee_exit_threat_bias
 	if bias <= 0.0:
@@ -80,18 +91,16 @@ func _pick_escape_zone() -> Node2D:
 	var origin := _owner.global_position
 	var best: Node2D = null
 	var best_score := INF
-	for zone in _owner.get_tree().get_nodes_in_group("escape_zone"):
-		if not is_instance_valid(zone):
-			continue
-		var to_zone: Vector2 = (zone as Node2D).global_position - origin
-		var dist := to_zone.length()
+	for exit in _owner.get_exit_set():
+		var to_exit: Vector2 = exit.global_position - origin
+		var dist := to_exit.length()
 		var align := 0.0
 		if dist > 0.01:
-			align = maxf(0.0, to_zone.normalized().dot(threat_dir))
+			align = maxf(0.0, to_exit.normalized().dot(threat_dir))
 		var score := dist * (1.0 + bias * align)
 		if score < best_score:
 			best_score = score
-			best = zone
+			best = exit
 	return best
 
 
@@ -120,6 +129,17 @@ func _threat_direction() -> Vector2:
 ## bend and sets a virtual move target; the Human dispatcher's super._physics_process
 ## does the actual movement (+ BOID separation).
 func tick(delta: float) -> void:
+	# Shelter entry (buildings spec §6.1): crossing an intact, unlocked door while
+	# FLEEING converts to SHELTERED — the only entry path, checked BEFORE the cower
+	# detector so a diving entrant can never cower-trip on the threshold. Human-side
+	# polling (not Area2D signals): humans tick in registry order, so same-frame
+	# entries claim spots in deterministic order (§10).
+	for door in _shelter_doors():
+		if door.is_intact() and not door.is_locked() and door.contains_point(_owner.global_position):
+			var building: Node = door.get_parent()
+			if building != null and building.has_method("claim_spot"):
+				_owner.enter_shelter(building, door)
+				return
 	# Cower detection (3.5, §4.4): a full cower_window spent within cower_min_displacement
 	# of our anchor → cornered → cower. Runs even with no exit (a halted human cowers in
 	# place). Net displacement (anchor distance), so ping-ponging in a corner still trips.
@@ -156,6 +176,49 @@ func tick(delta: float) -> void:
 
 	_owner.move_speed = GameConfig.human_flee_speed
 	_owner.set_move_target(origin + steer * LOOKAHEAD)
+
+
+# === SHELTER (buildings spec §6, step 2) ===
+
+## Points the nav agent at the claimed spot. Called by Human.enter_shelter.
+func begin_sheltered(spot: Vector2) -> void:
+	_spot_target = spot
+	_agent.target_position = spot
+
+
+## One physics frame while SHELTERED: nav-walk to the claimed spot (interior walls
+## respected), then hold. No herding bend (nothing hunts in here pre-breach) and no
+## cower detection — its suspension (§6.1) is simply this method never touching it.
+func tick_sheltered(_delta: float) -> void:
+	var origin := _owner.global_position
+	var remaining := origin.distance_to(_spot_target)
+	if remaining <= SPOT_ARRIVE:
+		_owner.velocity = Vector2.ZERO
+		_owner.has_target = false
+		return
+
+	var nav_dir := _agent.get_next_path_position() - origin
+	if nav_dir.length() < 0.01:
+		nav_dir = _spot_target - origin
+	if nav_dir.length() > 0.01:
+		nav_dir = nav_dir.normalized()
+
+	_owner.move_speed = GameConfig.human_flee_speed
+	# Inside LOOKAHEAD, target the spot itself so the walker settles rather than
+	# overshooting on the lookahead carrot.
+	if remaining <= LOOKAHEAD:
+		_owner.set_move_target(_spot_target)
+	else:
+		_owner.set_move_target(origin + nav_dir * LOOKAHEAD)
+
+
+## The level's shelter doors, fetched once from the group (one-time wiring per rule 8;
+## shelters are static per level in the PoC — revisit if buildings ever spawn mid-run).
+func _shelter_doors() -> Array:
+	if not _doors_cached:
+		_doors_cached = true
+		_doors_cache = _owner.get_tree().get_nodes_in_group("shelter_doors")
+	return _doors_cache
 
 
 ## Sum of "away from zombie" vectors for every living zombie within flee_repel_radius,

@@ -47,7 +47,7 @@ Small, ruled, high-impact. Suggested PATCH bumps (or one v0.43.1 batch — Ben's
 - **A5** lose verdict coupled to render framerate (filter lose-count by `is_alive`, keep `+ _pending_risers`).
 - Cross-owner control-group write (route through a SelectionManager method).
 - **R = Restart** (spec §5.1) — unimplemented; reuse the debug-overlay reset path.
-- `position`→`global_position` cluster (selection_manager click/box; unit.gd movement/bounds — some resolve by deletion).
+- ✅ `position`→`global_position` cluster — DONE 2026-07-23 (exposed by puzzle_test_3's offset `Marketplace` container: click/box selection missed nested units entirely, incl. corpses; nested humans steered/raycast in the wrong frame). Fixed: selection_manager click/box (×4), unit.gd move_to_target + clamp_position_to_bounds + _ready target init, human.gd both LOS raycasts, game_manager spawn_* (world→parent-frame conversion). The dormant-code *deletions* remain Tier 5 (rule-2 refactor).
 - Dead code (shadowing LOS overrides + `space_state`, `@onready camera`, `starting_zombie_count`, unused `human_escaped` signal); stale comments.
 - One-line `is_special` guard in `_apply_contagion` + `_release` (spec §3.7 insurance).
 

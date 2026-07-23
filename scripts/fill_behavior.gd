@@ -169,9 +169,10 @@ func is_reached() -> bool:
 
 # === INTERNAL ===
 
-## True if no environment or friendly human blocks the straight line to `z`. Uses
-## global_position (the Human.has_line_of_sight_to override is local-position based;
-## this is the correct cross-unit check). Excludes the firing human and the target.
+## True if no environment or friendly human blocks the straight line to `z`.
+## global_position-based (as is Human.has_line_of_sight_to since the Tier-4
+## cluster fix — this one differs only in its mask). Excludes the firing human
+## and the target.
 func _has_clear_lane(z: Zombie) -> bool:
 	var space := _owner.get_world_2d().direct_space_state
 	var query := PhysicsRayQueryParameters2D.create(_owner.global_position, z.global_position)

@@ -83,7 +83,10 @@ func spawn_zombie(pos: Vector2) -> Zombie:
 		return null
 	
 	var zombie: Zombie = zombie_scene.instantiate()
-	zombie.position = pos
+	# Convert the world-space spawn point into the parent's frame BEFORE add_child,
+	# so _ready (anchors, bounds clamp) already sees the final position — and an
+	# offset Units parent can't shift the spawn (Tier-4 cluster fix).
+	zombie.position = units_parent.to_local(pos)
 	units_parent.add_child(zombie)
 	_register_zombie(zombie)
 	return zombie
@@ -94,7 +97,7 @@ func spawn_human(pos: Vector2) -> Human:
 		return null
 	
 	var human: Human = human_scene.instantiate()
-	human.position = pos
+	human.position = units_parent.to_local(pos)   # world→parent frame; see spawn_zombie
 	units_parent.add_child(human)
 	_register_human(human)
 	return human
