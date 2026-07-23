@@ -8,27 +8,30 @@
 [ext_resource type="PackedScene" uid="uid://c8yqh3jvpxn3w" path="res://scenes/zombie.tscn" id="6_w3d7j"]
 [ext_resource type="PackedScene" uid="uid://brqxu82wy6h2r" path="res://scenes/human.tscn" id="7_tknvt"]
 [ext_resource type="Script" uid="uid://c5fmdp1r7ticb" path="res://scripts/vision_renderer.gd" id="8_eb1x8"]
+[ext_resource type="Script" uid="uid://bgnbocmyabj1m" path="res://scripts/shelter_building.gd" id="9_5w25o"]
 [ext_resource type="PackedScene" uid="uid://bmw8qx5r2n8pk" path="res://scenes/building.tscn" id="9_e3ked"]
+[ext_resource type="Script" uid="uid://b5tktwtpd5hg5" path="res://scripts/door.gd" id="10_yxdyl"]
+[ext_resource type="Script" uid="uid://cvde25j0ujcg" path="res://scripts/wall.gd" id="11_5df1r"]
 [ext_resource type="Script" uid="uid://cax0dih7wnxe0" path="res://scripts/selection_manager.gd" id="11_ffchl"]
 [ext_resource type="Script" uid="uid://yd0ofoh8ih30" path="res://scripts/nav_baker.gd" id="12_x71dj"]
 [ext_resource type="PackedScene" uid="uid://di2wxa5t7dmxv" path="res://scenes/debug_overlay.tscn" id="13_a7b4w"]
 [ext_resource type="PackedScene" uid="uid://cpxw4y8m7n5pk" path="res://scenes/end_game_overlay.tscn" id="14_5kcmx"]
 [ext_resource type="PackedScene" uid="uid://bvx8qw2m7n5pk" path="res://scenes/escape_zone.tscn" id="15_uqu48"]
 
-[sub_resource type="NavigationPolygon" id="NavigationPolygon_irluq"]
-vertices = PackedVector2Array(225, 285, 982, 485, -982, 485, 89, 285, 225, 6, 691, -239, 827, -239, 225, 99, 89, 99, 827, -425, 982, -479, -982, -479, 691, -425, 225, -180, -63, 149, -63, -37, -199, 149, -199, -37, 89, 6, 89, -180)
-polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3), PackedInt32Array(4, 5, 6, 7, 8), PackedInt32Array(6, 9, 10, 1), PackedInt32Array(11, 10, 9, 12), PackedInt32Array(5, 4, 13), PackedInt32Array(6, 1, 0, 7), PackedInt32Array(14, 15, 8, 3), PackedInt32Array(14, 3, 2, 16), PackedInt32Array(16, 2, 11, 17), PackedInt32Array(18, 4, 8), PackedInt32Array(18, 8, 15), PackedInt32Array(19, 18, 15), PackedInt32Array(11, 12, 5, 13, 19), PackedInt32Array(17, 11, 19, 15)])
+[sub_resource type="NavigationPolygon" id="NavigationPolygon_5w25o"]
+vertices = PackedVector2Array(-4626, 585.27344, -4532, 585.03906, -4532, 679, -4626, 585.3125, -4632, 679, -4632, 585.3125, 9988, 4991, -9988, 4991, -4687, 713, -4663, 713, -4823, 713, -4204, -124, -4204, -168, 9988, -4985, -9988, -4985, -5228, -168, -5228, -124, -4497.9297, 584.97656, -4498, 713, -4498, 567.9297, -4498, 551, -4532, 551.03906, -4626, 551.27344, -4626, 359, -4532, 551, -4498.0234, 551, -4498.0234, 550.9297, -4727, 393, -4660, 393, -4660, 493, -4754, 493, -4754, 393, -4751, 393, -4727, 359, -4751, 359, -4788, 359, -4788, 487, -4964, 487, -4847, 679, -4930, 679, -4930, 521, -4660, 521, -4660.0703, 551.3203, -4660, 551.3203, -4660, 568.3672, -4823, 679, -4660, 679, -4663, 679, -4498, 584.97656, -4515.0625, 551, -4964, 713, -4847, 713, -4687, 679)
+polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3), PackedInt32Array(3, 2, 4, 5), PackedInt32Array(6, 7, 8, 9), PackedInt32Array(10, 8, 7), PackedInt32Array(11, 12, 13, 6), PackedInt32Array(14, 13, 12, 15), PackedInt32Array(7, 14, 15, 16), PackedInt32Array(17, 11, 6, 18), PackedInt32Array(11, 17, 19, 20), PackedInt32Array(21, 22, 23, 24), PackedInt32Array(20, 25, 26, 11), PackedInt32Array(27, 28, 29, 30), PackedInt32Array(30, 31, 32), PackedInt32Array(27, 30, 32, 33), PackedInt32Array(33, 32, 34), PackedInt32Array(35, 36, 37, 16), PackedInt32Array(38, 39, 40, 41, 42), PackedInt32Array(41, 43, 42), PackedInt32Array(38, 42, 44, 45), PackedInt32Array(44, 46, 47), PackedInt32Array(18, 48, 17), PackedInt32Array(11, 26, 49, 24, 23), PackedInt32Array(16, 11, 23, 33), PackedInt32Array(16, 33, 34), PackedInt32Array(16, 34, 35), PackedInt32Array(7, 16, 37, 50), PackedInt32Array(7, 50, 51), PackedInt32Array(10, 7, 51), PackedInt32Array(10, 51, 38, 45), PackedInt32Array(52, 45, 44), PackedInt32Array(52, 44, 47), PackedInt32Array(52, 47, 9, 8), PackedInt32Array(6, 9, 18)])
 cell_size = 4.0
-agent_radius = 18.0
+agent_radius = 12.0
 
 [node name="Main" type="Node2D" unique_id=151308185]
 position = Vector2(3, 0)
 
 [node name="Camera" type="Camera2D" parent="." unique_id=585395039 groups=["camera"]]
-position = Vector2(-4, -81)
-offset = Vector2(-8000, 0)
+offset = Vector2(-4600, 550)
 script = ExtResource("1_rs13b")
-bounds_max = Vector2(1000, 500)
+bounds_min = Vector2(-10000, -5000)
+bounds_max = Vector2(10000, 5000)
 
 [node name="LevelBounds" type="Node2D" parent="." unique_id=904357471]
 position = Vector2(0, 3)
@@ -65,680 +68,125 @@ script = ExtResource("8_eb1x8")
 
 [node name="Ground 1" type="Polygon2D" parent="TestLevel/Grounds" unique_id=922269539]
 z_index = -1
-position = Vector2(-2731, 658)
+position = Vector2(725.00006, 1170)
 scale = Vector2(0.9801489, 0.6009627)
 color = Color(0.20392157, 0.30588236, 0.20392157, 1)
 polygon = PackedVector2Array(-6289.86, -1733.8845, -4592.159, -1733.8845, -4592.159, -455.93506, -6289.86, -455.93506)
+metadata/_edit_lock_ = true
 
-[node name="Ground 2" type="Polygon2D" parent="TestLevel/Grounds" unique_id=1221933826]
+[node name="Ground 6" type="Polygon2D" parent="TestLevel/Grounds" unique_id=356460888]
 z_index = -1
-position = Vector2(-4473, 941.00836)
-scale = Vector2(0.4362859, 1.2662421)
+position = Vector2(24767, 2728)
+scale = Vector2(4.554263, 2.5189264)
 color = Color(0.20392157, 0.30588236, 0.20392157, 1)
-polygon = PackedVector2Array(-6323.834, -1754.0155, -4416.828, -1754.0155, -4416.828, -439.89087, -6323.834, -439.89087)
+polygon = PackedVector2Array(-6267.217, -1740.2446, -5352.3164, -1740.2448, -4424.548, -1740.2446, -4424.548, -726.32056, -6267.217, -726.32056)
+metadata/_edit_lock_ = true
 
-[node name="Ground 3" type="Polygon2D" parent="TestLevel/Grounds" unique_id=566342643]
+[node name="Water" type="Polygon2D" parent="TestLevel/Grounds" unique_id=1423909727]
 z_index = -1
-position = Vector2(-3685, -797)
-scale = Vector2(0.4362859, 0.28382176)
-color = Color(0.20392157, 0.30588236, 0.20392157, 1)
-polygon = PackedVector2Array(-6222.9844, -1701.7722, -4462.67, -1701.7722, -4462.67, -433.3706, -6222.9844, -433.3706)
+position = Vector2(6275.319, 3288.0002)
+scale = Vector2(1.7649405, 1.2810732)
+color = Color(0.11532649, 0.3324995, 0.48461342, 1)
+polygon = PackedVector2Array(-6649.13, -1867.1844, -940.07324, -1867.1844, -940.07324, -1467.5195, -6649.13, -1467.5195)
 
-[node name="Ground 4" type="Polygon2D" parent="TestLevel/Grounds" unique_id=596487277]
-z_index = -1
-position = Vector2(-3685.0002, 99)
-scale = Vector2(0.4362859, 0.28382176)
-color = Color(0.20392157, 0.30588236, 0.20392157, 1)
-polygon = PackedVector2Array(-6222.9844, -1701.7722, -4462.67, -1701.7722, -4462.67, -433.3706, -6222.9844, -433.3706)
+[node name="Shelters" type="Node2D" parent="TestLevel" unique_id=1039592102]
 
-[node name="Ground 5" type="Polygon2D" parent="TestLevel/Grounds" unique_id=1748200128]
-z_index = -1
-position = Vector2(2023.9999, 947.5323)
-scale = Vector2(1.2220826, 1.2810732)
-color = Color(0.20392157, 0.30588236, 0.20392157, 1)
-polygon = PackedVector2Array(-6264.716, -1738.8018, -4431.7793, -1738.8018, -4431.7793, -439.89078, -6264.716, -439.89078)
+[node name="ShelterBuilding" type="Polygon2D" parent="TestLevel/Shelters" unique_id=1228247797]
+position = Vector2(-4150, 573)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(-152, -80, 24, -80, 24, -208, 152, -208, 152, -15.689026, 280, -16, 280, 112, 152, 112, -152, 112)
+script = ExtResource("9_5w25o")
+wall_color = Color(0.19917181, 0.2016859, 0.20671391, 1)
+wall_thickness = 10.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="Door" type="Node2D" parent="TestLevel/Shelters/ShelterBuilding" unique_id=928742559]
+position = Vector2(-40, 112)
+rotation = 3.1415927
+script = ExtResource("10_yxdyl")
+door_color = Color(0.48690546, 0.3083103, 0.16153252, 1)
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Door2" type="Node2D" parent="TestLevel/Shelters/ShelterBuilding" unique_id=928531327]
+position = Vector2(120, 112)
+rotation = 3.1415927
+script = ExtResource("10_yxdyl")
+door_color = Color(0.48690546, 0.3083103, 0.16153252, 1)
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Door3" type="Node2D" parent="TestLevel/Shelters/ShelterBuilding" unique_id=903017513]
+position = Vector2(56, -208)
+script = ExtResource("10_yxdyl")
+door_color = Color(0.48690546, 0.3083103, 0.16153252, 1)
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Wall" type="Polygon2D" parent="TestLevel/Shelters/ShelterBuilding" unique_id=1010749527]
+position = Vector2(125.00001, -77)
+scale = Vector2(0.21999899, 0.019999804)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-100, -100, 28.419434, -100, 100, -100, 100, 100, -100, 100)
+script = ExtResource("11_5df1r")
+solid = true
+wall_thickness = 50.0
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall2" type="Polygon2D" parent="TestLevel/Shelters/ShelterBuilding" unique_id=1939939518]
+position = Vector2(46.5, -77)
+scale = Vector2(0.17499757, 0.019999804)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-100, -100, 28.419434, -100, 100, -100, 100, 100, -100, 100)
+script = ExtResource("11_5df1r")
+solid = true
+wall_thickness = 50.0
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall3" type="Polygon2D" parent="TestLevel/Shelters/ShelterBuilding" unique_id=62499192]
+position = Vector2(149, 9.541557)
+rotation = 1.5707964
+scale = Vector2(0.20041461, 0.019999804)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-100, -100, 100, -100, 100, 100, -100, 100)
+script = ExtResource("11_5df1r")
+solid = true
+wall_thickness = 50.0
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall4" type="Polygon2D" parent="TestLevel/Shelters/ShelterBuilding" unique_id=262739550]
+position = Vector2(149, 90)
+rotation = 1.5707964
+scale = Vector2(0.17499757, 0.019999804)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-100, -100, 28.419434, -100, 100, -100, 100, 100, -100, 100)
+script = ExtResource("11_5df1r")
+solid = true
+wall_thickness = 50.0
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
 
 [node name="Buildings" type="Node2D" parent="TestLevel" unique_id=985347166]
 
 [node name="Building" parent="TestLevel/Buildings" unique_id=1238611686 instance=ExtResource("9_e3ked")]
-position = Vector2(-8418, -383)
-building_width = 1000.0
+position = Vector2(-5453, 506)
+building_width = 20.0
+building_height = 780.0
+
+[node name="Building3" parent="TestLevel/Buildings" unique_id=1313281490 instance=ExtResource("9_e3ked")]
+position = Vector2(-3789, -772)
+building_width = 20.0
+building_height = 1800.0
+
+[node name="Building2" parent="TestLevel/Buildings" unique_id=266569287 instance=ExtResource("9_e3ked")]
+position = Vector2(-4623, 119)
+building_width = 1680.0
 building_height = 20.0
-
-[node name="Level 7" type="Node2D" parent="TestLevel" unique_id=2031917393]
-
-[node name="Human4" parent="TestLevel/Level 7" unique_id=1634536967 instance=ExtResource("7_tknvt")]
-position = Vector2(-216, 188)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human6" parent="TestLevel/Level 7" unique_id=1174633476 instance=ExtResource("7_tknvt")]
-position = Vector2(-215, 243)
-initial_state = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human71" parent="TestLevel/Level 7" unique_id=485601543 instance=ExtResource("7_tknvt")]
-position = Vector2(-279, 203)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human72" parent="TestLevel/Level 7" unique_id=1763502530 instance=ExtResource("7_tknvt")]
-position = Vector2(-278, 258)
-initial_state = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human7" parent="TestLevel/Level 7" unique_id=544416392 instance=ExtResource("7_tknvt")]
-position = Vector2(615, 59)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human8" parent="TestLevel/Level 7" unique_id=122093242 instance=ExtResource("7_tknvt")]
-position = Vector2(616, 114)
-initial_state = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human9" parent="TestLevel/Level 7" unique_id=123359927 instance=ExtResource("7_tknvt")]
-position = Vector2(661, 41)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human10" parent="TestLevel/Level 7" unique_id=802561045 instance=ExtResource("7_tknvt")]
-position = Vector2(662, 96)
-initial_state = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human11" parent="TestLevel/Level 7" unique_id=2086367837 instance=ExtResource("7_tknvt")]
-position = Vector2(714, 64)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human12" parent="TestLevel/Level 7" unique_id=2123312914 instance=ExtResource("7_tknvt")]
-position = Vector2(715, 119)
-initial_state = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human13" parent="TestLevel/Level 7" unique_id=1802181031 instance=ExtResource("7_tknvt")]
-position = Vector2(760, 46)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human14" parent="TestLevel/Level 7" unique_id=1862594511 instance=ExtResource("7_tknvt")]
-position = Vector2(761, 101)
-initial_state = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human15" parent="TestLevel/Level 7" unique_id=1821312093 instance=ExtResource("7_tknvt")]
-position = Vector2(611, -54)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human16" parent="TestLevel/Level 7" unique_id=407273159 instance=ExtResource("7_tknvt")]
-position = Vector2(612, 1)
-initial_state = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human17" parent="TestLevel/Level 7" unique_id=183575338 instance=ExtResource("7_tknvt")]
-position = Vector2(657, -72)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human18" parent="TestLevel/Level 7" unique_id=1465967015 instance=ExtResource("7_tknvt")]
-position = Vector2(658, -17)
-initial_state = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human19" parent="TestLevel/Level 7" unique_id=753881892 instance=ExtResource("7_tknvt")]
-position = Vector2(710, -49)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human20" parent="TestLevel/Level 7" unique_id=1315301692 instance=ExtResource("7_tknvt")]
-position = Vector2(711, 6)
-initial_state = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human21" parent="TestLevel/Level 7" unique_id=307641213 instance=ExtResource("7_tknvt")]
-position = Vector2(756, -67)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human22" parent="TestLevel/Level 7" unique_id=1119156948 instance=ExtResource("7_tknvt")]
-position = Vector2(757, -12)
-initial_state = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human23" parent="TestLevel/Level 7" unique_id=739582286 instance=ExtResource("7_tknvt")]
-position = Vector2(686, 232)
-initial_state = 1
-defender_class = 2
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human24" parent="TestLevel/Level 7" unique_id=1011978984 instance=ExtResource("7_tknvt")]
-position = Vector2(-203, 133)
-initial_state = 1
-defender_class = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human25" parent="TestLevel/Level 7" unique_id=1206424053 instance=ExtResource("7_tknvt")]
-position = Vector2(466, 41)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human26" parent="TestLevel/Level 7" unique_id=763210770 instance=ExtResource("7_tknvt")]
-position = Vector2(467, 96)
-initial_state = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human27" parent="TestLevel/Level 7" unique_id=1437281296 instance=ExtResource("7_tknvt")]
-position = Vector2(519, 64)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human28" parent="TestLevel/Level 7" unique_id=1723281677 instance=ExtResource("7_tknvt")]
-position = Vector2(520, 119)
-initial_state = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human29" parent="TestLevel/Level 7" unique_id=519671664 instance=ExtResource("7_tknvt")]
-position = Vector2(565, 46)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human30" parent="TestLevel/Level 7" unique_id=1709368166 instance=ExtResource("7_tknvt")]
-position = Vector2(566, 101)
-initial_state = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human31" parent="TestLevel/Level 7" unique_id=1129969910 instance=ExtResource("7_tknvt")]
-position = Vector2(365, -359)
-initial_state = 1
-defender_class = 2
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human32" parent="TestLevel/Level 7" unique_id=1025717526 instance=ExtResource("7_tknvt")]
-position = Vector2(380, 176)
-initial_state = 1
-defender_class = 2
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human33" parent="TestLevel/Level 7" unique_id=1213079309 instance=ExtResource("7_tknvt")]
-position = Vector2(462, -72)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human34" parent="TestLevel/Level 7" unique_id=1143609845 instance=ExtResource("7_tknvt")]
-position = Vector2(463, -17)
-initial_state = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human35" parent="TestLevel/Level 7" unique_id=1091047095 instance=ExtResource("7_tknvt")]
-position = Vector2(515, -49)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human36" parent="TestLevel/Level 7" unique_id=1202196120 instance=ExtResource("7_tknvt")]
-position = Vector2(516, 6)
-initial_state = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human37" parent="TestLevel/Level 7" unique_id=1387604670 instance=ExtResource("7_tknvt")]
-position = Vector2(561, -67)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human38" parent="TestLevel/Level 7" unique_id=1867297987 instance=ExtResource("7_tknvt")]
-position = Vector2(562, -12)
-initial_state = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human39" parent="TestLevel/Level 7" unique_id=1385450221 instance=ExtResource("7_tknvt")]
-position = Vector2(604, -173)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human40" parent="TestLevel/Level 7" unique_id=1088308616 instance=ExtResource("7_tknvt")]
-position = Vector2(605, -118)
-initial_state = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human41" parent="TestLevel/Level 7" unique_id=983024184 instance=ExtResource("7_tknvt")]
-position = Vector2(650, -191)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human42" parent="TestLevel/Level 7" unique_id=47670333 instance=ExtResource("7_tknvt")]
-position = Vector2(651, -136)
-initial_state = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human43" parent="TestLevel/Level 7" unique_id=574994857 instance=ExtResource("7_tknvt")]
-position = Vector2(703, -168)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human44" parent="TestLevel/Level 7" unique_id=1156658357 instance=ExtResource("7_tknvt")]
-position = Vector2(704, -113)
-initial_state = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human45" parent="TestLevel/Level 7" unique_id=1238193752 instance=ExtResource("7_tknvt")]
-position = Vector2(749, -186)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human46" parent="TestLevel/Level 7" unique_id=1238499958 instance=ExtResource("7_tknvt")]
-position = Vector2(750, -131)
-initial_state = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human47" parent="TestLevel/Level 7" unique_id=1841165390 instance=ExtResource("7_tknvt")]
-position = Vector2(600, -286)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human48" parent="TestLevel/Level 7" unique_id=1846610078 instance=ExtResource("7_tknvt")]
-position = Vector2(601, -231)
-initial_state = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human49" parent="TestLevel/Level 7" unique_id=926987552 instance=ExtResource("7_tknvt")]
-position = Vector2(646, -304)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human50" parent="TestLevel/Level 7" unique_id=433285740 instance=ExtResource("7_tknvt")]
-position = Vector2(647, -249)
-initial_state = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human51" parent="TestLevel/Level 7" unique_id=1249131461 instance=ExtResource("7_tknvt")]
-position = Vector2(699, -281)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human52" parent="TestLevel/Level 7" unique_id=1095364620 instance=ExtResource("7_tknvt")]
-position = Vector2(700, -226)
-initial_state = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human53" parent="TestLevel/Level 7" unique_id=1761131599 instance=ExtResource("7_tknvt")]
-position = Vector2(745, -299)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human54" parent="TestLevel/Level 7" unique_id=1196543008 instance=ExtResource("7_tknvt")]
-position = Vector2(746, -244)
-initial_state = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human55" parent="TestLevel/Level 7" unique_id=1313721104 instance=ExtResource("7_tknvt")]
-position = Vector2(167, -437)
-initial_state = 1
-defender_class = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human56" parent="TestLevel/Level 7" unique_id=666805101 instance=ExtResource("7_tknvt")]
-position = Vector2(-282, 133)
-initial_state = 1
-defender_class = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human5" parent="TestLevel/Level 7" unique_id=1346925049 instance=ExtResource("7_tknvt")]
-position = Vector2(-745, -290)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human77" parent="TestLevel/Level 7" unique_id=502029967 instance=ExtResource("7_tknvt")]
-position = Vector2(-744, -235)
-initial_state = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human78" parent="TestLevel/Level 7" unique_id=1388837837 instance=ExtResource("7_tknvt")]
-position = Vector2(-808, -275)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human79" parent="TestLevel/Level 7" unique_id=1662098579 instance=ExtResource("7_tknvt")]
-position = Vector2(-807, -220)
-initial_state = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human80" parent="TestLevel/Level 7" unique_id=1139135141 instance=ExtResource("7_tknvt")]
-position = Vector2(-740, -176)
-initial_state = 1
-defender_class = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human81" parent="TestLevel/Level 7" unique_id=1466917842 instance=ExtResource("7_tknvt")]
-position = Vector2(-819, -176)
-initial_state = 1
-defender_class = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human82" parent="TestLevel/Level 7" unique_id=1961149042 instance=ExtResource("7_tknvt")]
-position = Vector2(-627, -248)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human83" parent="TestLevel/Level 7" unique_id=110038738 instance=ExtResource("7_tknvt")]
-position = Vector2(-626, -193)
-initial_state = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human84" parent="TestLevel/Level 7" unique_id=672388259 instance=ExtResource("7_tknvt")]
-position = Vector2(-690, -233)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human85" parent="TestLevel/Level 7" unique_id=965115023 instance=ExtResource("7_tknvt")]
-position = Vector2(-689, -178)
-initial_state = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human86" parent="TestLevel/Level 7" unique_id=107819186 instance=ExtResource("7_tknvt")]
-position = Vector2(-622, -134)
-initial_state = 1
-defender_class = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human87" parent="TestLevel/Level 7" unique_id=1024506189 instance=ExtResource("7_tknvt")]
-position = Vector2(-701, -134)
-initial_state = 1
-defender_class = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human57" parent="TestLevel/Level 7" unique_id=1159210320 instance=ExtResource("7_tknvt")]
-position = Vector2(453, -191)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human58" parent="TestLevel/Level 7" unique_id=637887269 instance=ExtResource("7_tknvt")]
-position = Vector2(454, -136)
-initial_state = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human59" parent="TestLevel/Level 7" unique_id=1685946147 instance=ExtResource("7_tknvt")]
-position = Vector2(506, -168)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human60" parent="TestLevel/Level 7" unique_id=886503814 instance=ExtResource("7_tknvt")]
-position = Vector2(507, -113)
-initial_state = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human61" parent="TestLevel/Level 7" unique_id=638356005 instance=ExtResource("7_tknvt")]
-position = Vector2(552, -186)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human62" parent="TestLevel/Level 7" unique_id=1671563932 instance=ExtResource("7_tknvt")]
-position = Vector2(553, -131)
-initial_state = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human63" parent="TestLevel/Level 7" unique_id=1534600623 instance=ExtResource("7_tknvt")]
-position = Vector2(93, -423)
-initial_state = 1
-defender_class = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human73" parent="TestLevel/Level 7" unique_id=146493763 instance=ExtResource("7_tknvt")]
-position = Vector2(-327, -251)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human74" parent="TestLevel/Level 7" unique_id=579077176 instance=ExtResource("7_tknvt")]
-position = Vector2(-249, -131)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human75" parent="TestLevel/Level 7" unique_id=1829193747 instance=ExtResource("7_tknvt")]
-position = Vector2(-198, -181)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human76" parent="TestLevel/Level 7" unique_id=1099582102 instance=ExtResource("7_tknvt")]
-position = Vector2(-193, -136)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human64" parent="TestLevel/Level 7" unique_id=1007115283 instance=ExtResource("7_tknvt")]
-position = Vector2(134, -378)
-initial_state = 1
-defender_class = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human65" parent="TestLevel/Level 7" unique_id=806064779 instance=ExtResource("7_tknvt")]
-position = Vector2(449, -304)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human66" parent="TestLevel/Level 7" unique_id=1125591277 instance=ExtResource("7_tknvt")]
-position = Vector2(450, -249)
-initial_state = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human67" parent="TestLevel/Level 7" unique_id=1673360671 instance=ExtResource("7_tknvt")]
-position = Vector2(502, -281)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human68" parent="TestLevel/Level 7" unique_id=222132173 instance=ExtResource("7_tknvt")]
-position = Vector2(503, -226)
-initial_state = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human69" parent="TestLevel/Level 7" unique_id=518199684 instance=ExtResource("7_tknvt")]
-position = Vector2(548, -299)
-initial_state = 1
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Human70" parent="TestLevel/Level 7" unique_id=1106186476 instance=ExtResource("7_tknvt")]
-position = Vector2(549, -244)
-initial_state = 1
-patrol_mode = 1
-patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
-cohesion_strength = 12.0
-alignment_rate = 0.3
-
-[node name="Zombie4" parent="TestLevel/Level 7" unique_id=1325715882 instance=ExtResource("6_w3d7j")]
-position = Vector2(-8731, 160)
-
-[node name="Zombie5" parent="TestLevel/Level 7" unique_id=1067108926 instance=ExtResource("6_w3d7j")]
-position = Vector2(-8735, 205)
-
-[node name="Zombie6" parent="TestLevel/Level 7" unique_id=889300941 instance=ExtResource("6_w3d7j")]
-position = Vector2(-8735, 242)
-
-[node name="Zombie7" parent="TestLevel/Level 7" unique_id=965821525 instance=ExtResource("6_w3d7j")]
-position = Vector2(-8773, 179)
-
-[node name="Zombie8" parent="TestLevel/Level 7" unique_id=782569221 instance=ExtResource("6_w3d7j")]
-position = Vector2(-8774, 219)
-
-[node name="Zombie9" parent="TestLevel/Level 7" unique_id=1252845129 instance=ExtResource("6_w3d7j")]
-position = Vector2(-8774, 256)
-
-[node name="Zombie10" parent="TestLevel/Level 7" unique_id=679392699 instance=ExtResource("6_w3d7j")]
-position = Vector2(-8818, 189)
-
-[node name="Zombie11" parent="TestLevel/Level 7" unique_id=1505792532 instance=ExtResource("6_w3d7j")]
-position = Vector2(-8819, 229)
-
-[node name="Zombie12" parent="TestLevel/Level 7" unique_id=1355043991 instance=ExtResource("6_w3d7j")]
-position = Vector2(-8819, 266)
 
 [node name="Escape Zones" type="Node" parent="TestLevel" unique_id=1359137202]
 
 [node name="Humans" type="Node" parent="TestLevel" unique_id=827267819]
 
 [node name="Zombies" type="Node" parent="TestLevel" unique_id=393150134]
+
+[node name="Zombie" parent="TestLevel/Zombies" unique_id=818075516 instance=ExtResource("6_w3d7j")]
+position = Vector2(-5368, 848)
 
 [node name="Units" type="Node2D" parent="." unique_id=1968361044 groups=["units_parent"]]
 
@@ -747,22 +195,14 @@ script = ExtResource("11_ffchl")
 
 [node name="NavigationRegion" type="NavigationRegion2D" parent="." unique_id=257540646]
 visible = false
-navigation_polygon = SubResource("NavigationPolygon_irluq")
+navigation_polygon = SubResource("NavigationPolygon_5w25o")
 script = ExtResource("12_x71dj")
-agent_radius = 18.0
 
 [node name="DebugOverlay" parent="." unique_id=468344591 instance=ExtResource("13_a7b4w")]
+visible = false
 
 [node name="EndGameOverlay" parent="." unique_id=2000451810 instance=ExtResource("14_5kcmx")]
 visible = false
 
 [node name="EscapeZone" parent="." unique_id=1179168205 instance=ExtResource("15_uqu48")]
-position = Vector2(-3363, -744)
-
-[node name="EscapeZone2" parent="." unique_id=160926733 instance=ExtResource("15_uqu48")]
-position = Vector2(-3603, 304)
-zone_size = Vector2(50, 1000)
-
-[node name="EscapeZone3" parent="." unique_id=1759555624 instance=ExtResource("15_uqu48")]
-position = Vector2(-3339, -872)
-zone_size = Vector2(1000, 50)
+position = Vector2(3703, 908)

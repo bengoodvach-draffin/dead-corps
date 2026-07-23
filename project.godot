@@ -87,6 +87,7 @@ command={
 2d_physics/layer_2="Zombies"
 2d_physics/layer_3="Humans"
 2d_physics/layer_4="EscapeBarrier"
+2d_physics/layer_5="DoorLOS"
 
 [rendering]
 

@@ -70,6 +70,9 @@ this branch. Faithfulness to the spec there is worth the more capable model.
 - **Pounce exclusion:** a human targeted by an in-flight pounce is invisible to
   all other ferals' retargeting. This is the only anti-pile-up rule; do not add
   attacker caps.
+- **A feral's death releases BOTH claims** — the pounce claim (`_pounce.abort()`)
+  and the pursuit claim (`_feral.clear()`), in `die()`. Leaking either strands a
+  human as permanently claimed/pursued and silently corrupts the peel-off model.
 - **Cowering humans are local-scan only** — never in the global hunt pool.
 - **The break is committed the instant the fear threshold trips:** fill cancels
   immediately, line vanishes, no shot can land during the reaction beat.

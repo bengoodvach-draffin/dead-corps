@@ -23,10 +23,12 @@ extends Node
 ## Civilians (the one unarmed class) use a pure reaction clock instead (build-plan
 ## 3.2): no fill/fire — see a clear-lane zombie for civilian_reaction seconds → flee.
 
-## Raycast blocker mask: Environment (layer 1) + Humans (layer 4). Zombies (layer 2)
-## never block — the target is the nearest, so no zombie can screen it; excluding it
-## from the mask just keeps the ray from tripping on the target/its neighbours.
-const LOS_BLOCKER_MASK := 5
+## Raycast blocker mask: Environment (1) + Humans (4) + intact-door "DoorLOS"
+## blockers (16). Zombies (layer 2) never block — the target is the nearest, so no
+## zombie can screen it; excluding it from the mask just keeps the ray from
+## tripping on the target/its neighbours. Intact doors block the shot like a wall
+## (buildings spec §7.1 — no LOS through a door until breach).
+const LOS_BLOCKER_MASK := 21
 
 var _owner: Human = null
 var _gm: Node = null

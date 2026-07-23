@@ -373,21 +373,21 @@ func _add_class_label() -> void:
 	add_child(label)
 
 
-# === LINE OF SIGHT (buildings block) ===
+# === LINE OF SIGHT (buildings + intact doors block) ===
 
-## True if no building blocks the straight line from this human to `target`.
+## True if no building or intact door blocks the straight line from this human to `target`.
 func has_line_of_sight_to(target: Unit) -> bool:
 	var query := PhysicsRayQueryParameters2D.create(position, target.position)
-	query.collision_mask = 1            # buildings only
+	query.collision_mask = 17           # Environment (1) + intact-door "DoorLOS" blockers (16)
 	query.exclude = [self, target]
 	return space_state.intersect_ray(query).is_empty()
 
 
-## True if no building blocks the straight line from this human to `point`
-## (e.g. an escape zone).
+## True if no building or intact door blocks the straight line from this human to
+## `point` (e.g. an escape zone).
 func has_line_of_sight_to_point(point: Vector2) -> bool:
 	var query := PhysicsRayQueryParameters2D.create(position, point)
-	query.collision_mask = 1            # buildings only
+	query.collision_mask = 17           # Environment (1) + intact-door "DoorLOS" blockers (16)
 	query.exclude = [self]
 	return space_state.intersect_ray(query).is_empty()
 

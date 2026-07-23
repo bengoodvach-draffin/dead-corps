@@ -16,9 +16,9 @@
 [ext_resource type="PackedScene" uid="uid://cpxw4y8m7n5pk" path="res://scenes/end_game_overlay.tscn" id="14_60iet"]
 [ext_resource type="PackedScene" uid="uid://bvx8qw2m7n5pk" path="res://scenes/escape_zone.tscn" id="15_ct5y5"]
 
-[sub_resource type="NavigationPolygon" id="NavigationPolygon_irluq"]
-vertices = PackedVector2Array(225, 285, 982, 485, -982, 485, 89, 285, 225, 6, 691, -239, 827, -239, 225, 99, 89, 99, 827, -425, 982, -479, -982, -479, 691, -425, 225, -180, -63, 149, -63, -37, -199, 149, -199, -37, 89, 6, 89, -180)
-polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3), PackedInt32Array(4, 5, 6, 7, 8), PackedInt32Array(6, 9, 10, 1), PackedInt32Array(11, 10, 9, 12), PackedInt32Array(5, 4, 13), PackedInt32Array(6, 1, 0, 7), PackedInt32Array(14, 15, 8, 3), PackedInt32Array(14, 3, 2, 16), PackedInt32Array(16, 2, 11, 17), PackedInt32Array(18, 4, 8), PackedInt32Array(18, 8, 15), PackedInt32Array(19, 18, 15), PackedInt32Array(11, 12, 5, 13, 19), PackedInt32Array(17, 11, 19, 15)])
+[sub_resource type="NavigationPolygon" id="NavigationPolygon_0bfmi"]
+vertices = PackedVector2Array(-26, 56, -264, -47, -30, -56, 26, -56, 30, 56, 30, 432, 982, 485, -982, 485, -26, 432, -309, 423, -445, 423, 272, 148, 982, -479, 136, 148, 136, -128, 272, -128, 26, -479, -982, -479, -445, 67, -264, -233, -30, -479, -400, -233, -400, -47, -309, 67)
+polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3, 4), PackedInt32Array(5, 6, 7, 8), PackedInt32Array(9, 8, 7, 10), PackedInt32Array(6, 5, 11, 12), PackedInt32Array(13, 11, 5), PackedInt32Array(13, 5, 4, 14), PackedInt32Array(12, 11, 15), PackedInt32Array(16, 12, 15, 14), PackedInt32Array(3, 16, 14, 4), PackedInt32Array(10, 7, 17, 18), PackedInt32Array(2, 1, 19, 20), PackedInt32Array(17, 20, 19, 21), PackedInt32Array(18, 17, 21, 22), PackedInt32Array(23, 18, 22, 1, 0), PackedInt32Array(23, 0, 8, 9)])
 cell_size = 4.0
 agent_radius = 18.0
 
@@ -741,7 +741,7 @@ script = ExtResource("11_252ko")
 
 [node name="NavigationRegion" type="NavigationRegion2D" parent="." unique_id=257540646]
 visible = false
-navigation_polygon = SubResource("NavigationPolygon_irluq")
+navigation_polygon = SubResource("NavigationPolygon_0bfmi")
 script = ExtResource("12_joimv")
 agent_radius = 18.0
 

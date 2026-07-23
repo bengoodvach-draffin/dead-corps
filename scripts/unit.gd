@@ -195,13 +195,12 @@ func die() -> void:
 	queue_free()
 
 
-## True if no building blocks the straight line to `target` (raycast vs collision
-## layer 1, excluding both units). Used by feral local-scan (2.3) and the fill
-## front (3.1). global_position-based.
+## True if no building or intact door blocks the straight line to `target`.
+## Used by feral local-scan (2.3) and the fill front (3.1). global_position-based.
 func has_line_of_sight_to(target: Unit) -> bool:
 	var space := get_world_2d().direct_space_state
 	var query := PhysicsRayQueryParameters2D.create(global_position, target.global_position)
-	query.collision_mask = 1            # buildings only
+	query.collision_mask = 17           # Environment (1) + intact-door "DoorLOS" blockers (16)
 	query.exclude = [self, target]
 	return space.intersect_ray(query).is_empty()
 

@@ -62,12 +62,14 @@ func _threshold() -> int:
 	return GameConfig.fear_threshold[_owner.defender_class]
 
 
-## True if no building blocks the line from this human to `zombie` (mask 1 = environment
-## only — humans do NOT block fear). global_position-based; excludes self and the target.
+## True if no building or intact door blocks the line from this human to `zombie`
+## (environment + DoorLOS — humans do NOT block fear; a sheltered human stays calm
+## while ferals pound the door, buildings spec §5.3). global_position-based;
+## excludes self and the target.
 func _has_los(zombie: Unit) -> bool:
 	var space := _owner.get_world_2d().direct_space_state
 	var query := PhysicsRayQueryParameters2D.create(_owner.global_position, zombie.global_position)
-	query.collision_mask = 1
+	query.collision_mask = 17   # Environment (1) + intact-door "DoorLOS" blockers (16)
 	query.exclude = [_owner, zombie]
 	return space.intersect_ray(query).is_empty()
 

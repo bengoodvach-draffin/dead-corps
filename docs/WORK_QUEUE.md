@@ -29,7 +29,7 @@
 ## Tier 1 — Ruled bug fixes (do before the next playtest; they protect the validation verdict)
 Small, ruled, high-impact. Suggested PATCH bumps (or one v0.43.1 batch — Ben's call).
 
-1. **A1 — feral pursuit-claim leak (HIGHEST).** `zombie.gd die()` aborts the pounce but never calls `_feral.clear()`, so a feral shot mid-chase never releases its pursuit claim → its straggler stays "pursued" forever, no feral peels onto it, and the hunted ring sticks. Corrupts the peel-off model the PoC exists to validate. **Fix:** add `_feral.clear()` in `die()` before the corpse-linger await.
+1. **A1 — feral pursuit-claim leak (HIGHEST).** ✅ DONE 2026-07-12 (landed in the same commit as this queue; entry never got its checkmark). `zombie.gd die()` aborts the pounce AND calls `_feral.clear()` before the corpse-linger await, so a feral shot mid-chase releases both claims and its straggler returns to the peel-off pool.
 2. **A2 — stop-to-fire.** ✅ CODE LANDED 2026-07-12 (UNTESTED — pre-emptive). A *moving* armed defender wipes its aim rotation each frame → can't fire >~21° off its travel direction. Fix: `human.gd` dispatcher halts an armed defender while `_fill_front.is_reached()` so aim owns facing; resumes on fire. **Only manifests for a moving armed defender — no patrols exist yet, so it can't occur today; test deferred until patrols return** (test steps in the `phase3-test-criteria` memory). Dispatcher `match`-restructure deferred to Tier 5 (Phase 5).
 3. **B3 — cowerers block firing lanes.** ✅ DONE 2026-07-12. `start_cowering()` now zeroes `collision_layer` (mirrors `die()`) so a cowerer no longer screens armed defenders' shots (spec §4.1).
 
@@ -72,6 +72,6 @@ Small, ruled, high-impact. Suggested PATCH bumps (or one v0.43.1 batch — Ben's
 ## Trailing — doc sync (⏳ pending items from the 2026-07-02 batch)
 Approved to execute (rule-9 signalled); no version bump. Two are **code-gated** — land them *after* the code fix:
 - §4.1 decay clause (gun cools when no zombie *visible*), §4.3 threat-biased exit, §3.4 failsafe wording (bucketed, not rolling).
-- After **A1**: implementer-guide invariant "a feral's death releases BOTH claims — pounce (abort) + pursuit (clear)."
+- ✅ After **A1**: implementer-guide invariant "a feral's death releases BOTH claims — pounce (abort) + pursuit (clear)." (added 2026-07-23)
 - After **A2**: implementer-guide invariant "an armed human halts while the front is reached — stop-to-fire is the design."
 - CLAUDE.md 2D-isometric wording (3D migration) — still Ben-gated.
