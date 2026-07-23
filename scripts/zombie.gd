@@ -176,6 +176,20 @@ func ignite_feral(target: Human = null) -> void:
 	modulate = FERAL_TINT
 
 
+## Release-at-the-building (buildings spec §5.1 + the footprint amendment):
+## ignite FERAL with an occupied building as the siege seed — this zombie
+## besieges its OWN nearest door (nearest-door-per-feral, no coordination).
+## Same verb weight as release-on-human: released is released, no recall.
+func ignite_feral_at_building(building: Node2D) -> void:
+	current_state = State.FERAL
+	has_target = false
+	_was_moving = false
+	move_queue.clear()
+	queued_attack = null
+	_feral.set_siege(building)
+	modulate = FERAL_TINT
+
+
 ## The pounce landed a kill — relay it as the zombie's kill signal (feeds
 ## contagion in 2.5 and risers in 2.6).
 func _on_pounce_kill(human: Human) -> void:

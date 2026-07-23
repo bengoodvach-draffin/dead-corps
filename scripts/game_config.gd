@@ -115,3 +115,15 @@ var facing_tolerance: float = 15.0
 # === NO-PROGRESS FAILSAFE ===
 var failsafe_min_progress: float = 40.0
 var failsafe_window: float = 2.0
+
+# === ENTERABLE BUILDINGS (buildings spec §14, v0 defaults) ===
+## Depth (px) of the door engagement arc — the zone in front of a door where a
+## feral pounds. Unified with the step-4 lock zone: an engaged door admits no one.
+var door_engagement_depth: float = 25.0
+## Seconds between one feral's pounds on a door (DetHash-staggered per unit).
+var pound_interval: float = 1.0
+## Flat door damage per pound.
+var pound_damage: float = 10.0
+## Default door integrity (a Door can override per-door; e.g. armory-grade 1500).
+## v0: 600 ≈ 60 solo pounds ≈ 10s under a 6-feral siege. Sweep-tuned.
+var door_integrity: float = 600.0

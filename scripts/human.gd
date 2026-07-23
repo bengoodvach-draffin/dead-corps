@@ -420,8 +420,14 @@ func get_exit_set() -> Array[Node2D]:
 		if is_instance_valid(zone):
 			exits.append(zone)
 	for door in get_tree().get_nodes_in_group("shelter_doors"):
-		if is_instance_valid(door) and door.is_intact() and not door.is_locked():
-			exits.append(door)
+		if not is_instance_valid(door) or not door.is_intact() or door.is_locked():
+			continue
+		# A breached BUILDING leaves the set permanently — all its doors, even the
+		# intact ones (§9: a hole in the wall is not shelter).
+		var b: Node = door.building()
+		if b != null and b.is_breached():
+			continue
+		exits.append(door)
 	return exits
 
 
@@ -529,14 +535,24 @@ func enter_shelter(building: Node2D, door: Node2D) -> void:
 	queue_redraw()   # drop any lingering line viz
 
 
-## Live check: sheltered humans are not valid feral targets (§6.1, state-excluded —
-## walls deny LOS anyway) and can't be release-pinned (SelectionManager). Step 3
-## turns pursuers of an entrant into besiegers; today they retarget or calm.
+## Live check: is this human in the SHELTERED state (regardless of whether the
+## building still protects it)?
 func is_sheltered() -> bool:
 	return current_state == State.SHELTERED
 
 
-## The occupied building, or null (step 3+ reads this as the siege prey-proxy).
+## Sheltered AND the building is still intact — the protection check. Safely
+## sheltered humans are not valid feral targets (§6.1: pursuers besiege instead)
+## and can't be release-pinned. Once the building is BREACHED, its occupants are
+## normal prey again (§5.2 room-by-room hunting) even while still SHELTERED.
+func is_safely_sheltered() -> bool:
+	if current_state != State.SHELTERED:
+		return false
+	return _shelter_building != null and is_instance_valid(_shelter_building) \
+		and not _shelter_building.is_breached()
+
+
+## The occupied building, or null (the siege prey-proxy, read by FeralBrain).
 func shelter_building() -> Node2D:
 	return _shelter_building
 

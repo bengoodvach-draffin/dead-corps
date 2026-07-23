@@ -117,6 +117,16 @@ class_name LevelConfig
 ## Window (s) for the no-progress failsafe check.
 @export var failsafe_window: float = 2.0
 
+# === ENTERABLE BUILDINGS ===
+## Depth (px) of the door engagement arc — where a besieging feral pounds (and, step 4, what locks the door).
+@export var door_engagement_depth: float = 25.0
+## Seconds between one feral's pounds on a door (staggered per unit — a crowd never strikes in unison).
+@export var pound_interval: float = 1.0
+## Flat door damage per pound. More ferals in the arc = faster breach, capped physically by door width.
+@export var pound_damage: float = 10.0
+## Default door integrity (per-door override on the Door node; 0 there = use this).
+@export var door_integrity: float = 600.0
+
 
 ## On game start, push every value into the GameConfig autoload.
 ## Editor-only: do nothing (don't mutate the autoload while editing).
@@ -177,5 +187,10 @@ func _ready() -> void:
 
 	GameConfig.failsafe_min_progress = failsafe_min_progress
 	GameConfig.failsafe_window = failsafe_window
+
+	GameConfig.door_engagement_depth = door_engagement_depth
+	GameConfig.pound_interval = pound_interval
+	GameConfig.pound_damage = pound_damage
+	GameConfig.door_integrity = door_integrity
 
 	print("✅ LevelConfig: pushed per-level tunables into GameConfig")

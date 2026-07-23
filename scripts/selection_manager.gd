@@ -341,6 +341,13 @@ func handle_command(_screen_pos: Vector2) -> void:
 		# Immediate release now (attack, forget the route). Pin-and-aim (magnetism #1).
 		_release(clicked_human.global_position, gm)
 		return
+	# RELEASE-AT-THE-BUILDING (buildings spec §5.1 + the footprint amendment): RMB
+	# anywhere on an OCCUPIED intact building = a release variant — each selected
+	# calm zombie besieges its own nearest door. Still exactly one attack verb.
+	var clicked_building := _shelter_building_at(world_pos)
+	if clicked_building != null and not calm_zombies.is_empty():
+		_release_at_building(clicked_building, calm_zombies)
+		return
 	if not calm_zombies.is_empty():
 		var slots := calculate_formation_positions(world_pos, calm_zombies)
 		for i in range(calm_zombies.size()):
@@ -361,13 +368,14 @@ func _release(click_pos: Vector2, gm: Node) -> void:
 		clear_selection()
 		return
 
-	# Candidate humans: living, within the cluster radius of the click. Sheltered
-	# humans are excluded (buildings spec §6.1 — not valid targets behind walls;
-	# release-at-the-building becomes the siege verb in step 3).
+	# Candidate humans: living, within the cluster radius of the click. SAFELY
+	# sheltered humans are excluded (buildings spec §6.1 — not valid targets
+	# behind intact walls; the building itself is the siege target). Occupants of
+	# a breached building seed like anyone.
 	var candidates: Array[Human] = []
 	for u in gm.neighbours_within(click_pos, GameConfig.release_cluster_radius, &"humans"):
 		var h := u as Human
-		if h != null and h.is_alive and not h.is_sheltered():
+		if h != null and h.is_alive and not h.is_safely_sheltered():
 			candidates.append(h)
 
 	# Ferals to seed: the selected calm zombies, in unit_uid order (determinism).
@@ -391,8 +399,8 @@ func _release(click_pos: Vector2, gm: Node) -> void:
 ## Nearest living human within release_aim_radius of `pos`, or null (release vs move).
 ## The radius is the release-magnetism knob (#1): a click this close to a human is a
 ## release pinned to the nearest one; a direct click is just the degenerate case.
-## Sheltered humans never pin (buildings spec §6.1) — a click near them is a plain
-## move order until step 3 makes the occupied BUILDING the release target.
+## SAFELY sheltered humans never pin (buildings spec §6.1) — the occupied BUILDING
+## is the release target instead; breached-building occupants pin like anyone.
 func _human_at(pos: Vector2, gm: Node) -> Human:
 	if gm == null:
 		return null
@@ -400,7 +408,7 @@ func _human_at(pos: Vector2, gm: Node) -> Human:
 	var best: Human = null
 	var best_dist := INF
 	for h in humans:
-		if (h as Human).is_sheltered():
+		if (h as Human).is_safely_sheltered():
 			continue
 		var d := pos.distance_to(h.global_position)
 		if d < best_dist:
@@ -409,22 +417,68 @@ func _human_at(pos: Vector2, gm: Node) -> Human:
 	return best
 
 
-## Updates which human shows the "release here" ring: the one under the cursor, but
-## only while the selection contains a releasable (calm) zombie — otherwise RMB is a
-## plain move and there's nothing to telegraph. Clears the prior hover on any change.
+## RELEASE-AT-THE-BUILDING (step 3): ignite the given calm zombies onto an
+## occupied building — each besieges its own nearest door. Uncancelable;
+## released zombies leave the selection. Deterministic: unit_uid order.
+func _release_at_building(building: Node2D, calm_zombies: Array[Unit]) -> void:
+	var ferals: Array[Zombie] = []
+	for u in calm_zombies:
+		if is_instance_valid(u) and u is Zombie and (u as Zombie).can_receive_command():
+			ferals.append(u)
+	ferals.sort_custom(func(a: Zombie, b: Zombie) -> bool: return a.unit_uid < b.unit_uid)
+	for z in ferals:
+		z.ignite_feral_at_building(building)
+	if not ferals.is_empty():
+		print("🔥 RELEASE: %d zombies onto building %s" % [ferals.size(), building.name])
+	clear_selection()
+
+
+## The occupied, unbreached ShelterBuilding whose footprint contains `pos`, or
+## null. Buildings are static per level — cached once (rule 8: group lookups are
+## one-time wiring, and the hover check runs per frame).
+var _shelters_cache: Array = []
+var _shelters_cached: bool = false
+
+func _shelter_building_at(pos: Vector2) -> Node2D:
+	if not _shelters_cached:
+		_shelters_cached = true
+		_shelters_cache = get_tree().get_nodes_in_group("shelter_buildings")
+	for b in _shelters_cache:
+		if is_instance_valid(b) and b.contains_point(pos) and b.is_occupied() and not b.is_breached():
+			return b
+	return null
+
+
+## Updates the release telegraphs: the "release here" ring on the human under the
+## cursor, or (step 3) the footprint outline on an occupied building under it —
+## only while the selection contains a releasable (calm) zombie. Clears the prior
+## hover on any change.
 func _update_release_hover() -> void:
 	var target: Human = null
+	var target_building: Node2D = null
 	if _selection_has_releasable():
 		var gm := _game_manager()
 		if gm != null:
-			target = _human_at(get_global_mouse_position(), gm)
-	if target == _hovered_human:
-		return
-	if _hovered_human != null and is_instance_valid(_hovered_human):
-		_hovered_human.set_hover_highlighted(false)
-	_hovered_human = target
-	if _hovered_human != null:
-		_hovered_human.set_hover_highlighted(true)
+			var mouse := get_global_mouse_position()
+			target = _human_at(mouse, gm)
+			if target == null:
+				target_building = _shelter_building_at(mouse)
+	if target != _hovered_human:
+		if _hovered_human != null and is_instance_valid(_hovered_human):
+			_hovered_human.set_hover_highlighted(false)
+		_hovered_human = target
+		if _hovered_human != null:
+			_hovered_human.set_hover_highlighted(true)
+	if target_building != _hovered_building:
+		if _hovered_building != null and is_instance_valid(_hovered_building):
+			_hovered_building.set_hover_highlighted(false)
+		_hovered_building = target_building
+		if _hovered_building != null:
+			_hovered_building.set_hover_highlighted(true)
+
+
+## The building currently showing the release-telegraph outline (step 3).
+var _hovered_building: Node2D = null
 
 
 ## True if any selected unit is a calm zombie (so a release is possible).

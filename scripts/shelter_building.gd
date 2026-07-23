@@ -94,13 +94,41 @@ func doors() -> Array:
 
 # === OCCUPANCY + SPOT CLAIMS (step 2, spec §6.2) ===
 
-## True while at least one living human shelters here. Step 3's release-at-the-
-## building targeting and slice 2's armory both key off this.
+## True while at least one living human shelters here. Release-at-the-building
+## targeting (step 3) and slice 2's armory both key off this.
 func is_occupied() -> bool:
 	for h in _occupants:
 		if is_instance_valid(h) and h.is_alive:
 			return true
 	return false
+
+
+## True once ANY door is breached — the whole building leaves the flee exit set
+## permanently (§9: a hole in the wall is not shelter) and its sheltered
+## occupants become valid prey again (§5.2: room-by-room hunting).
+func is_breached() -> bool:
+	for door: Door in doors():
+		if door.is_breached():
+			return true
+	return false
+
+
+## True if `point` (global) is inside the drawn footprint — the release-at-the-
+## building click test (step 3).
+func contains_point(point: Vector2) -> bool:
+	return Geometry2D.is_point_in_polygon(to_local(point), polygon)
+
+
+## Release telegraph (step 3): white footprint outline while the cursor hovers an
+## occupied building with releasable zombies selected — same misclick defense as
+## the release-on-human ring. Toggled by SelectionManager.
+var _hover_highlighted: bool = false
+
+func set_hover_highlighted(value: bool) -> void:
+	if _hover_highlighted == value:
+		return
+	_hover_highlighted = value
+	queue_redraw()
 
 
 ## Registers `human` as an occupant and returns the global position it should hold.
@@ -142,6 +170,17 @@ func claim_spot(human: Node2D, entry_door: Node2D) -> Vector2:
 		_warned_no_spots = true
 		push_warning("ShelterBuilding '%s' has no ShelterSpot children — entrants huddle at the centre." % name)
 	return _footprint_centre() + DetHash.offset(human.unit_uid, OVERFLOW_SALT, OVERFLOW_SPREAD)
+
+
+## Living occupants, in arrival order (deterministic). Read by besiegers at
+## breach — the pour-in ruling (2026-07-23): a besieger with no other prey takes
+## the nearest occupant, no LOS gate.
+func living_occupants() -> Array:
+	var result := []
+	for h in _occupants:
+		if is_instance_valid(h) and h.is_alive:
+			result.append(h)
+	return result
 
 
 ## Frees a human's claim + occupancy (death now; the breach-flush in step 6).
@@ -371,6 +410,11 @@ func _apply_collision() -> void:
 func _draw() -> void:
 	for quad in _wall_quads:
 		draw_colored_polygon(quad, wall_color)
+	# "Release here" telegraph (step 3): bright footprint outline under the cursor.
+	if _hover_highlighted and polygon.size() >= 3:
+		var outline := polygon.duplicate()
+		outline.append(polygon[0])
+		draw_polyline(outline, Color(1.0, 1.0, 1.0, 0.95), 3.0)
 
 
 ## Reports the wall band (NOT the footprint) to NavBaker: walls are carved from

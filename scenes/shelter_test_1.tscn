@@ -54,6 +54,7 @@ offset_top = -400.0
 offset_right = 600.0
 offset_bottom = 400.0
 color = Color(0.2, 0.3, 0.2, 1)
+metadata/_edit_lock_ = true
 
 [node name="ShelterBuilding" type="Polygon2D" parent="TestLevel" unique_id=1476668217]
 position = Vector2(100, 0)
@@ -75,8 +76,8 @@ position = Vector2(60, 65)
 script = ExtResource("15_spot")
 
 [node name="GuardSpot" type="Node2D" parent="TestLevel/ShelterBuilding" unique_id=1419753078]
-position = Vector2(-90, 0)
-rotation = 3.1415927
+position = Vector2(131, 15)
+rotation = 3.2148964
 script = ExtResource("15_spot")
 is_guard = true
 
@@ -98,6 +99,15 @@ position = Vector2(-290, 150)
 
 [node name="ZombieReserve3" parent="TestLevel" unique_id=1985978798 instance=ExtResource("5_zombie")]
 position = Vector2(-270, 190)
+
+[node name="ZombieReserve4" parent="TestLevel" unique_id=1379026946 instance=ExtResource("5_zombie")]
+position = Vector2(-320, 176)
+
+[node name="ZombieReserve5" parent="TestLevel" unique_id=1213409241 instance=ExtResource("5_zombie")]
+position = Vector2(-360, 176)
+
+[node name="ZombieReserve6" parent="TestLevel" unique_id=1727554278 instance=ExtResource("5_zombie")]
+position = Vector2(-340, 216)
 
 [node name="EscapeZone" parent="TestLevel" unique_id=1254712186 instance=ExtResource("12_esc")]
 position = Vector2(-550, 0)

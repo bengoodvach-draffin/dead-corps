@@ -136,8 +136,9 @@ func tick(delta: float) -> void:
 	# entries claim spots in deterministic order (§10).
 	for door in _shelter_doors():
 		if door.is_intact() and not door.is_locked() and door.contains_point(_owner.global_position):
-			var building: Node = door.get_parent()
-			if building != null and building.has_method("claim_spot"):
+			var building: Node = door.building()
+			# A breached building shelters nobody, even through its intact doors (§9).
+			if building != null and not building.is_breached():
 				_owner.enter_shelter(building, door)
 				return
 	# Cower detection (3.5, §4.4): a full cower_window spent within cower_min_displacement
