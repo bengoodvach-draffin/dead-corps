@@ -33,6 +33,11 @@ var fill_speed: Array[float] = [0.0, 250.0, 300.0, 450.0]
 var fear_threshold: Array[int] = [0, 1, 2, 3]
 ## Civilian fill is a pure reaction clock (seconds) → completion = flee.
 var civilian_reaction: float = 0.75
+## Minimum seconds between SHOTS per class (CIV slot unused). The front keeps
+## growing during the cooldown — at range (fill time > cooldown) nothing changes;
+## this is the close-range fire-rate floor (point-blank refills in ~0.07s and a
+## lone militia was shredding whole waves — Ben's playtest, 2026-07-24).
+var fire_cooldown: Array[float] = [0.0, 0.8, 0.6, 0.4]
 
 # === FEAR ===
 var fear_radius: float = 250.0
@@ -127,3 +132,6 @@ var pound_damage: float = 10.0
 ## Default door integrity (a Door can override per-door; e.g. armory-grade 1500).
 ## v0: 600 ≈ 60 solo pounds ≈ 10s under a 6-feral siege. Sweep-tuned.
 var door_integrity: float = 600.0
+## Delay (s) before a door re-admits humans after its arc clears of ferals.
+## v0: 0 (tuning option only — raise if boundary-hovering ferals flicker the lock).
+var door_unlock_hysteresis: float = 0.0

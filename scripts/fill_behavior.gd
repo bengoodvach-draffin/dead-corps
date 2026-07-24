@@ -46,6 +46,10 @@ var _target: Zombie = null
 ## (fill frozen). Drives the debug line color (filling vs about-to-fire).
 var _reached: bool = false
 
+## Seconds until the next shot may land (per-class fire_cooldown, set on firing).
+## The front grows freely during it — this is only the close-range rate floor.
+var _cooldown: float = 0.0
+
 ## Tracks whether the debug line was drawn last frame, so we issue exactly one extra
 ## redraw when it clears (and avoid redrawing idle humans every frame).
 var _was_drawing: bool = false
@@ -53,6 +57,15 @@ var _was_drawing: bool = false
 ## Civilian reaction clock (build-plan 3.2): seconds a clear-lane zombie has been
 ## visible. At civilian_reaction it triggers the flee. Resets when sight is lost.
 var _civ_clock: float = 0.0
+
+## The door-watch (buildings spec §7.1, step 5): while the owner shelters in a
+## building with an ENGAGED door (ferals in its arc = the lock predicate) that it
+## has interior LOS to, the front runs HOT against a virtual target pinned just
+## inside that door — no decay, no shot, facing pre-aligned. At breach the first
+## zombie through is already inside the front, so it eats a near-instant shot and
+## normal fill rules resume (rotation gate, humans-block-LOS, critical distance).
+var _watching: bool = false
+var _watch_pos: Vector2 = Vector2.ZERO
 
 
 func setup(owner_human: Human) -> void:
@@ -85,7 +98,9 @@ func tick(delta: float) -> void:
 ## (the peek/bait exploit is still covered: ANY visible zombie keeps it hot).
 func _tick_armed(delta: float, nearest_visible: Zombie) -> void:
 	var speed := _fill_speed()
+	_cooldown = maxf(0.0, _cooldown - delta)
 	if nearest_visible != null:
+		_watching = false
 		_target = nearest_visible
 		var d := _owner.global_position.distance_to(nearest_visible.global_position)
 		if _fill < d:
@@ -93,14 +108,26 @@ func _tick_armed(delta: float, nearest_visible: Zombie) -> void:
 			_reached = false
 			_fill += speed * delta
 		else:
-			# Reached: rotation gates the shot, fill frozen during the turn (§4.1).
+			# Reached: rotation AND the fire cooldown gate the shot; the front
+			# holds meanwhile (§4.1). The cooldown is the close-range rate floor —
+			# at point-blank the front refills near-instantly, so without it a
+			# lone defender machine-gunned whole waves.
 			_reached = true
-			if _rotate_toward(nearest_visible, delta):
+			if _rotate_toward(nearest_visible.global_position, delta) and _cooldown <= 0.0:
 				_fire(nearest_visible)
 	else:
 		_reached = false
 		_target = null
-		_fill = maxf(0.0, _fill - GameConfig.fill_decay_factor * speed * delta)
+		_update_door_watch()
+		if _watching:
+			# Door-watch (§7.1): hot against the engaged door — grow to the door
+			# distance and hold there. No decay, no fire (nothing to kill yet);
+			# facing pre-aligns so the at-breach shot is genuinely near-instant.
+			var d := _owner.global_position.distance_to(_watch_pos)
+			_fill = minf(_fill + speed * delta, d)
+			_rotate_toward(_watch_pos, delta)
+		else:
+			_fill = maxf(0.0, _fill - GameConfig.fill_decay_factor * speed * delta)
 
 
 ## Civilian reaction clock (spec §4.1): no fill front, no fire — while a clear-lane
@@ -150,7 +177,36 @@ func cancel() -> void:
 	_target = null
 	_reached = false
 	_civ_clock = 0.0
+	_watching = false
 	_owner.queue_redraw()
+
+
+## Selects the door-watch point (§7.1): the nearest ENGAGED door of the owner's
+## building with a clear interior lane, or none. Engagement reuses the lock
+## predicate — one zone, one truth (§4.2). Deterministic: doors in scene order,
+## strict nearest.
+func _update_door_watch() -> void:
+	_watching = false
+	# Only from the defensive position (Ben's ruling): a garrison walking to its
+	# spot doesn't aim over its shoulder — it settles first, then trains on the
+	# door. Normal fill (real targets through an open breach) stays live mid-walk.
+	if not _owner.at_shelter_spot():
+		return
+	var building: Node = _owner.shelter_building()
+	if building == null or not is_instance_valid(building):
+		return
+	var best_d := INF
+	for door in building.doors():
+		if not door.is_locked():
+			continue
+		var p: Vector2 = door.inside_point()
+		if not _clear_lane_to_point(p):
+			continue
+		var d := _owner.global_position.distance_to(p)
+		if d < best_d:
+			best_d = d
+			_watching = true
+			_watch_pos = p
 
 
 # === RENDERING ACCESSORS (read by Human._draw for the debug line, → vision_renderer in 5.1) ===
@@ -167,6 +223,15 @@ func is_reached() -> bool:
 	return _reached
 
 
+## True while the front is pinned to an engaged door (the door-watch, §7.1).
+func watching() -> bool:
+	return _watching
+
+
+func watch_pos() -> Vector2:
+	return _watch_pos
+
+
 # === INTERNAL ===
 
 ## True if no environment or friendly human blocks the straight line to `z`.
@@ -181,10 +246,20 @@ func _has_clear_lane(z: Zombie) -> bool:
 	return space.intersect_ray(query).is_empty()
 
 
-## Rotates the owner's facing toward `z` at turn_speed; returns true once within
-## facing_tolerance (clear to fire). The front holds while this is false (§4.1).
-func _rotate_toward(z: Zombie, delta: float) -> bool:
-	var to := z.global_position - _owner.global_position
+## Lane check to a POINT (the door-watch): same blockers, no target to exclude.
+func _clear_lane_to_point(point: Vector2) -> bool:
+	var space := _owner.get_world_2d().direct_space_state
+	var query := PhysicsRayQueryParameters2D.create(_owner.global_position, point)
+	query.collision_mask = LOS_BLOCKER_MASK
+	query.exclude = [_owner]
+	return space.intersect_ray(query).is_empty()
+
+
+## Rotates the owner's facing toward a world point at turn_speed; returns true
+## once within facing_tolerance (clear to fire). The front holds while this is
+## false (§4.1). Point-based so the door-watch can pre-align too.
+func _rotate_toward(point: Vector2, delta: float) -> bool:
+	var to := point - _owner.global_position
 	if to == Vector2.ZERO:
 		return true
 	var desired := to.normalized()
@@ -206,6 +281,7 @@ func _rotate_toward(z: Zombie, delta: float) -> bool:
 func _fire(z: Zombie) -> void:
 	_fill = 0.0
 	_reached = false
+	_cooldown = GameConfig.fire_cooldown[_owner.defender_class]
 	var gm := _game_manager()
 	if gm != null:
 		gm.report_gunfire_kill(z, _owner)

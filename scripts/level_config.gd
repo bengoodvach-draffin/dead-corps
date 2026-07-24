@@ -32,6 +32,8 @@ class_name LevelConfig
 @export var fear_threshold: Array[int] = [0, 1, 2, 3]
 ## Seconds a civilian sees a zombie before fleeing (their "fill" is a pure reaction clock).
 @export var civilian_reaction: float = 0.75
+## Per-class [CIV, MIL, POL, GI] minimum seconds between shots — the close-range fire-rate floor. CIV unused.
+@export var fire_cooldown: Array[float] = [0.0, 0.8, 0.6, 0.4]
 
 # === FEAR ===
 ## Radius (px) for the fear count. Zombies (any state, building-LOS gated) inside it feed the break.
@@ -126,6 +128,8 @@ class_name LevelConfig
 @export var pound_damage: float = 10.0
 ## Default door integrity (per-door override on the Door node; 0 there = use this).
 @export var door_integrity: float = 600.0
+## Delay (s) before a door re-admits humans after its arc clears of ferals (0 = instant).
+@export var door_unlock_hysteresis: float = 0.0
 
 
 ## On game start, push every value into the GameConfig autoload.
@@ -145,6 +149,7 @@ func _ready() -> void:
 	GameConfig.fill_speed = fill_speed
 	GameConfig.fear_threshold = fear_threshold
 	GameConfig.civilian_reaction = civilian_reaction
+	GameConfig.fire_cooldown = fire_cooldown
 
 	GameConfig.fear_radius = fear_radius
 	GameConfig.fear_reaction = fear_reaction
@@ -192,5 +197,6 @@ func _ready() -> void:
 	GameConfig.pound_interval = pound_interval
 	GameConfig.pound_damage = pound_damage
 	GameConfig.door_integrity = door_integrity
+	GameConfig.door_unlock_hysteresis = door_unlock_hysteresis
 
 	print("✅ LevelConfig: pushed per-level tunables into GameConfig")

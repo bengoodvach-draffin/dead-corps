@@ -41,6 +41,12 @@ var _gm_cache: Node = null
 ## stays put (it does NOT recompute from live unit positions each frame).
 var _group_route: Array[Vector2] = []
 
+## Held-F time multiplier (the fast-forward affordance). Paired with a matching
+## physics_ticks_per_second raise so each tick keeps the exact 1/60 step — the
+## sim is tick-identical, just faster (see the F handler for the why).
+const FAST_FORWARD_SCALE := 3.0
+const BASE_PHYSICS_TICKS := 60
+
 func _ready() -> void:
 	set_process_input(true)
 
@@ -68,6 +74,20 @@ func _input(event: InputEvent) -> void:
 	elif event.is_action_pressed("command"):
 		handle_command(event.position)
 	
+	# FAST-FORWARD (Ben's ruling 2026-07-24): hold F for 3× time. BOTH knobs are
+	# set so the physics DELTA stays exactly 1/60: Godot scales the tick delta by
+	# time_scale (delta = time_scale / ticks_per_second — measured 0.05 at plain
+	# 3×, which coarsened every integration step and flipped level outcomes).
+	# 3× ticks_per_second × 3× time_scale = 3× as many ticks of the SAME 1/60
+	# step → a tick-identical sim, just faster (§10-safe, verified boot-to-boot).
+	elif event is InputEventKey and event.keycode == KEY_F and not event.echo:
+		if event.pressed:
+			Engine.physics_ticks_per_second = BASE_PHYSICS_TICKS * int(FAST_FORWARD_SCALE)
+			Engine.time_scale = FAST_FORWARD_SCALE
+		else:
+			Engine.time_scale = 1.0
+			Engine.physics_ticks_per_second = BASE_PHYSICS_TICKS
+
 	# Handle control group hotkeys
 	elif event is InputEventKey and event.pressed:
 		handle_control_group_input(event)
@@ -238,7 +258,7 @@ func handle_click_selection() -> void:
 	var min_distance := 30.0  # Click tolerance in pixels
 
 	for unit in units:
-		if unit is Zombie and (unit as Zombie).is_selectable():
+		if unit is Zombie and ((unit as Zombie).is_selectable() or (unit as Zombie).is_finishing_kill()):
 			# global_position — units nested under offset parents (e.g. an encounter
 			# container) have local coords nowhere near the click (Tier-4 cluster fix).
 			var distance := box_start_pos.distance_to(unit.global_position)
@@ -267,7 +287,7 @@ func handle_box_selection() -> void:
 	var units := get_tree().get_nodes_in_group("zombies")
 
 	for unit in units:
-		if unit is Zombie and (unit as Zombie).is_selectable():
+		if unit is Zombie and ((unit as Zombie).is_selectable() or (unit as Zombie).is_finishing_kill()):
 			if selection_rect.has_point(unit.global_position):
 				add_unit_to_selection(unit)
 
@@ -304,14 +324,19 @@ func handle_command(_screen_pos: Vector2) -> void:
 	var append := Input.is_key_pressed(KEY_SHIFT)   # shift+RMB = queue a waypoint/attack (#8)
 	var clicked_human := _human_at(world_pos, gm)
 
-	# Partition the selection into commandable calm zombies and pending-rise corpses.
+	# Partition the selection into commandable calm zombies, FINISHING zombies
+	# (post-kill recovery — orders are stored, applying at calm; the hunt wins if
+	# it continues), and pending-rise corpses.
 	var calm_zombies: Array[Unit] = []
+	var finishers: Array[Unit] = []
 	var corpses: Array[Unit] = []
 	for u in selected_units:
 		if not is_instance_valid(u):
 			continue
 		if u is Zombie and (u as Zombie).can_receive_command():
 			calm_zombies.append(u)
+		elif u is Zombie and (u as Zombie).is_finishing_kill():
+			finishers.append(u)
 		elif u is Human and (u as Human).is_selectable_corpse():
 			corpses.append(u)
 
@@ -339,20 +364,32 @@ func handle_command(_screen_pos: Vector2) -> void:
 			gm.set_rise_route(c, world_pos)
 	if clicked_human != null:
 		# Immediate release now (attack, forget the route). Pin-and-aim (magnetism #1).
+		# Finishers store the attack — it fires when they calm, or drops if they retarget.
+		for f in finishers:
+			(f as Zombie).queue_finish_attack(clicked_human)
 		_release(clicked_human.global_position, gm)
 		return
 	# RELEASE-AT-THE-BUILDING (buildings spec §5.1 + the footprint amendment): RMB
 	# anywhere on an OCCUPIED intact building = a release variant — each selected
 	# calm zombie besieges its own nearest door. Still exactly one attack verb.
+	# Finishers just walk toward it once calm (a stored re-siege would outlive the
+	# click's context — keep the stored order to the simple verbs).
 	var clicked_building := _shelter_building_at(world_pos)
 	if clicked_building != null and not calm_zombies.is_empty():
+		for f in finishers:
+			(f as Zombie).queue_finish_move(world_pos)
 		_release_at_building(clicked_building, calm_zombies)
 		return
-	if not calm_zombies.is_empty():
-		var slots := calculate_formation_positions(world_pos, calm_zombies)
-		for i in range(calm_zombies.size()):
-			calm_zombies[i].set_move_target(slots[i])
-			(calm_zombies[i] as Zombie).queued_attack = null
+	var movers: Array[Unit] = calm_zombies + finishers
+	if not movers.is_empty():
+		var slots := calculate_formation_positions(world_pos, movers)
+		for i in range(movers.size()):
+			var z := movers[i] as Zombie
+			if z.can_receive_command():
+				z.set_move_target(slots[i])
+				z.queued_attack = null
+			else:
+				z.queue_finish_move(slots[i])   # applies at calm; void if the hunt continues
 
 
 ## RELEASE (2.4, spec §5.2): every selected calm zombie ignites FERAL, seeded across

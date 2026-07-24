@@ -88,8 +88,15 @@ func _ready() -> void:
 	# Unit starts stationary at its own position (world space — target_position is
 	# always global; local coords diverge under offset parents).
 	target_position = global_position
-	clamp_position_to_bounds()
 	update_selection_visual()
+	# GAME logic only (CLAUDE.md @tool rule): in the EDITOR, WorldBounds holds its
+	# ±1000 defaults (LevelBounds writes at runtime only), so clamping here dragged
+	# every @tool unit in a big offset-parent scene onto the default rect's edge
+	# the moment the scene was opened — the puzzle_test_3 corruption. Never clamp
+	# in the editor.
+	if Engine.is_editor_hint():
+		return
+	clamp_position_to_bounds()
 
 
 ## Per physics frame: BOID forces, then movement, then bounds.

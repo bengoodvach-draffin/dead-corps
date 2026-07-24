@@ -23,6 +23,7 @@ cell_size = 4.0
 agent_radius = 12.0
 
 [node name="Main" type="Node2D" unique_id=472403656]
+position = Vector2(-1, 0)
 
 [node name="Camera" type="Camera2D" parent="." unique_id=399974683 groups=["camera"]]
 script = ExtResource("1_cam")
@@ -124,7 +125,6 @@ navigation_polygon = SubResource("NavigationPolygon_q3bhh")
 script = ExtResource("9_nav")
 
 [node name="DebugOverlay" parent="." unique_id=1059068594 instance=ExtResource("10_dbg")]
-visible = false
 
 [node name="EndGameOverlay" parent="." unique_id=983442177 instance=ExtResource("11_end")]
 visible = false

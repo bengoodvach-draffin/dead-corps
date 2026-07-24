@@ -46,8 +46,16 @@ func _ready() -> void:
 	# In the editor we only bake on demand (the button); auto-bake at runtime.
 	if Engine.is_editor_hint():
 		return
-	# Defer so all siblings (buildings, walls, LevelBounds) are in the tree first.
-	call_deferred("rebake")
+	# One PHYSICS tick so all siblings (buildings, walls, LevelBounds) are in the
+	# tree first. Physics-frame, not call_deferred: deferred calls flush per RENDER
+	# frame, so under fast-forward the navmesh would appear time_scale-many ticks
+	# later — a boot-time divergence (§10). One physics tick is one physics tick.
+	_rebake_next_tick()
+
+
+func _rebake_next_tick() -> void:
+	await get_tree().physics_frame
+	rebake()
 
 
 ## Rebuilds and bakes the navigation mesh from current scene geometry.

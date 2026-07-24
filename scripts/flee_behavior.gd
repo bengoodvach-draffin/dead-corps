@@ -28,7 +28,9 @@ var _owner: Human = null
 var _gm: Node = null
 var _agent: NavigationAgent2D = null
 
-## Committed exit (a zone's global_position) and whether one was found.
+## Committed exit: the NODE (zone or shelter door — needed to notice it dropping
+## out of the exit set, §9 churn), its position, and whether one was found.
+var _escape_exit: Node2D = null
 var _escape_target: Vector2 = Vector2.ZERO
 var _has_escape: bool = false
 
@@ -61,16 +63,38 @@ func setup(owner_human: Human) -> void:
 ## Commits the rout: lock the best exit (no LOS, spec §4.3) and point the nav agent at
 ## it. Called once when the human breaks. No exit at all → the human just halts.
 func begin() -> void:
-	var zone := _pick_escape_zone()
-	if zone != null:
-		_escape_target = zone.global_position
-		_has_escape = true
-		_agent.target_position = _escape_target
-		print("🔍 FLEE: %s → exit %s at %s" % [_owner.name, zone.name, _escape_target.round()])
-	else:
-		_has_escape = false
+	_commit_exit()
 	_cower_ref = _owner.global_position
 	_cower_elapsed = 0.0
+
+
+## Picks + commits the current best exit (threat-aware). Used at the break AND on
+## a re-path when the committed exit drops out of the set (§9 churn).
+func _commit_exit() -> void:
+	var exit := _pick_escape_zone()
+	if exit != null:
+		_escape_exit = exit
+		_escape_target = exit.global_position
+		_has_escape = true
+		_agent.target_position = _escape_target
+		print("🔍 FLEE: %s → exit %s at %s" % [_owner.name, exit.name, _escape_target.round()])
+	else:
+		_escape_exit = null
+		_has_escape = false
+
+
+## True while the committed exit is still a member of the exit set (§9): escape
+## zones always are; a shelter door only while intact, unlocked, and its building
+## unbreached. Duck-typed — zones have no is_locked.
+func _exit_valid(exit: Node2D) -> bool:
+	if exit == null or not is_instance_valid(exit):
+		return false
+	if not exit.has_method("is_locked"):
+		return true   # an escape zone never churns
+	if not exit.is_intact() or exit.is_locked():
+		return false
+	var building: Node = exit.building()
+	return building == null or not building.is_breached()
 
 
 ## Chooses the exit to flee to, from THE unified exit set (escape zones ∪ open
@@ -147,11 +171,28 @@ func tick(delta: float) -> void:
 	if _owner.global_position.distance_to(_cower_ref) >= GameConfig.cower_min_displacement:
 		_cower_ref = _owner.global_position
 		_cower_elapsed = 0.0
-	else:
+	elif not _blocked_by_fleeing_human():
+		# §8.3 fleeing-queue pause rule: the cower clock does NOT accumulate while
+		# our blocking collision is another FLEEING human — a live, draining queue
+		# (e.g. a back-door flush) is legitimate non-progress, not "cornered". A
+		# wall or a COWERER still runs the clock, so the genuine dead-end cascade
+		# survives: the front rank cowers, its blockers' clocks resume, the huddle
+		# collapses inward exactly as §4.4 intends. NOTE: currently LATENT — units
+		# carry no unit-unit collision (BOID separation only), so this guard can
+		# only fire if body collision is ever enabled (work-queue Point 1).
 		_cower_elapsed += delta
 		if _cower_elapsed >= GameConfig.cower_window:
 			_owner.start_cowering()
 			return
+
+	# Exit-set churn (§9): the committed exit dropped out (door locked by a feral
+	# in its arc, or its building breached) → re-path via the same threat-aware
+	# picker. Predicate-driven both ways: a door that clears re-enters the picks,
+	# and a human with NO exit keeps watching for one to reopen (bounded — the
+	# cower detector corners it within cower_window if nothing opens). The player
+	# herds runners by which exits they leave looking open.
+	if not _has_escape or not _exit_valid(_escape_exit):
+		_commit_exit()
 
 	if not _has_escape:
 		_owner.velocity = Vector2.ZERO
@@ -211,6 +252,22 @@ func tick_sheltered(_delta: float) -> void:
 		_owner.set_move_target(_spot_target)
 	else:
 		_owner.set_move_target(origin + nav_dir * LOOKAHEAD)
+
+
+## True once the sheltered owner has reached its claimed spot (the door-watch
+## only arms from the defensive position, not mid-walk — Ben's playtest ruling).
+func at_spot() -> bool:
+	return _owner.global_position.distance_to(_spot_target) <= SPOT_ARRIVE
+
+
+## §8.3: whether the owner's last movement collision was another FLEEING human
+## (see the pause rule in tick). Latent until unit-unit body collision exists.
+func _blocked_by_fleeing_human() -> bool:
+	var col := _owner.get_last_slide_collision()
+	if col == null:
+		return false
+	var other := col.get_collider() as Human
+	return other != null and other.current_state == Human.State.FLEEING
 
 
 ## The level's shelter doors, fetched once from the group (one-time wiring per rule 8;

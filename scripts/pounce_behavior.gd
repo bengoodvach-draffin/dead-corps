@@ -32,6 +32,12 @@ func is_active() -> bool:
 	return _phase != Phase.IDLE
 
 
+## True during the stationary post-kill second. The kill is done — this is the
+## "finishing" window where the zombie is selectable for a QUEUED order.
+func is_recovering() -> bool:
+	return _phase == Phase.RECOVERY
+
+
 ## Begins the lunge at `target`. Claims the target for exclusion (spec §3.5) so no
 ## other feral retargets onto it during the flight.
 func start(target: Human) -> void:

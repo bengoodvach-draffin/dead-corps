@@ -48,10 +48,6 @@ chain_scan_radius = 150.0
 feral_offaxis_penalty = 1.5
 cower_window = 1.2
 release_aim_radius = 50.0
-door_engagement_depth = null
-pound_interval = null
-pound_damage = null
-door_integrity = null
 metadata/_custom_type_script = "uid://dlqe4p8ushalq"
 
 [node name="Initializer" type="Node" parent="." unique_id=1515215272]
@@ -89,6 +85,47 @@ position = Vector2(-4623, 119)
 building_width = 1680.0
 building_height = 20.0
 metadata/_edit_lock_ = true
+
+[node name="Building17" parent="TestLevel/Perimeter" unique_id=1214163587 instance=ExtResource("9_e3ked")]
+position = Vector2(-3523, 612)
+rotation = 1.5707964
+building_width = 570.0
+building_height = 20.0
+
+[node name="Building18" parent="TestLevel/Perimeter" unique_id=657341129 instance=ExtResource("9_e3ked")]
+position = Vector2(-1279, -1665)
+rotation = 1.5707964
+building_width = 20.0
+building_height = 5000.0
+metadata/_edit_lock_ = true
+
+[node name="Building19" parent="TestLevel/Perimeter" unique_id=775770529 instance=ExtResource("9_e3ked")]
+position = Vector2(2921, -1665)
+rotation = 1.5707964
+building_width = 20.0
+building_height = 3400.0
+metadata/_edit_lock_ = true
+
+[node name="water barrier 1" parent="TestLevel/Perimeter" unique_id=1043966297 instance=ExtResource("9_e3ked")]
+position = Vector2(-2963, 906)
+rotation = 1.5707964
+building_color = Color(0.14901961, 0.32941177, 0.4627451, 1)
+building_width = 20.0
+building_height = 5000.0
+
+[node name="water barrier 2" parent="TestLevel/Perimeter" unique_id=2104407117 instance=ExtResource("9_e3ked")]
+position = Vector2(2037, 906)
+rotation = 1.5707964
+building_color = Color(0.14901961, 0.32941177, 0.4627451, 1)
+building_width = 20.0
+building_height = 5000.0
+
+[node name="water barrier 3" parent="TestLevel/Perimeter" unique_id=1312585228 instance=ExtResource("9_e3ked")]
+position = Vector2(4574, 906)
+rotation = 1.5707964
+building_color = Color(0.14901961, 0.32941177, 0.4627451, 1)
+building_width = 20.0
+building_height = 80.0
 
 [node name="Grounds" type="Node" parent="TestLevel" unique_id=1919347183]
 
@@ -131,7 +168,6 @@ metadata/_custom_type_script = "uid://bgnbocmyabj1m"
 position = Vector2(-40, 112)
 rotation = 3.1415927
 script = ExtResource("10_yxdyl")
-integrity_override = null
 door_color = Color(0.48690546, 0.3083103, 0.16153252, 1)
 metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
 
@@ -139,14 +175,12 @@ metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
 position = Vector2(120, 112)
 rotation = 3.1415927
 script = ExtResource("10_yxdyl")
-integrity_override = null
 door_color = Color(0.48690546, 0.3083103, 0.16153252, 1)
 metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
 
 [node name="Door3" type="Node2D" parent="TestLevel/Shelters/ShelterBuilding" unique_id=903017513]
 position = Vector2(56, -208)
 script = ExtResource("10_yxdyl")
-integrity_override = null
 door_color = Color(0.48690546, 0.3083103, 0.16153252, 1)
 metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
 
@@ -225,40 +259,49 @@ auto_translate_mode = 2
 position = Vector2(-4635, 496)
 
 [node name="Building" parent="TestLevel/Encounters/Marketplace" unique_id=431539980 instance=ExtResource("9_e3ked")]
-position = Vector2(-477, -190)
+position = Vector2(-652, -222)
 rotation = 1.5707964
+building_height = 80.0
 
 [node name="Building2" parent="TestLevel/Encounters/Marketplace" unique_id=2048175953 instance=ExtResource("9_e3ked")]
-position = Vector2(-253, -190)
+position = Vector2(-427, -221)
 rotation = 1.5707964
+building_height = 80.0
 
 [node name="Building3" parent="TestLevel/Encounters/Marketplace" unique_id=1714535122 instance=ExtResource("9_e3ked")]
-position = Vector2(-18, -190)
+position = Vector2(-138, -221)
 rotation = 1.5707964
+building_height = 80.0
 
 [node name="Building4" parent="TestLevel/Encounters/Marketplace" unique_id=1782532239 instance=ExtResource("9_e3ked")]
-position = Vector2(215, -190)
+position = Vector2(152, -223)
 rotation = 1.5707964
+building_height = 80.0
 
 [node name="Building5" parent="TestLevel/Encounters/Marketplace" unique_id=2052112061 instance=ExtResource("9_e3ked")]
-position = Vector2(-478, 2)
+position = Vector2(-652, -29)
 rotation = 1.5707964
+building_height = 80.0
 
 [node name="Building6" parent="TestLevel/Encounters/Marketplace" unique_id=437772750 instance=ExtResource("9_e3ked")]
-position = Vector2(-254, 2)
+position = Vector2(-428, -29)
 rotation = 1.5707964
+building_height = 80.0
 
 [node name="Building7" parent="TestLevel/Encounters/Marketplace" unique_id=633687173 instance=ExtResource("9_e3ked")]
-position = Vector2(-19, 2)
+position = Vector2(-139, -29)
 rotation = 1.5707964
+building_height = 80.0
 
 [node name="Building8" parent="TestLevel/Encounters/Marketplace" unique_id=109327762 instance=ExtResource("9_e3ked")]
-position = Vector2(214, 2)
+position = Vector2(151, -31)
 rotation = 1.5707964
+building_height = 80.0
 
 [node name="Building9" parent="TestLevel/Encounters/Marketplace" unique_id=187650118 instance=ExtResource("9_e3ked")]
-position = Vector2(-478, 194)
+position = Vector2(-652, 163)
 rotation = 1.5707964
+building_height = 80.0
 
 [node name="Building13" parent="TestLevel/Encounters/Marketplace" unique_id=964717275 instance=ExtResource("9_e3ked")]
 position = Vector2(-736, 312)
@@ -271,12 +314,6 @@ rotation = 1.5707964
 building_width = 400.0
 building_height = 20.0
 
-[node name="Building16" parent="TestLevel/Encounters/Marketplace" unique_id=1043966297 instance=ExtResource("9_e3ked")]
-position = Vector2(1111, 150)
-rotation = 1.5707964
-building_width = 500.0
-building_height = 20.0
-
 [node name="Building15" parent="TestLevel/Encounters/Marketplace" unique_id=1519452758 instance=ExtResource("9_e3ked")]
 position = Vector2(408, 323)
 rotation = 1.5707964
@@ -284,31 +321,94 @@ building_width = 150.0
 building_height = 20.0
 
 [node name="Building10" parent="TestLevel/Encounters/Marketplace" unique_id=245562942 instance=ExtResource("9_e3ked")]
-position = Vector2(-254, 194)
+position = Vector2(-428, 163)
 rotation = 1.5707964
+building_height = 80.0
 
 [node name="Building11" parent="TestLevel/Encounters/Marketplace" unique_id=2117522383 instance=ExtResource("9_e3ked")]
-position = Vector2(-19, 194)
+position = Vector2(-139, 163)
 rotation = 1.5707964
+building_height = 80.0
 
 [node name="Building12" parent="TestLevel/Encounters/Marketplace" unique_id=1438688304 instance=ExtResource("9_e3ked")]
-position = Vector2(214, 194)
+position = Vector2(151, 161)
 rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building16" parent="TestLevel/Encounters/Marketplace" unique_id=1893476948 instance=ExtResource("9_e3ked")]
+position = Vector2(-539, -221)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building17" parent="TestLevel/Encounters/Marketplace" unique_id=1246999174 instance=ExtResource("9_e3ked")]
+position = Vector2(-260, -220)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building18" parent="TestLevel/Encounters/Marketplace" unique_id=181510328 instance=ExtResource("9_e3ked")]
+position = Vector2(-25, -220)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building19" parent="TestLevel/Encounters/Marketplace" unique_id=310004511 instance=ExtResource("9_e3ked")]
+position = Vector2(265, -222)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building20" parent="TestLevel/Encounters/Marketplace" unique_id=2027857053 instance=ExtResource("9_e3ked")]
+position = Vector2(-539, -28)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building21" parent="TestLevel/Encounters/Marketplace" unique_id=258233555 instance=ExtResource("9_e3ked")]
+position = Vector2(-261, -28)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building22" parent="TestLevel/Encounters/Marketplace" unique_id=1857852127 instance=ExtResource("9_e3ked")]
+position = Vector2(-26, -28)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building23" parent="TestLevel/Encounters/Marketplace" unique_id=367841871 instance=ExtResource("9_e3ked")]
+position = Vector2(264, -30)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building24" parent="TestLevel/Encounters/Marketplace" unique_id=2127807904 instance=ExtResource("9_e3ked")]
+position = Vector2(-539, 164)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building25" parent="TestLevel/Encounters/Marketplace" unique_id=73139490 instance=ExtResource("9_e3ked")]
+position = Vector2(-261, 164)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building26" parent="TestLevel/Encounters/Marketplace" unique_id=1606651292 instance=ExtResource("9_e3ked")]
+position = Vector2(-26, 164)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building27" parent="TestLevel/Encounters/Marketplace" unique_id=922034351 instance=ExtResource("9_e3ked")]
+position = Vector2(264, 162)
+rotation = 1.5707964
+building_height = 80.0
 
 [node name="Human" parent="TestLevel/Encounters/Marketplace" unique_id=1346925049 instance=ExtResource("7_tknvt")]
-position = Vector2(-512, -264)
+position = Vector2(-681, -303)
 
 [node name="Human7" parent="TestLevel/Encounters/Marketplace" unique_id=891522994 instance=ExtResource("7_tknvt")]
-position = Vector2(-495, 120)
+position = Vector2(-679, 86)
 
 [node name="Human2" parent="TestLevel/Encounters/Marketplace" unique_id=492860750 instance=ExtResource("7_tknvt")]
-position = Vector2(-464, -264)
+position = Vector2(-633, -303)
 
 [node name="Human3" parent="TestLevel/Encounters/Marketplace" unique_id=1332870171 instance=ExtResource("7_tknvt")]
-position = Vector2(72, -22)
+position = Vector2(184, -144)
 
 [node name="Human6" parent="TestLevel/Encounters/Marketplace" unique_id=109390815 instance=ExtResource("7_tknvt")]
-position = Vector2(112, 10)
+position = Vector2(224, -112)
 
 [node name="Human9" parent="TestLevel/Encounters/Marketplace" unique_id=657601774 instance=ExtResource("7_tknvt")]
 position = Vector2(464, -312)
@@ -341,10 +441,10 @@ position = Vector2(504, 200)
 position = Vector2(552, 200)
 
 [node name="Human4" parent="TestLevel/Encounters/Marketplace" unique_id=781958277 instance=ExtResource("7_tknvt")]
-position = Vector2(-32, 120)
+position = Vector2(-23, 86)
 
 [node name="Human5" parent="TestLevel/Encounters/Marketplace" unique_id=990453821 instance=ExtResource("7_tknvt")]
-position = Vector2(216, -264)
+position = Vector2(373, -45)
 
 [node name="Human8" parent="TestLevel/Encounters/Marketplace" unique_id=267130342 instance=ExtResource("7_tknvt")]
 position = Vector2(744, -144)
@@ -360,12 +460,6 @@ defender_class = 1
 
 [node name="Node2D" type="Node2D" parent="TestLevel/Encounters" unique_id=28036015]
 
-[node name="Building17" parent="TestLevel/Encounters/Node2D" unique_id=1180794321 instance=ExtResource("9_e3ked")]
-position = Vector2(-3436, 370)
-rotation = 1.5707964
-building_width = 200.0
-building_height = 20.0
-
 [node name="Escape Zones" type="Node" parent="TestLevel" unique_id=1359137202]
 
 [node name="Humans" type="Node" parent="TestLevel" unique_id=827267819]
@@ -373,7 +467,7 @@ building_height = 20.0
 [node name="Zombies" type="Node" parent="TestLevel" unique_id=393150134]
 
 [node name="Zombie" parent="TestLevel/Zombies" unique_id=818075516 instance=ExtResource("6_w3d7j")]
-position = Vector2(-5401, 858)
+position = Vector2(-5400, 858)
 
 [node name="Units" type="Node2D" parent="." unique_id=1968361044 groups=["units_parent"]]
 
@@ -391,4 +485,4 @@ script = ExtResource("12_x71dj")
 visible = false
 
 [node name="EscapeZone" parent="." unique_id=1179168205 instance=ExtResource("15_uqu48")]
-position = Vector2(3703, 908)
+position = Vector2(3703, 896)

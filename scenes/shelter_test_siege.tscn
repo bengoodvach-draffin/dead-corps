@@ -55,6 +55,7 @@ offset_top = -450.0
 offset_right = 700.0
 offset_bottom = 450.0
 color = Color(0.2, 0.3, 0.2, 1)
+metadata/_edit_lock_ = true
 
 [node name="ShelterBuilding" type="Polygon2D" parent="TestLevel" unique_id=268055038]
 position = Vector2(100, 0)

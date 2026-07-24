@@ -246,6 +246,12 @@ func _nav_distance(from_pos: Vector2, to_pos: Vector2) -> float:
 	return total
 
 
+## Global centre of the footprint (public — Door.inside_point() uses it to know
+## which side of the wall band is "inside").
+func centre() -> Vector2:
+	return _footprint_centre()
+
+
 ## Average of the footprint's points, in global space (the no-spots fallback).
 func _footprint_centre() -> Vector2:
 	if polygon.is_empty():

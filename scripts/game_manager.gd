@@ -61,8 +61,12 @@ func _ready() -> void:
 	add_child(hud)
 
 	# CRITICAL FIX: Register manually placed units
-	# When users manually place zombies/humans in the editor, they need to be tracked
-	await get_tree().process_frame  # Wait for all nodes to be ready
+	# When users manually place zombies/humans in the editor, they need to be tracked.
+	# PHYSICS frame, not process frame: a render frame holds time_scale-many physics
+	# ticks, so waiting on it made the registration tick (= when units first perceive
+	# each other) depend on the fast-forward state — a boot-time divergence that
+	# flipped level outcomes under held-F. One physics tick is one physics tick.
+	await get_tree().physics_frame
 	register_manually_placed_units()
 
 
@@ -73,6 +77,14 @@ func _process(delta: float) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	# Nav-map sync per PHYSICS TICK. Godot syncs the NavigationServer once per
+	# RENDER frame by default, so under fast-forward (3 ticks/frame) agents path
+	# against maps up to 3 ticks stale — enough micro-divergence to flip a level's
+	# outcome (found via a held-F playtest). Forcing the sync here couples pathing
+	# to the tick stream: the sim is identical at any time_scale or render rate
+	# (§10). GameManager ticks before the units (tree order), so every agent
+	# queries a fresh map.
+	NavigationServer2D.map_force_update(get_viewport().find_world_2d().navigation_map)
 	# Riser countdowns tick on the physics step (fixed timestep → deterministic).
 	if not game_ended:
 		_tick_risers(delta)

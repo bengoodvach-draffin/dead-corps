@@ -235,11 +235,26 @@ func _physics_process(delta: float) -> void:
 		# "auto-cower inside" bug can't exist). FEAR IS SUSPENDED TOO: dread cannot
 		# penetrate an intact shelter, and a human standing IN the door gap sits
 		# inside the DoorLOS body where outward rays leak (hit_from_inside) — with
-		# fear live that leak caused a 60Hz break→re-enter loop. The §8.1 flush
-		# re-arms fear at breach (step 6); a breached door can't re-shelter, so the
-		# loop is impossible there. No patrol; no fill (door-watch is step 5).
-		if _flee != null:
+		# fear live that leak caused a 60Hz break→re-enter loop.
+		#
+		# THE FLUSH (§8.1, step 6): once the building is BREACHED, dread pours in —
+		# fear re-arms for CIVILIANS, LOS-gated as always (§8.2: interior walls
+		# block dread, open doorways leak it — panic sweeps the floor plan room by
+		# room as ferals round corners). A broken civilian start_fleeing()s: out of
+		# the occupancy, out through whatever exit remains (the breached building
+		# left the set). Armed humans are the LAST STAND (§7.2): fear stays
+		# suspended forever — they hold their spots and fire until killed.
+		if not is_armed() and not is_safely_sheltered() and _fear != null:
+			_fear.tick(delta)
+		if _is_breaking():
+			velocity = Vector2.ZERO
+		elif _flee != null:
 			_flee.tick_sheltered(delta)
+		# Armed interior defense (step 5): the fill runs while sheltered — cold
+		# behind intact walls, HOT against an engaged door (the door-watch, §7.1),
+		# and fully live through real lanes once the breach opens.
+		if is_armed() and _fill_front != null:
+			_fill_front.tick(delta)
 	elif current_state == State.FLEEING:
 		# Permanent rout (§4.3): steer to the exit. No patrol, no fill.
 		if _flee != null:
@@ -557,6 +572,12 @@ func shelter_building() -> Node2D:
 	return _shelter_building
 
 
+## True while sheltered AND settled on the claimed spot — the door-watch (§7.1)
+## only arms from the defensive position, not mid-walk.
+func at_shelter_spot() -> bool:
+	return current_state == State.SHELTERED and _flee != null and _flee.at_spot()
+
+
 # === CORPSE COMMANDS (build-plan 6a) ===
 
 ## Marks this dead human as a pending-rise corpse — makes it selectable/commandable.
@@ -695,18 +716,23 @@ func _draw() -> void:
 ## front is on, length = the current fill progress (clamped to the target's distance).
 ## Orange while filling; red once the front has reached the target (rotating to fire).
 func _draw_fill_line() -> void:
-	# Only defenders draw it; a fleeing human has no front.
-	if current_state != State.IDLE and current_state != State.SENTRY:
+	# Defenders and sheltered garrisons draw it; a fleeing human has no front.
+	if current_state != State.IDLE and current_state != State.SENTRY and current_state != State.SHELTERED:
 		return
 	if _fill_front == null:
 		return
+	var end_g: Vector2
 	var t := _fill_front.current_target()
-	if t == null or not is_instance_valid(t):
+	if t != null and is_instance_valid(t):
+		end_g = t.global_position
+	elif _fill_front.watching():
+		end_g = _fill_front.watch_pos()   # the door-watch line, pinned at the door (§10)
+	else:
 		return
 	var length := _fill_front.fill_length()
 	if length <= 0.0:
 		return
-	var to := t.global_position - global_position   # local delta (the node is unrotated)
+	var to := end_g - global_position   # local delta (the node is unrotated)
 	if to == Vector2.ZERO:
 		return
 	var seg_len := minf(length, to.length())

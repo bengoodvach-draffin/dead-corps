@@ -64,6 +64,16 @@ var _pulse: float = 0.0
 var _zombie_barrier: StaticBody2D = null
 var _los_blocker: StaticBody2D = null
 
+## THE LOCK (§4.2, step 4). A continuous predicate, not a latch: locked while any
+## FERAL is inside the engagement arc; the instant the arc clears (plus optional
+## hysteresis) the door admits humans again. Nothing is remembered. Enforced by a
+## third barrier body on layer 6 "DoorLock" (bit 32) — humans (mask 33) bounce
+## off it while locked; zombies never collide with it.
+var _lock_barrier: StaticBody2D = null
+var _locked: bool = false
+var _unlock_wait: float = 0.0
+var _gm: Node = null
+
 ## High-z child the integrity bar draws on (runtime only) — units render at z 0
 ## in tree order, so drawing the bar on the Door itself buried it under any
 ## zombie standing at the doorway. The leaf stays at ground level deliberately.
@@ -98,6 +108,51 @@ func _process(delta: float) -> void:
 			_bar_layer.queue_redraw()
 
 
+## The lock predicate (§4.2), evaluated every physics frame — deterministic:
+## registry-ordered query, fixed timestep, no state beyond the hysteresis clock.
+func _physics_process(delta: float) -> void:
+	if Engine.is_editor_hint() or _breached:
+		return
+	var engaged := _feral_in_arc()
+	if engaged:
+		_set_locked(true)
+		_unlock_wait = GameConfig.door_unlock_hysteresis
+	elif _locked:
+		_unlock_wait -= delta
+		if _unlock_wait <= 0.0:
+			_set_locked(false)
+
+
+## True if any FERAL zombie is inside the engagement arc. Registry query with a
+## radius that always covers the arc rect, then the exact arc test.
+func _feral_in_arc() -> bool:
+	var gm := _game_manager()
+	if gm == null:
+		return false
+	var reach := door_width * 0.5 + ARC_SIDE_MARGIN + thickness * 0.5 + GameConfig.door_engagement_depth
+	for u in gm.neighbours_within(global_position, reach, &"zombies"):
+		var z := u as Zombie
+		if z != null and z.current_state == Zombie.State.FERAL and in_engagement_arc(z.global_position):
+			return true
+	return false
+
+
+func _set_locked(value: bool) -> void:
+	if _locked == value:
+		return
+	_locked = value
+	if _lock_barrier != null:
+		_lock_barrier.collision_layer = 32 if _locked else 0
+	queue_redraw()   # the locked leaf tint
+
+
+## Lazily resolves the GameManager (unit registry). Cached after first use.
+func _game_manager() -> Node:
+	if _gm == null or not is_instance_valid(_gm):
+		_gm = get_tree().get_first_node_in_group("game_manager")
+	return _gm
+
+
 ## Matches the parent building's wall thickness if there is one (exports are set
 ## before _ready, so this is safe regardless of ready order).
 func _read_parent_thickness() -> void:
@@ -112,6 +167,7 @@ func _read_parent_thickness() -> void:
 func _create_barriers() -> void:
 	_zombie_barrier = _make_barrier("ZombieBarrier", 8)   # layer 4 "EscapeBarrier"
 	_los_blocker = _make_barrier("DoorLOSBlocker", 16)    # layer 5 "DoorLOS"
+	_lock_barrier = _make_barrier("LockBarrier", 0)       # layer 6 "DoorLock" while locked
 
 
 func _make_barrier(body_name: String, layer: int) -> StaticBody2D:
@@ -188,10 +244,11 @@ func integrity_fraction() -> float:
 	return _integrity / _max_integrity if _max_integrity > 0.0 else 0.0
 
 
-## The lock (§4.2): true while a feral is inside the engagement arc — an engaged
-## door admits no humans. Step 4 makes this real; until then every door admits.
+## The lock (§4.2): true while a feral is inside the engagement arc (plus any
+## unlock hysteresis) — an engaged door admits no humans. Compresses to one
+## sentence: an engaged door admits no one. A breached door has no lock.
 func is_locked() -> bool:
-	return false
+	return _locked and not _breached
 
 
 ## The owning ShelterBuilding (duck-typed), or null for a standalone door.
@@ -200,6 +257,20 @@ func building() -> Node:
 	if parent != null and parent.has_method("claim_spot"):
 		return parent
 	return null
+
+
+## A global point just INSIDE the wall band at this door — what the door-watch
+## (§7.1) rays at and pins its front to: the door centre itself sits inside the
+## DoorLOS blocker, which would block its own watchers. Falls back to +Y for a
+## standalone door.
+func inside_point() -> Vector2:
+	var inward := 1.0
+	var b := building()
+	if b != null:
+		var local_centre: Vector2 = to_local(b.centre())
+		if local_centre.y != 0.0:
+			inward = signf(local_centre.y)
+	return to_global(Vector2(0.0, inward * (thickness * 0.5 + 8.0)))
 
 
 ## True if `point` (global) is inside the doorway gap — the §6.1 entry test. Local
@@ -230,8 +301,10 @@ func _draw() -> void:
 		draw_rect(Rect2(half_w - 6, -half_t, 6, thickness), door_color.darkened(0.4))
 		return
 	# The door leaf as a flat rect spanning the gap (ground level — units at the
-	# doorway draw over it; the bar lives on the high-z BarLayer instead).
-	draw_rect(Rect2(-door_width * 0.5, -thickness * 0.5, door_width, thickness), door_color)
+	# doorway draw over it; the bar lives on the high-z BarLayer instead). While
+	# LOCKED the leaf shifts dark-red: the barred-door tell (§10 readability).
+	var leaf := door_color.lerp(Color(0.55, 0.1, 0.08), 0.55) if _locked else door_color
+	draw_rect(Rect2(-door_width * 0.5, -thickness * 0.5, door_width, thickness), leaf)
 
 
 ## Integrity bar (§4.4), drawn on the high-z BarLayer so it always reads above

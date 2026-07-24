@@ -92,6 +92,43 @@ func is_selectable() -> bool:
 	return current_state == State.CALM
 
 
+## FINISHING (Ben's ruling 2026-07-24, the corpse-command model applied to the
+## pounce recovery): a feral in its stationary post-kill second is box-selectable
+## alongside calm zombies, and an order to it is STORED, applying the instant it
+## calms. If the hunt continues instead (prey remains → retarget), the stored
+## order is dropped — the hunt always wins; released is released stays intact.
+func is_finishing_kill() -> bool:
+	return current_state == State.FERAL and _pounce != null and _pounce.is_recovering()
+
+
+## Stored order for a finishing zombie (see is_finishing_kill). The attack case
+## reuses queued_attack (consumed by _tick_calm once idle).
+var _pending_calm_move: Vector2 = Vector2.ZERO
+var _has_pending_calm_move: bool = false
+
+
+func queue_finish_move(slot: Vector2) -> void:
+	if not is_finishing_kill():
+		return
+	_pending_calm_move = slot
+	_has_pending_calm_move = true
+	queued_attack = null
+
+
+func queue_finish_attack(human: Human) -> void:
+	if not is_finishing_kill():
+		return
+	queued_attack = human
+	_has_pending_calm_move = false
+
+
+## The hunt continued past the recovery (retarget / next pounce) — the stored
+## order is void (the hunt always wins).
+func _drop_finish_order() -> void:
+	_has_pending_calm_move = false
+	queued_attack = null
+
+
 ## Per-frame dispatcher (rule 4). DEAD is inert; CALM/FERAL route to handlers.
 func _physics_process(delta: float) -> void:
 	if current_state == State.DEAD:
@@ -151,11 +188,12 @@ func _tick_feral(delta: float) -> void:
 
 	match _feral.tick(delta):
 		FeralBrain.Result.READY_TO_POUNCE:
+			_drop_finish_order()   # the hunt continues — a stored finish-order is void
 			_pounce.start(_feral.current_target())
 		FeralBrain.Result.NO_TARGET:
 			_set_calm()
 		FeralBrain.Result.PURSUING:
-			pass
+			_drop_finish_order()   # ditto — pursuit resumed after the recovery
 
 
 ## Releases this zombie into the frenzy. Released is released — FERAL zombies
@@ -197,12 +235,16 @@ func _on_pounce_kill(human: Human) -> void:
 
 
 ## Returns to CALM control: clears the feral target, reverts the tint, and anchors
-## the shamble where the zombie ended up.
+## the shamble where the zombie ended up. A stored finish-order (move) applies
+## NOW; a stored finish-attack (queued_attack) fires via _tick_calm's normal path.
 func _set_calm() -> void:
 	current_state = State.CALM
 	_feral.clear()
 	modulate = CALM_TINT
 	_shamble.set_anchor(global_position)
+	if _has_pending_calm_move:
+		_has_pending_calm_move = false
+		set_move_target(_pending_calm_move)
 
 
 ## Moves toward `point` along the navmesh (around buildings/walls) at `speed`, returning true
@@ -227,10 +269,21 @@ func nav_move_toward(point: Vector2, speed: float, arrive_dist: float = 5.0) -> 
 		nav_agent.target_position = point
 		_nav_path_ready = false
 
-	# Reached the target's neighbourhood (closes the stuck band + tolerates crowding).
+	# Inside the target's neighbourhood: close the FINAL stretch straight-line to
+	# a tight 2px so the unit lands ON the ordered point, not a radius short (the
+	# old stop-at-band left the body's edge kissing the cursor). Fall back to the
+	# agent's arrival ONLY when the straight approach is genuinely BLOCKED (point
+	# tucked against terrain / crowd jam — progress toward the point collapses);
+	# the agent itself reports "finished" anywhere inside its 20px band, which is
+	# exactly the imprecision being closed here, so its word alone doesn't count.
 	if global_position.distance_to(point) <= nav_agent.target_desired_distance:
-		velocity = Vector2.ZERO
-		return true
+		var before_d := global_position.distance_to(point)
+		if step_toward(point, speed, 2.0):
+			return true
+		var progressed := before_d - global_position.distance_to(point)
+		if progressed < speed * get_physics_process_delta_time() * 0.25:
+			return _nav_path_ready and nav_agent.is_navigation_finished()
+		return false
 
 	var dir := nav_agent.get_next_path_position() - global_position
 	if dir.length() > 0.01:
@@ -240,9 +293,13 @@ func nav_move_toward(point: Vector2, speed: float, arrive_dist: float = 5.0) -> 
 	else:
 		velocity = Vector2.ZERO   # path not ready — wait, don't straight-line into terrain
 
-	# Behind-terrain / blocked target: once the path has loaded, trust the agent's own arrival
-	# at the nearest reachable point so the route advances instead of sticking.
-	if _nav_path_ready and nav_agent.is_navigation_finished():
+	# Behind-terrain / blocked target: once the path has loaded, trust the agent's own
+	# arrival at the nearest reachable point so the route advances instead of sticking.
+	# ONLY while still outside the desired-distance band — the agent reports "finished"
+	# anywhere inside it, which would end the order a radius short the very frame we
+	# cross in and starve the precision branch above (the cursor-gap bug).
+	if _nav_path_ready and nav_agent.is_navigation_finished() \
+			and global_position.distance_to(point) > nav_agent.target_desired_distance:
 		velocity = Vector2.ZERO
 		return true
 	return false

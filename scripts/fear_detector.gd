@@ -37,6 +37,12 @@ func tick(delta: float) -> void:
 	if _committed:
 		_beat -= delta
 		if _beat <= 0.0:
+			# The beat is over — the break RESOLVES into the rout. Clearing the
+			# flag matters: it used to latch true forever, which was harmless
+			# while only the defending branch read it, but the step-6 SHELTERED
+			# branch also freezes on is_breaking() — a stale flag froze every
+			# entrant on the threshold ("humans can't enter the building").
+			_committed = false
 			_owner.start_fleeing()
 		return
 

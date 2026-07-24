@@ -261,14 +261,19 @@ func _best_prey_off_door() -> Human:
 	return best
 
 
-## Nearest valid living occupant of `building` (pour-in ruling): candidates in
-## arrival order, strict nearest — deterministic. Pounce-claimed ones excluded
-## per the normal exclusion (§3.5).
+## Nearest valid living occupant of `building` (pour-in ruling). UN-PURSUED
+## occupants are preferred — the peel philosophy (one feral per straggler)
+## applied indoors, so an entry wave fans out across the occupants instead of
+## dog-piling the nearest one; pile-on only once everyone inside is claimed.
+## Deterministic: arrival order, strict nearest.
 func _nearest_occupant(building: Node2D) -> Human:
 	if building == null or not is_instance_valid(building):
 		return null
+	var gm := _game_manager()
 	var best: Human = null
 	var best_dist := INF
+	var best_fresh: Human = null
+	var best_fresh_dist := INF
 	for occ in building.living_occupants():
 		var h := occ as Human
 		if not _is_candidate(h):
@@ -277,7 +282,10 @@ func _nearest_occupant(building: Node2D) -> Human:
 		if d < best_dist:
 			best_dist = d
 			best = h
-	return best
+		if gm != null and not gm.is_pursued(h) and d < best_fresh_dist:
+			best_fresh_dist = d
+			best_fresh = h
+	return best_fresh if best_fresh != null else best
 
 
 ## True if the (lost) target is alive but SAFELY sheltered — the §5.1 trigger to
