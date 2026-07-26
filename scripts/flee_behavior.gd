@@ -45,6 +45,12 @@ var _cower_elapsed: float = 0.0
 ## Arrival slack is ABOVE Unit's ~5px stop so the walker settles instead of orbiting.
 const SPOT_ARRIVE: float = 8.0
 var _spot_target: Vector2 = Vector2.ZERO
+
+## Flush door-leg ("fix 2"): the just-outside-the-chosen-door waypoint a flushing
+## runner clears before heading to its committed exit.
+const VIA_ARRIVE: float = 30.0
+var _via_point: Vector2 = Vector2.ZERO
+var _has_via: bool = false
 var _doors_cache: Array = []
 var _doors_cached: bool = false
 
@@ -70,13 +76,24 @@ func begin() -> void:
 
 ## Picks + commits the current best exit (threat-aware). Used at the break AND on
 ## a re-path when the committed exit drops out of the set (§9 churn).
+## FLUSH DOOR-LEG ("fix 2", Ben's ruling 2026-07-26): committing while inside a
+## breached building routes the FIRST leg via that building's best passable door
+## (threat-scored like exits), so a runner never paths through the breach when a
+## safer door exists — then onward to the exit from there.
 func _commit_exit() -> void:
 	var exit := _pick_escape_zone()
+	_has_via = false
 	if exit != null:
 		_escape_exit = exit
 		_escape_target = exit.global_position
 		_has_escape = true
-		_agent.target_position = _escape_target
+		var via := _pick_flush_door()
+		if via != Vector2.INF:
+			_via_point = via
+			_has_via = true
+			_agent.target_position = _via_point
+		else:
+			_agent.target_position = _escape_target
 		print("🔍 FLEE: %s → exit %s at %s" % [_owner.name, exit.name, _escape_target.round()])
 	else:
 		_escape_exit = null
@@ -94,7 +111,7 @@ func _exit_valid(exit: Node2D) -> bool:
 	if not exit.is_intact() or exit.is_locked():
 		return false
 	var building: Node = exit.building()
-	return building == null or not building.is_breached()
+	return building != null and building.is_shelter and not building.is_breached()
 
 
 ## Chooses the exit to flee to, from THE unified exit set (escape zones ∪ open
@@ -128,25 +145,93 @@ func _pick_escape_zone() -> Node2D:
 	return best
 
 
-## Direction from the human toward the centroid of perceived zombies (within its
-## awareness range, no LOS) — the danger it's fleeing. Zero if none are nearby.
+## Direction from the human toward the centroid of perceived zombies — the danger
+## it's fleeing. Outdoors: within awareness range, no LOS (spec §4.3). INSIDE A
+## BREACHED SHELTER (the flush — Ben's ruling 2026-07-26, mirror of the sight-only
+## breach fear): uncapped and SIGHT-gated instead — the awareness cap went blind
+## to invaders across a big warehouse, the exit-threat bias switched off, and
+## flushed civs charged the breach head-on. They flee what they SAW, however far.
+## Re-evaluated per re-path, so the sampling reverts to normal once outside.
 func _threat_direction() -> Vector2:
 	var gm := _game_manager()
 	if gm == null:
 		return Vector2.ZERO
 	var origin := _owner.global_position
-	var awareness: float = GameConfig.awareness[_owner.defender_class]
 	var sum := Vector2.ZERO
 	var count := 0
-	for u in gm.neighbours_within(origin, awareness, &"zombies"):
-		sum += u.global_position
-		count += 1
+	if _inside_breached_shelter(origin):
+		for u in gm.living_zombies():
+			if _owner.has_line_of_sight_to(u):
+				sum += u.global_position
+				count += 1
+	else:
+		var awareness: float = GameConfig.awareness[_owner.defender_class]
+		for u in gm.neighbours_within(origin, awareness, &"zombies"):
+			sum += u.global_position
+			count += 1
 	if count == 0:
 		return Vector2.ZERO
 	var to_threat := (sum / count) - origin
 	if to_threat.length() < 0.01:
 		return Vector2.ZERO
 	return to_threat.normalized()
+
+
+## The just-outside point of the flushing owner's best passable door, or
+## Vector2.INF when not inside a breached building (ordinary breaks skip the
+## leg). Doors scored like exits: distance × (1 + bias × alignment-with-threat),
+## so the door AWAY from what they saw wins. Passable = fallen/open, or intact
+## and unlocked. Deterministic: doors in scene order, strict best.
+func _pick_flush_door() -> Vector2:
+	var origin := _owner.global_position
+	var building: Node2D = null
+	for b in _shelter_buildings():
+		if is_instance_valid(b) and b.is_breached() and b.contains_point(origin):
+			building = b
+			break
+	if building == null:
+		return Vector2.INF
+	var threat := _threat_direction()
+	var bias := GameConfig.flee_exit_threat_bias
+	var best := Vector2.INF
+	var best_score := INF
+	for door in building.doors():
+		var passable: bool = (not door.is_intact()) or (not door.is_locked())
+		if not passable:
+			continue
+		# Mirror inside_point() through the door centre = a point just OUTSIDE.
+		var out_point: Vector2 = door.global_position * 2.0 - door.inside_point()
+		var to_door := out_point - origin
+		var dist := to_door.length()
+		var align := 0.0
+		if dist > 0.01 and threat != Vector2.ZERO:
+			align = maxf(0.0, to_door.normalized().dot(threat))
+		var score := dist * (1.0 + bias * align)
+		if score < best_score:
+			best_score = score
+			best = out_point
+	return best
+
+
+## True if `pos` lies inside any breached shelter's footprint — the flush state
+## (the fleeing human's building ref is already released by then, so this is
+## geometric on purpose; also covers re-paths while still indoors).
+func _inside_breached_shelter(pos: Vector2) -> bool:
+	for b in _shelter_buildings():
+		if is_instance_valid(b) and b.is_breached() and b.contains_point(pos):
+			return true
+	return false
+
+
+## The level's shelter buildings, fetched once from the group — static per level.
+var _shelters_cache: Array = []
+var _shelters_cached: bool = false
+
+func _shelter_buildings() -> Array:
+	if not _shelters_cached:
+		_shelters_cached = true
+		_shelters_cache = _owner.get_tree().get_nodes_in_group("shelter_buildings")
+	return _shelters_cache
 
 
 ## One physics frame of the rout. Blends the nav-path direction with the zombie-repulsion
@@ -161,8 +246,10 @@ func tick(delta: float) -> void:
 	for door in _shelter_doors():
 		if door.is_intact() and not door.is_locked() and door.contains_point(_owner.global_position):
 			var building: Node = door.building()
-			# A breached building shelters nobody, even through its intact doors (§9).
-			if building != null and not building.is_breached():
+			# Only true shelters convert (terrain kit): gates have no building,
+			# dumb boxes don't shelter, and a breached building shelters nobody
+			# even through its intact doors (§9).
+			if building != null and building.is_shelter and not building.is_breached():
 				_owner.enter_shelter(building, door)
 				return
 	# Cower detection (3.5, §4.4): a full cower_window spent within cower_min_displacement
@@ -200,6 +287,11 @@ func tick(delta: float) -> void:
 		return
 
 	var origin := _owner.global_position
+
+	# Flush door-leg ("fix 2"): once through/past the chosen door, head to the exit.
+	if _has_via and origin.distance_to(_via_point) <= VIA_ARRIVE:
+		_has_via = false
+		_agent.target_position = _escape_target
 
 	# Nav path toward the exit (around buildings). If the path isn't ready/empty, the
 	# next point is ~our own position → fall back to a straight line at the exit.

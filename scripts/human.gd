@@ -250,11 +250,16 @@ func _physics_process(delta: float) -> void:
 			velocity = Vector2.ZERO
 		elif _flee != null:
 			_flee.tick_sheltered(delta)
-		# Armed interior defense (step 5): the fill runs while sheltered — cold
-		# behind intact walls, HOT against an engaged door (the door-watch, §7.1),
-		# and fully live through real lanes once the breach opens.
+		# Armed interior defense (step 5): pre-breach the fill runs only FROM THE
+		# CLAIMED SPOT — an entrant walking the door gap stands INSIDE the DoorLOS
+		# body, where outward rays leak (hit_from_inside) and drew phantom fill
+		# lines at zombies outside (Ben's step-7 catch). Once the breach opens
+		# real lanes it runs anywhere. A phantom picked up in the gap is dropped.
 		if is_armed() and _fill_front != null:
-			_fill_front.tick(delta)
+			if at_shelter_spot() or not is_safely_sheltered():
+				_fill_front.tick(delta)
+			elif _fill_front.fill_length() > 0.0 or _fill_front.current_target() != null:
+				_fill_front.cancel()
 	elif current_state == State.FLEEING:
 		# Permanent rout (§4.3): steer to the exit. No patrol, no fill.
 		if _flee != null:
@@ -437,10 +442,12 @@ func get_exit_set() -> Array[Node2D]:
 	for door in get_tree().get_nodes_in_group("shelter_doors"):
 		if not is_instance_valid(door) or not door.is_intact() or door.is_locked():
 			continue
-		# A breached BUILDING leaves the set permanently — all its doors, even the
-		# intact ones (§9: a hole in the wall is not shelter).
+		# Only doors of a true, unbreached SHELTER are exits: standalone gate
+		# doors (no building) and dumb boxes (is_shelter false) are plain
+		# terrain, and a breached building leaves the set permanently — all its
+		# doors, even intact ones (§9: a hole in the wall is not shelter).
 		var b: Node = door.building()
-		if b != null and b.is_breached():
+		if b == null or not b.is_shelter or b.is_breached():
 			continue
 		exits.append(door)
 	return exits
@@ -548,6 +555,26 @@ func enter_shelter(building: Node2D, door: Node2D) -> void:
 		_flee.begin_sheltered(spot)
 	print("🔍 SHELTER: %s entered %s via %s → spot %s" % [name, building.name, door.name, spot])
 	queue_redraw()   # drop any lingering line viz
+
+
+## Level-start adoption (Ben's ruling 2026-07-26): a human PLACED inside an
+## intact shelter becomes SHELTERED at boot as if it had fled in — same spot
+## claims, same flush, same last stand. Called by GameManager after registration;
+## eligibility (intact + is_shelter building, not patrolling) is the caller's job.
+## `door` = the notional entry (nearest intact door), may be null.
+func adopt_into_shelter(building: Node2D, door: Node2D) -> void:
+	if current_state == State.DEAD or current_state == State.SHELTERED:
+		return
+	current_state = State.SHELTERED
+	is_patrolling = false
+	has_target = false
+	velocity = Vector2.ZERO
+	_shelter_building = building
+	var spot: Vector2 = building.claim_spot(self, door)
+	if _flee != null:
+		_flee.begin_sheltered(spot)
+	print("🔍 SHELTER: %s adopted by %s → spot %s" % [name, building.name, spot])
+	queue_redraw()
 
 
 ## Live check: is this human in the SHELTERED state (regardless of whether the

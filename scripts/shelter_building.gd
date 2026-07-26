@@ -28,6 +28,11 @@ class_name ShelterBuilding
 ## deepest spot with DetHash jitter (the huddle). Unbounded capacity (§6.2).
 ## Still to come: breach state (step 3), exit-set churn (step 4).
 
+## FALSE = a "dumb box" (terrain kit, Ben's ruling 2026-07-26): identical walls,
+## doors and nav — but its doors never join the flee exit set and crossing them
+## shelters nobody. Plain boxed terrain with convenient gaps.
+@export var is_shelter: bool = true
+
 ## Colour of the generated perimeter walls.
 @export var wall_color: Color = Color(0.4, 0.4, 0.4, 1):
 	set(value):
@@ -266,12 +271,41 @@ func _footprint_centre() -> Vector2:
 func _sync() -> void:
 	if not is_inside_tree():
 		return
+	_normalize_scale()
 	color = floor_color   # the Polygon2D's own fill = the visible floor (§10)
 	_ensure_body()
 	_snap_doors()
 	_build_wall_quads()
 	_apply_collision()
 	queue_redraw()
+
+
+## Folds any node-level scale INTO the polygon (and door/spot children), then
+## resets scale to 1:1 — self-healing. The editor's scale gizmo would otherwise
+## stretch the generated wall THICKNESS non-uniformly and distort every piece of
+## door math (barrier sizes, arcs, entry margins) that assumes unscaled locals.
+## The footprint keeps the size the designer dragged; the walls keep their true
+## thickness. Runs in _sync, so saved scaled scenes heal on open/load too.
+func _normalize_scale() -> void:
+	if scale.is_equal_approx(Vector2.ONE):
+		return
+	if absf(scale.x) < 0.001 or absf(scale.y) < 0.001:
+		push_warning("ShelterBuilding '%s': degenerate scale %s reset (fold skipped)." % [name, scale])
+		scale = Vector2.ONE
+		return
+	var s := scale
+	var pts := polygon
+	for i in pts.size():
+		pts[i] = pts[i] * s
+	# A mirrored (negative) scale flips the winding — the nav merge treats
+	# clockwise outlines as holes, so restore counter-clockwise.
+	if Geometry2D.is_polygon_clockwise(pts):
+		pts.reverse()
+	polygon = pts
+	for child in get_children():
+		if child is Node2D:
+			child.position = child.position * s
+	scale = Vector2.ONE
 
 
 ## Creates (or refinds after a reload) the internal collision body.

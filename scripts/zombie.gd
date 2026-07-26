@@ -228,6 +228,19 @@ func ignite_feral_at_building(building: Node2D) -> void:
 	modulate = FERAL_TINT
 
 
+## Release-on-door (terrain kit / spec §5.1's original verb): ignite FERAL with
+## a specific door as the ordered siege target — gates in plain walls, empty
+## buildings, any intact door. Released is released.
+func ignite_feral_at_door(door: Node2D) -> void:
+	current_state = State.FERAL
+	has_target = false
+	_was_moving = false
+	move_queue.clear()
+	queued_attack = null
+	_feral.set_door_siege(door)
+	modulate = FERAL_TINT
+
+
 ## The pounce landed a kill — relay it as the zombie's kill signal (feeds
 ## contagion in 2.5 and risers in 2.6).
 func _on_pounce_kill(human: Human) -> void:

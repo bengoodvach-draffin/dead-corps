@@ -49,10 +49,23 @@ signal breached(door: Door)
 		door_color = value
 		queue_redraw()
 
-## Wall thickness the door spans — pushed in by the parent ShelterBuilding so the
-## visual and barriers match the generated walls. Read from the parent (duck-typed,
-## no ShelterBuilding type reference → no class-load cycle) before the barriers build.
-var thickness: float = 16.0
+## Open doorway (terrain kit, Ben's ruling 2026-07-26): born a permanent hole —
+## no barriers, no lock, no leaf, no integrity. Everyone and every sight-line
+## passes from tick zero. NOTE: an open door makes its whole building count as
+## breached (a hole in the wall is not shelter, §9) — it never attracts or
+## protects civilians.
+@export var starts_open: bool = false:
+	set(value):
+		starts_open = value
+		queue_redraw()
+
+## Wall thickness the door spans. A ShelterBuilding parent overwrites this on
+## sync; for a STANDALONE gate door in hand-built wall geometry, set it to match
+## the flanking walls.
+@export_range(2.0, 100.0, 1.0) var thickness: float = 16.0:
+	set(value):
+		thickness = value
+		queue_redraw()
 
 ## Runtime siege state (step 3). _max_integrity resolves at _ready.
 var _integrity: float = 0.0
@@ -80,6 +93,11 @@ var _gm: Node = null
 var _bar_layer: Node2D = null
 
 
+## Which local-Y sign is the building INTERIOR (from the footprint centre); 0 for
+## a standalone door (disables the inside burst).
+var _inside_sign: float = 0.0
+
+
 func _ready() -> void:
 	_read_parent_thickness()
 	queue_redraw()
@@ -88,8 +106,16 @@ func _ready() -> void:
 		return
 	_max_integrity = integrity_override if integrity_override > 0.0 else GameConfig.door_integrity
 	_integrity = _max_integrity
-	# One-time wiring: FleeBehavior's entry check and the exit set (§9) find doors here.
+	var b := building()
+	if b != null:
+		_inside_sign = signf(to_local(b.centre()).y)
+	# One-time wiring: the entry check, the exit set (§9), the wedge-pound scan
+	# and release-on-door all find doors here (gates included — the group name is
+	# historical).
 	add_to_group("shelter_doors")
+	if starts_open:
+		_breached = true   # born a hole: everything downstream reads "breached"
+		return
 	_create_barriers()
 	_bar_layer = Node2D.new()
 	_bar_layer.name = "BarLayer"
@@ -108,10 +134,19 @@ func _process(delta: float) -> void:
 			_bar_layer.queue_redraw()
 
 
-## The lock predicate (§4.2), evaluated every physics frame — deterministic:
-## registry-ordered query, fixed timestep, no state beyond the hysteresis clock.
+## The lock predicate (§4.2) + the INSIDE BURST, evaluated every physics frame —
+## deterministic: registry-ordered query, fixed timestep.
 func _physics_process(delta: float) -> void:
 	if Engine.is_editor_hint() or _breached:
+		return
+	# INSIDE BURST (Ben's ruling 2026-07-25): any living zombie standing in the
+	# arc's INSIDE half breaks this door open instantly. The body price was paid
+	# at the breach that let it in — pursuit must FLOW out the back (a flushed
+	# runner's head start is the run, not a second siege). Calm zombies included:
+	# the cleared building's horde walks out. Outside-in stays the priced pound
+	# (§4.3) — pre-breach, nothing can stand inside, so this can never pre-fire.
+	if _zombie_inside_arc():
+		_burst_from_inside()
 		return
 	var engaged := _feral_in_arc()
 	if engaged:
@@ -135,6 +170,28 @@ func _feral_in_arc() -> bool:
 		if z != null and z.current_state == Zombie.State.FERAL and in_engagement_arc(z.global_position):
 			return true
 	return false
+
+
+## True if ANY living zombie (calm or feral) stands in the INSIDE half of the
+## engagement arc. _inside_sign 0 (standalone door, no building) disables this.
+func _zombie_inside_arc() -> bool:
+	if _inside_sign == 0.0:
+		return false
+	var gm := _game_manager()
+	if gm == null:
+		return false
+	var reach := door_width * 0.5 + ARC_SIDE_MARGIN + thickness * 0.5 + GameConfig.door_engagement_depth
+	for u in gm.neighbours_within(global_position, reach, &"zombies"):
+		if not in_engagement_arc(u.global_position):
+			continue
+		if signf(to_local(u.global_position).y) == _inside_sign:
+			return true
+	return false
+
+
+func _burst_from_inside() -> void:
+	print("💥 BURST: %s broken open from the inside!" % name)
+	_do_breach()
 
 
 func _set_locked(value: bool) -> void:
@@ -196,6 +253,7 @@ func apply_pound(damage: float) -> void:
 	if _bar_layer != null:
 		_bar_layer.queue_redraw()
 	if _integrity <= 0.0:
+		print("💥 BREACH: %s is down!" % name)
 		_do_breach()
 
 
@@ -214,7 +272,6 @@ func _do_breach() -> void:
 		_los_blocker.collision_layer = 0
 		_los_blocker.queue_free()
 		_los_blocker = null
-	print("💥 BREACH: %s is down!" % name)
 	breached.emit(self)
 	queue_redraw()
 	if _bar_layer != null:
@@ -292,8 +349,19 @@ func in_engagement_arc(point: Vector2) -> bool:
 
 # === VISUALS (interim programmer graphics — Phase 5 moves these to vision_renderer) ===
 
+## Release telegraph (§5.1 misclick defense): bright outline while the cursor
+## hovers this door with releasable zombies selected. Toggled by SelectionManager.
+var _hover_highlighted: bool = false
+
+func set_hover_highlighted(value: bool) -> void:
+	if _hover_highlighted == value:
+		return
+	_hover_highlighted = value
+	queue_redraw()
+
+
 func _draw() -> void:
-	if _breached:
+	if _breached or starts_open:
 		# An open hole: two splintered jamb stubs so the gap still reads as a doorway.
 		var half_w := door_width * 0.5
 		var half_t := thickness * 0.5
@@ -305,6 +373,10 @@ func _draw() -> void:
 	# LOCKED the leaf shifts dark-red: the barred-door tell (§10 readability).
 	var leaf := door_color.lerp(Color(0.55, 0.1, 0.08), 0.55) if _locked else door_color
 	draw_rect(Rect2(-door_width * 0.5, -thickness * 0.5, door_width, thickness), leaf)
+	# "Release here" outline (the door hover telegraph).
+	if _hover_highlighted:
+		draw_rect(Rect2(-door_width * 0.5 - 3, -thickness * 0.5 - 3, door_width + 6, thickness + 6),
+			Color(1.0, 1.0, 1.0, 0.95), false, 2.0)
 
 
 ## Integrity bar (§4.4), drawn on the high-z BarLayer so it always reads above

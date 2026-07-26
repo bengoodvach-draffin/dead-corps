@@ -53,8 +53,20 @@ func tick(delta: float) -> void:
 	# Count living zombies (any state) within the fear radius, BUILDING-LOS gated (a
 	# solid building blocks dread; friendly humans don't — fear isn't a shot). A zombie
 	# behind a wall doesn't count; one in the open or emerging from cover does (§4.2 ambush).
+	#
+	# BREACHED-SHELTER exception (Ben's ruling 2026-07-26, sharpens §8.2): inside a
+	# breached building the DISTANCE cap drops — panic propagates by SIGHT alone,
+	# so everyone who can see the breach-point ferals (or the horde through the
+	# hole) breaks the moment the door falls. Interior walls still stage the sweep
+	# room by room; outdoor fear keeps its 250px tuning; armed sheltered humans
+	# never tick fear at all (the last stand, §7.2).
 	var count := 0
-	for u in gm.neighbours_within(_owner.global_position, GameConfig.fear_radius, &"zombies"):
+	var pool: Array
+	if _owner.is_sheltered() and not _owner.is_safely_sheltered():
+		pool = gm.living_zombies()
+	else:
+		pool = gm.neighbours_within(_owner.global_position, GameConfig.fear_radius, &"zombies")
+	for u in pool:
 		if _has_los(u):
 			count += 1
 	if count > _threshold():

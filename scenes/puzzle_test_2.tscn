@@ -722,6 +722,7 @@ position = Vector2(-377, 245)
 building_height = 320.0
 
 [node name="Wall" type="Polygon2D" parent="TestLevel/Buildings" unique_id=602201568]
+solid = false
 position = Vector2(-1168, -339)
 color = Color(0, 0, 0, 0)
 polygon = PackedVector2Array(-100, -100, 100, -100, 100, 100, -100, 100, -100, 44.042236)

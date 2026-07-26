@@ -1,6 +1,6 @@
 # Dead Corps — Claude Code Project Memory
 
-**Current version:** v0.43.0 · **Engine:** Godot 4.6 / GDScript · **Perspective:** 2D isometric (full 3D migration still confirmed, but now waits behind the v2 pivot PoC)
+**Current version:** v0.44.0 · **Engine:** Godot 4.6 / GDScript · **Perspective:** 2D isometric (full 3D migration still confirmed, but now waits behind the v2 pivot PoC)
 
 This file is loaded into every Claude Code session. It is the lean orchestrator: working rules, design pillars, and pointers. Detailed reference lives in `docs/` and is read on demand — do not assume those files are in context until you've read them.
 

@@ -82,6 +82,12 @@ rotation = 3.2148964
 script = ExtResource("15_spot")
 is_guard = true
 
+[node name="Door2" type="Node2D" parent="TestLevel/ShelterBuilding" unique_id=1802660193]
+position = Vector2(150, -53)
+rotation = 1.5707964
+script = ExtResource("14_door")
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
 [node name="CivOutside" parent="TestLevel" unique_id=1092071531 instance=ExtResource("6_human")]
 position = Vector2(-90, 120)
 

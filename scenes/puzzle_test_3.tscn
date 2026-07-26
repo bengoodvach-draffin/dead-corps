@@ -43,7 +43,7 @@ bounds_max = Vector2(10000, 5000)
 [node name="LevelConfig" type="Node2D" parent="." unique_id=1080841229]
 position = Vector2(-3, 3)
 script = ExtResource("3_5w25o")
-zombie_speed = 170.0
+zombie_speed = 140.0
 chain_scan_radius = 150.0
 feral_offaxis_penalty = 1.5
 cower_window = 1.2
@@ -160,6 +160,7 @@ position = Vector2(-3799, 208)
 color = Color(0.16, 0.16, 0.2, 0.4)
 polygon = PackedVector2Array(-152, -80, 24, -80, 24, -208, 152, -208, 152, -15.689026, 280, -16, 280, 112, 152, 112, -152, 112)
 script = ExtResource("9_5w25o")
+is_shelter = null
 wall_color = Color(0.19917181, 0.2016859, 0.20671391, 1)
 wall_thickness = 10.0
 metadata/_custom_type_script = "uid://bgnbocmyabj1m"
@@ -169,6 +170,8 @@ position = Vector2(-40, 112)
 rotation = 3.1415927
 script = ExtResource("10_yxdyl")
 door_color = Color(0.48690546, 0.3083103, 0.16153252, 1)
+starts_open = null
+thickness = 10.0
 metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
 
 [node name="Door2" type="Node2D" parent="TestLevel/Shelters/ShelterBuilding" unique_id=928531327]
@@ -176,12 +179,16 @@ position = Vector2(120, 112)
 rotation = 3.1415927
 script = ExtResource("10_yxdyl")
 door_color = Color(0.48690546, 0.3083103, 0.16153252, 1)
+starts_open = null
+thickness = 10.0
 metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
 
 [node name="Door3" type="Node2D" parent="TestLevel/Shelters/ShelterBuilding" unique_id=903017513]
 position = Vector2(56, -208)
 script = ExtResource("10_yxdyl")
 door_color = Color(0.48690546, 0.3083103, 0.16153252, 1)
+starts_open = null
+thickness = 10.0
 metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
 
 [node name="Wall" type="Polygon2D" parent="TestLevel/Shelters/ShelterBuilding" unique_id=1010749527]
@@ -411,16 +418,16 @@ position = Vector2(184, -144)
 position = Vector2(224, -112)
 
 [node name="Human9" parent="TestLevel/Encounters/Marketplace" unique_id=657601774 instance=ExtResource("7_tknvt")]
-position = Vector2(464, -312)
+position = Vector2(467, -232)
 
 [node name="Human10" parent="TestLevel/Encounters/Marketplace" unique_id=10282110 instance=ExtResource("7_tknvt")]
-position = Vector2(504, -280)
+position = Vector2(507, -200)
 
 [node name="Human11" parent="TestLevel/Encounters/Marketplace" unique_id=670300872 instance=ExtResource("7_tknvt")]
-position = Vector2(600, -320)
+position = Vector2(603, -240)
 
 [node name="Human12" parent="TestLevel/Encounters/Marketplace" unique_id=1760901091 instance=ExtResource("7_tknvt")]
-position = Vector2(552, -280)
+position = Vector2(555, -200)
 
 [node name="Human21" parent="TestLevel/Encounters/Marketplace" unique_id=508260461 instance=ExtResource("7_tknvt")]
 position = Vector2(910, -49)
@@ -441,7 +448,7 @@ position = Vector2(504, 200)
 position = Vector2(552, 200)
 
 [node name="Human4" parent="TestLevel/Encounters/Marketplace" unique_id=781958277 instance=ExtResource("7_tknvt")]
-position = Vector2(-23, 86)
+position = Vector2(-160, 86)
 
 [node name="Human5" parent="TestLevel/Encounters/Marketplace" unique_id=990453821 instance=ExtResource("7_tknvt")]
 position = Vector2(373, -45)
@@ -451,14 +458,244 @@ position = Vector2(744, -144)
 defender_class = 1
 
 [node name="Human16" parent="TestLevel/Encounters/Marketplace" unique_id=235301917 instance=ExtResource("7_tknvt")]
-position = Vector2(441, 368)
+position = Vector2(445, 287)
 defender_class = 1
 
 [node name="Human15" parent="TestLevel/Encounters/Marketplace" unique_id=1450355823 instance=ExtResource("7_tknvt")]
-position = Vector2(449, 87)
+position = Vector2(444, 98)
 defender_class = 1
 
-[node name="Node2D" type="Node2D" parent="TestLevel/Encounters" unique_id=28036015]
+[node name="Choice" type="Node2D" parent="TestLevel/Encounters" unique_id=28036015]
+position = Vector2(-2283, 664)
+
+[node name="EscapeZone" parent="TestLevel/Encounters/Choice" unique_id=1179168205 instance=ExtResource("15_uqu48")]
+position = Vector2(8, 408)
+zone_size = Vector2(200, 500)
+
+[node name="Building5" parent="TestLevel/Encounters/Choice" unique_id=1908386343 instance=ExtResource("9_e3ked")]
+position = Vector2(8, -424)
+building_width = 20.0
+building_height = 950.0
+
+[node name="Building6" parent="TestLevel/Encounters/Choice" unique_id=1605010739 instance=ExtResource("9_e3ked")]
+position = Vector2(748, -430)
+building_width = 20.0
+building_height = 950.0
+
+[node name="Building7" parent="TestLevel/Encounters/Choice" unique_id=1237971496 instance=ExtResource("9_e3ked")]
+position = Vector2(-732, -421)
+building_width = 20.0
+building_height = 950.0
+
+[node name="Building2" parent="TestLevel/Encounters/Choice" unique_id=1591507050 instance=ExtResource("9_e3ked")]
+position = Vector2(-516, 46)
+building_width = 450.0
+building_height = 20.0
+
+[node name="Building3" parent="TestLevel/Encounters/Choice" unique_id=408778102 instance=ExtResource("9_e3ked")]
+position = Vector2(9, 46)
+building_width = 450.0
+building_height = 20.0
+
+[node name="Building4" parent="TestLevel/Encounters/Choice" unique_id=1598344411 instance=ExtResource("9_e3ked")]
+position = Vector2(534, 46)
+building_width = 450.0
+building_height = 20.0
+
+[node name="Building8" parent="TestLevel/Encounters/Choice" unique_id=1459409108 instance=ExtResource("9_e3ked")]
+position = Vector2(-517, -893)
+building_width = 450.0
+building_height = 20.0
+
+[node name="Building9" parent="TestLevel/Encounters/Choice" unique_id=633534549 instance=ExtResource("9_e3ked")]
+position = Vector2(9, -893)
+building_width = 450.0
+building_height = 20.0
+
+[node name="Building10" parent="TestLevel/Encounters/Choice" unique_id=1831716181 instance=ExtResource("9_e3ked")]
+position = Vector2(534, -893)
+building_width = 450.0
+building_height = 20.0
+
+[node name="ShelterBuilding" type="Polygon2D" parent="TestLevel/Encounters/Choice" unique_id=1247980889]
+position = Vector2(-528, -383)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(-150, -285, 150, -285, 150, 285, -150, 285)
+script = ExtResource("9_5w25o")
+wall_thickness = 10.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="Door" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding" unique_id=1744210447]
+position = Vector2(88, -285)
+script = ExtResource("10_yxdyl")
+door_width = 61.0
+thickness = 10.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="ShelterBuilding2" type="Polygon2D" parent="TestLevel/Encounters/Choice" unique_id=1172187198]
+position = Vector2(-184, -384)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(-150, -285, 150, -285, 150, 285, -150, 285)
+script = ExtResource("9_5w25o")
+wall_thickness = 10.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="Door" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding2" unique_id=21889896]
+position = Vector2(-80, -285)
+script = ExtResource("10_yxdyl")
+door_width = 61.0
+thickness = 10.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="ShelterSpot" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding2" unique_id=1064766384]
+position = Vector2(-111, 53)
+rotation = -1.4748032
+script = ExtResource("13_yxdyl")
+is_guard = true
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterBuilding3" type="Polygon2D" parent="TestLevel/Encounters/Choice" unique_id=1037993946]
+position = Vector2(583, -560)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(-558, -96, 150, -100, 152, 408, -90.73889, 408, -558, 408)
+script = ExtResource("9_5w25o")
+wall_thickness = 10.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="Door" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=536755241]
+position = Vector2(0.061706543, -99.15289)
+rotation = -0.0059879525
+script = ExtResource("10_yxdyl")
+door_width = 64.0
+thickness = 10.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Door2" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1964799750]
+position = Vector2(-481, 408)
+rotation = 3.1415927
+script = ExtResource("10_yxdyl")
+door_width = 94.0
+thickness = 10.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Door3" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1913822049]
+position = Vector2(-358, 408)
+rotation = 3.1415927
+script = ExtResource("10_yxdyl")
+door_width = 107.0
+thickness = 10.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="ShelterSpot" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=21613430]
+position = Vector2(-471, 358)
+script = ExtResource("13_yxdyl")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot2" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1313669434]
+position = Vector2(-501, 312)
+script = ExtResource("13_yxdyl")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot3" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=248671196]
+position = Vector2(-453, 272)
+script = ExtResource("13_yxdyl")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot4" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=709639315]
+position = Vector2(-397, 283)
+script = ExtResource("13_yxdyl")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot5" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=506986204]
+position = Vector2(-387, 317)
+script = ExtResource("13_yxdyl")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot6" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1619849244]
+position = Vector2(-341, 352)
+script = ExtResource("13_yxdyl")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot7" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=744884175]
+position = Vector2(-419, 368)
+script = ExtResource("13_yxdyl")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot8" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1708669890]
+position = Vector2(-295, 376)
+script = ExtResource("13_yxdyl")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot9" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=109837885]
+position = Vector2(-302, 308)
+script = ExtResource("13_yxdyl")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot10" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=564698890]
+position = Vector2(-341, 269)
+script = ExtResource("13_yxdyl")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="Zombie" parent="TestLevel/Encounters/Choice" unique_id=713552506 instance=ExtResource("6_w3d7j")]
+position = Vector2(40, -936)
+
+[node name="Zombie2" parent="TestLevel/Encounters/Choice" unique_id=1985159310 instance=ExtResource("6_w3d7j")]
+position = Vector2(72, -952)
+
+[node name="Zombie3" parent="TestLevel/Encounters/Choice" unique_id=1841758551 instance=ExtResource("6_w3d7j")]
+position = Vector2(30, -984)
+
+[node name="Zombie4" parent="TestLevel/Encounters/Choice" unique_id=1558845217 instance=ExtResource("6_w3d7j")]
+position = Vector2(62, -1000)
+
+[node name="Zombie5" parent="TestLevel/Encounters/Choice" unique_id=1681692368 instance=ExtResource("6_w3d7j")]
+position = Vector2(115, -952)
+
+[node name="Zombie6" parent="TestLevel/Encounters/Choice" unique_id=235960800 instance=ExtResource("6_w3d7j")]
+position = Vector2(147, -968)
+
+[node name="Zombie7" parent="TestLevel/Encounters/Choice" unique_id=1381397805 instance=ExtResource("6_w3d7j")]
+position = Vector2(105, -1000)
+
+[node name="Zombie8" parent="TestLevel/Encounters/Choice" unique_id=542977553 instance=ExtResource("6_w3d7j")]
+position = Vector2(137, -1016)
+
+[node name="Human" parent="TestLevel/Encounters/Choice" unique_id=1674429368 instance=ExtResource("7_tknvt")]
+position = Vector2(72, -393)
+
+[node name="Human2" parent="TestLevel/Encounters/Choice" unique_id=1640228374 instance=ExtResource("7_tknvt")]
+position = Vector2(129, -376)
+
+[node name="Human3" parent="TestLevel/Encounters/Choice" unique_id=526461738 instance=ExtResource("7_tknvt")]
+position = Vector2(87, -324)
+
+[node name="Human4" parent="TestLevel/Encounters/Choice" unique_id=1491404711 instance=ExtResource("7_tknvt")]
+position = Vector2(154, -322)
+
+[node name="Human12" parent="TestLevel/Encounters/Choice" unique_id=835387299 instance=ExtResource("7_tknvt")]
+position = Vector2(-281, -712)
+defender_class = 3
+
+[node name="Human5" parent="TestLevel/Encounters/Choice" unique_id=1863008370 instance=ExtResource("7_tknvt")]
+position = Vector2(171, -401)
+
+[node name="Human6" parent="TestLevel/Encounters/Choice" unique_id=566943519 instance=ExtResource("7_tknvt")]
+position = Vector2(225, -344)
+
+[node name="Human7" parent="TestLevel/Encounters/Choice" unique_id=794040606 instance=ExtResource("7_tknvt")]
+position = Vector2(162, -237)
+
+[node name="Human8" parent="TestLevel/Encounters/Choice" unique_id=893835349 instance=ExtResource("7_tknvt")]
+position = Vector2(248, -260)
+
+[node name="Human9" parent="TestLevel/Encounters/Choice" unique_id=619632372 instance=ExtResource("7_tknvt")]
+position = Vector2(289, -207)
+
+[node name="Human10" parent="TestLevel/Encounters/Choice" unique_id=1602608901 instance=ExtResource("7_tknvt")]
+position = Vector2(298, -349)
+
+[node name="Human11" parent="TestLevel/Encounters/Choice" unique_id=248080746 instance=ExtResource("7_tknvt")]
+position = Vector2(206, -192)
 
 [node name="Escape Zones" type="Node" parent="TestLevel" unique_id=1359137202]
 
@@ -483,6 +720,3 @@ script = ExtResource("12_x71dj")
 
 [node name="EndGameOverlay" parent="." unique_id=2000451810 instance=ExtResource("14_5kcmx")]
 visible = false
-
-[node name="EscapeZone" parent="." unique_id=1179168205 instance=ExtResource("15_uqu48")]
-position = Vector2(3703, 896)

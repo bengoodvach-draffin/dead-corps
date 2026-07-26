@@ -380,6 +380,16 @@ func handle_command(_screen_pos: Vector2) -> void:
 			(f as Zombie).queue_finish_move(world_pos)
 		_release_at_building(clicked_building, calm_zombies)
 		return
+	# RELEASE-ON-DOOR (terrain kit / spec §5.1's original verb): RMB on any
+	# INTACT door — a gate in a wall, an empty building's door — is an ordered
+	# siege release: the selected calm zombies go break that specific door.
+	# Deliberate pre-breaching is a herding spend (denying an exit in advance).
+	var clicked_door := _door_at(world_pos)
+	if clicked_door != null and not calm_zombies.is_empty():
+		for f in finishers:
+			(f as Zombie).queue_finish_move(world_pos)
+		_release_at_door(clicked_door, calm_zombies)
+		return
 	var movers: Array[Unit] = calm_zombies + finishers
 	if not movers.is_empty():
 		var slots := calculate_formation_positions(world_pos, movers)
@@ -470,6 +480,42 @@ func _release_at_building(building: Node2D, calm_zombies: Array[Unit]) -> void:
 	clear_selection()
 
 
+## RELEASE-ON-DOOR: ignite the calm zombies onto one specific door (ordered
+## siege — persists until the door falls). Deterministic: unit_uid order.
+func _release_at_door(door: Node2D, calm_zombies: Array[Unit]) -> void:
+	var ferals: Array[Zombie] = []
+	for u in calm_zombies:
+		if is_instance_valid(u) and u is Zombie and (u as Zombie).can_receive_command():
+			ferals.append(u)
+	ferals.sort_custom(func(a: Zombie, b: Zombie) -> bool: return a.unit_uid < b.unit_uid)
+	for z in ferals:
+		z.ignite_feral_at_door(door)
+	if not ferals.is_empty():
+		print("🔥 RELEASE: %d zombies onto door %s" % [ferals.size(), door.name])
+	clear_selection()
+
+
+## The intact door under/near `pos` (within its half-width + a small pad), or
+## null. Doors are static per level — cached once.
+var _doors_cache: Array = []
+var _doors_cached: bool = false
+
+func _door_at(pos: Vector2) -> Node2D:
+	if not _doors_cached:
+		_doors_cached = true
+		_doors_cache = get_tree().get_nodes_in_group("shelter_doors")
+	var best: Node2D = null
+	var best_d := INF
+	for door in _doors_cache:
+		if not is_instance_valid(door) or not door.is_intact():
+			continue
+		var d: float = pos.distance_to(door.global_position)
+		if d <= door.door_width * 0.5 + 16.0 and d < best_d:
+			best_d = d
+			best = door
+	return best
+
+
 ## The occupied, unbreached ShelterBuilding whose footprint contains `pos`, or
 ## null. Buildings are static per level — cached once (rule 8: group lookups are
 ## one-time wiring, and the hover check runs per frame).
@@ -493,6 +539,7 @@ func _shelter_building_at(pos: Vector2) -> Node2D:
 func _update_release_hover() -> void:
 	var target: Human = null
 	var target_building: Node2D = null
+	var target_door: Node2D = null
 	if _selection_has_releasable():
 		var gm := _game_manager()
 		if gm != null:
@@ -500,6 +547,8 @@ func _update_release_hover() -> void:
 			target = _human_at(mouse, gm)
 			if target == null:
 				target_building = _shelter_building_at(mouse)
+			if target == null and target_building == null:
+				target_door = _door_at(mouse)   # gates + empty buildings' doors (§5.1 telegraph)
 	if target != _hovered_human:
 		if _hovered_human != null and is_instance_valid(_hovered_human):
 			_hovered_human.set_hover_highlighted(false)
@@ -512,10 +561,17 @@ func _update_release_hover() -> void:
 		_hovered_building = target_building
 		if _hovered_building != null:
 			_hovered_building.set_hover_highlighted(true)
+	if target_door != _hovered_door:
+		if _hovered_door != null and is_instance_valid(_hovered_door):
+			_hovered_door.set_hover_highlighted(false)
+		_hovered_door = target_door
+		if _hovered_door != null:
+			_hovered_door.set_hover_highlighted(true)
 
 
-## The building currently showing the release-telegraph outline (step 3).
+## The building / door currently showing the release-telegraph outline.
 var _hovered_building: Node2D = null
+var _hovered_door: Node2D = null
 
 
 ## True if any selected unit is a calm zombie (so a release is possible).

@@ -68,6 +68,7 @@ func _ready() -> void:
 	# flipped level outcomes under held-F. One physics tick is one physics tick.
 	await get_tree().physics_frame
 	register_manually_placed_units()
+	_adopt_shelter_residents()
 
 
 func _process(delta: float) -> void:
@@ -550,6 +551,40 @@ func fleeing_humans() -> Array[Human]:
 ## rise. Risers count, so there's no false loss in the gap between a kill and the rise.
 func get_total_zombie_count() -> int:
 	return get_all_zombies().size() + _pending_risers.size()
+
+
+## Shelter adoption (Ben's ruling 2026-07-26): humans PLACED inside an intact
+## shelter at level start become SHELTERED as if they'd fled in — the occupants
+## list is what every siege / flush / pour-in / win system keys off, and
+## hand-placed units weren't on it (besiegers calmed at the breach; the building
+## read unoccupied). Eligibility: intact `is_shelter` buildings only (dumb boxes
+## and ruins keep their bystanders); patrol-enabled humans keep their authored
+## routes. Deterministic: buildings in tree order, humans in unit_uid order.
+func _adopt_shelter_residents() -> void:
+	for b in get_tree().get_nodes_in_group("shelter_buildings"):
+		if not b.is_shelter or b.is_breached():
+			continue
+		for h in living_humans():
+			if h.patrol_enabled or h.is_sheltered():
+				continue
+			if not b.contains_point(h.global_position):
+				continue
+			h.adopt_into_shelter(b, _nearest_intact_door(b, h.global_position))
+
+
+## The building's intact door nearest `pos` — the adoptee's notional entry for
+## the deepest-first spot sort. Null for a doorless building (claim falls back).
+func _nearest_intact_door(building: Node, pos: Vector2) -> Node2D:
+	var best: Node2D = null
+	var best_d := INF
+	for door in building.doors():
+		if not door.is_intact():
+			continue
+		var d: float = pos.distance_to(door.global_position)
+		if d < best_d:
+			best_d = d
+			best = door
+	return best
 
 
 ## Registers manually placed units in the scene

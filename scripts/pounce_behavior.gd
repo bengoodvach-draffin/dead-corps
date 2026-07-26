@@ -53,8 +53,13 @@ func tick(delta: float) -> void:
 		Phase.FLIGHT:
 			# Lunge toward the target. Kill is NOT registered until landing, so a
 			# zombie killed mid-flight (gunfire, 3.1) leaves the human alive.
+			# Lunge speed derives from the POUNCE (range/flight_time × 1.5 margin),
+			# not zombie_speed — at slow config speeds the old lunge covered less
+			# than the pounce range and "killed from afar" (Ben's step-7 catch);
+			# now it lands ON the victim (§3.5: recovery is stationary ON the
+			# corpse). step_toward is physics-swept, so walls still stop it.
 			if is_instance_valid(_target):
-				_owner.step_toward(_target.global_position, GameConfig.zombie_speed)
+				_owner.step_toward(_target.global_position, _lunge_speed())
 			_timer -= delta
 			if _timer <= 0.0:
 				_land()
@@ -80,6 +85,12 @@ func abort() -> void:
 		_target.release_pounce()
 	_phase = Phase.IDLE
 	_target = null
+
+
+## Flight speed that always closes the full pounce range within the flight time,
+## with margin for a fleeing target. Independent of zombie_speed by design.
+func _lunge_speed() -> float:
+	return GameConfig.pounce_range / maxf(GameConfig.pounce_flight_time, 0.01) * 1.5
 
 
 ## Landing: the kill registers. Release the claim and kill the target, then enter

@@ -71,6 +71,7 @@ metadata/_edit_use_anchors_ = true
 [node name="Level 1" type="Node2D" parent="TestLevel" unique_id=1175887083]
 
 [node name="Wall" type="Polygon2D" parent="TestLevel/Level 1" unique_id=1140234852]
+solid = false
 position = Vector2(-871, -304)
 color = Color(0, 0, 0, 0)
 polygon = PackedVector2Array(-100, -100, 100, -100, 100, 100, -100, 100)
@@ -95,6 +96,7 @@ alignment_rate = 0.3
 [node name="Level 2" type="Node2D" parent="TestLevel" unique_id=2108846179]
 
 [node name="Wall1" type="Polygon2D" parent="TestLevel/Level 2" unique_id=65560385]
+solid = false
 position = Vector2(-615, -364)
 color = Color(0, 0, 0, 0)
 polygon = PackedVector2Array(-6, 123, -7, -97, 47, -97, 46, 177, -100, 176, -99.99994, 121.979675)
@@ -117,6 +119,7 @@ alignment_rate = 0.3
 [node name="Level 3" type="Node2D" parent="TestLevel" unique_id=1753995564]
 
 [node name="Wall2" type="Polygon2D" parent="TestLevel/Level 3" unique_id=1098669440]
+solid = false
 position = Vector2(-322, -309)
 scale = Vector2(1.5, 1.5)
 color = Color(0, 0, 0, 0)
@@ -153,6 +156,7 @@ alignment_rate = 0.3
 [node name="Level 4" type="Node2D" parent="TestLevel" unique_id=328545491]
 
 [node name="Wall2" type="Polygon2D" parent="TestLevel/Level 4" unique_id=649433615]
+solid = false
 position = Vector2(51, -308)
 scale = Vector2(1.5, 1.5)
 color = Color(0, 0, 0, 0)
@@ -188,6 +192,7 @@ alignment_rate = 0.3
 [node name="Level 5" type="Node2D" parent="TestLevel" unique_id=195236413]
 
 [node name="Wall2" type="Polygon2D" parent="TestLevel/Level 5" unique_id=1752197991]
+solid = false
 position = Vector2(405, -308)
 scale = Vector2(1.5, 1.5)
 color = Color(0, 0, 0, 0)
@@ -241,6 +246,7 @@ alignment_rate = 0.3
 [node name="Level 6" type="Node2D" parent="TestLevel" unique_id=1288322897]
 
 [node name="Wall2" type="Polygon2D" parent="TestLevel/Level 6" unique_id=608894821]
+solid = false
 position = Vector2(749, -306)
 scale = Vector2(1.5, 1.5)
 color = Color(0, 0, 0, 0)
@@ -281,6 +287,7 @@ alignment_rate = 0.3
 [node name="Level 7" type="Node2D" parent="TestLevel" unique_id=2031917393]
 
 [node name="Wall2" type="Polygon2D" parent="TestLevel/Level 7" unique_id=1049515011]
+solid = false
 position = Vector2(-464, 82)
 scale = Vector2(1.5, 1.5)
 color = Color(0, 0, 0, 0)
@@ -909,6 +916,7 @@ position = Vector2(-902, 120)
 [node name="Level 8" type="Node2D" parent="TestLevel" unique_id=782630570]
 
 [node name="Wall2" type="Polygon2D" parent="TestLevel/Level 8" unique_id=1152607419]
+solid = false
 position = Vector2(110, 30)
 scale = Vector2(1.5, 1.5)
 color = Color(0, 0, 0, 0)
