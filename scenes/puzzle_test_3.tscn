@@ -197,7 +197,6 @@ scale = Vector2(0.21999899, 0.019999804)
 color = Color(0.4, 0.4, 0.4, 1)
 polygon = PackedVector2Array(-100, -100, 28.419434, -100, 100, -100, 100, 100, -100, 100)
 script = ExtResource("11_5df1r")
-solid = true
 wall_thickness = 50.0
 metadata/_custom_type_script = "uid://cvde25j0ujcg"
 
@@ -207,7 +206,6 @@ scale = Vector2(0.17499757, 0.019999804)
 color = Color(0.4, 0.4, 0.4, 1)
 polygon = PackedVector2Array(-100, -100, 28.419434, -100, 100, -100, 100, 100, -100, 100)
 script = ExtResource("11_5df1r")
-solid = true
 wall_thickness = 50.0
 metadata/_custom_type_script = "uid://cvde25j0ujcg"
 
@@ -218,7 +216,6 @@ scale = Vector2(0.20041461, 0.019999804)
 color = Color(0.4, 0.4, 0.4, 1)
 polygon = PackedVector2Array(-100, -100, 100, -100, 100, 100, -100, 100)
 script = ExtResource("11_5df1r")
-solid = true
 wall_thickness = 50.0
 metadata/_custom_type_script = "uid://cvde25j0ujcg"
 
@@ -229,7 +226,6 @@ scale = Vector2(0.17499757, 0.019999804)
 color = Color(0.4, 0.4, 0.4, 1)
 polygon = PackedVector2Array(-100, -100, 28.419434, -100, 100, -100, 100, 100, -100, 100)
 script = ExtResource("11_5df1r")
-solid = true
 wall_thickness = 50.0
 metadata/_custom_type_script = "uid://cvde25j0ujcg"
 
