@@ -21,8 +21,9 @@
 - **CUT for now (Ben deprioritized):** zombies getting stuck on geometry — the corner-stuck investigation *and* the zombie-pursuit-nav asymmetry. Not queued.
 
 ## Blocked on Ben
-- **Corpse-commands A/B/C** (Tier 3): (A) move-order-only to start? (B) box-select grabs corpses alongside calm zombies? (C) interim visual cues (corpse marker + selected ring + line to destination) ok?
-- **Deter-knob test (Point 1):** Ben tests `flee_repel_strength` (1.5→2.5–3.0) / `flee_repel_radius` (180→220) to judge whether steering-only is enough or body collision is needed.
+- **The Mark design workshop** — the Mark is built (v0.45.0, attention field, behind C) but first play found it confusing; validation Q6 can't be judged until the verb is re-designed.
+- **Phase 6 level questions** — scale/roster/building-density/difficulty for the §12 PoC level.
+- **Deter-knob test (Point 1, parked):** Ben tests `flee_repel_strength` (1.5→2.5–3.0) / `flee_repel_radius` (180→220) to judge whether steering-only is enough or body collision is needed. *(Corpse-commands A/B/C — resolved; feature shipped 2026-07-12.)*
 
 ---
 
@@ -39,7 +40,7 @@ Small, ruled, high-impact. Suggested PATCH bumps (or one v0.43.1 batch — Ben's
 
 ## Tier 3 — Bigger playtest features
 6. **Corpse commands (3.2).** ✅ DONE 2026-07-12 (6a + 6b). Order a body before it rises. Model: the queued order is a stored **click**, re-resolved at rise via the live release-or-move rule (`release_aim_radius`) — human near → rises feral & attacks; else → rises calm & moves. A selected corpse's risen zombie auto-selects (if calm). 6b: assigning a control group to a corpse tags the entry so the risen zombie joins that group on rise.
-8. **Zombie move-queue / shift-click waypoints.** Shift-click chains multiple move orders for the selected calm reserve, so you set up a route (stage the next encounter, round a corner) without mid-action micro — the pro-flow half of playtest point #3. Calm moves already nav-path, so it also eases the "stuck on corners / micro to avoid enemies" complaint. **Cap: queued moves only — no loops/branches/patrol-editing** (that would drag back toward the planning game the pivot fled). *(Restored 2026-07-12 — was dropped when the corner-stuck half of point #3 was cut.)*
+8. **Zombie move-queue / shift-click waypoints.** ✅ DONE (confirmed in code 2026-07-27): shift+RMB chains move orders (`Unit.queue_move`, capped queue, fixed-coord route viz line); shift+RMB on a human = an attack terminal deferred to the end of the route. Queued moves only — no loops/branches/patrol-editing, per the cap.
 7. **Select-all-non-feral hotkey (3.1).** ✅ DONE 2026-07-26 as TWO keys (Ben's design): **Q** = select all calm zombies, **E** = select all calm zombies on screen — the riser-roundup answer. Corpses/finishers remain box-select-only.
 
 ## Tier 4 — Housekeeping bug batch ✅ DONE 2026-07-26 (landed with v0.45.0)

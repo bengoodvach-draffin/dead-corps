@@ -97,9 +97,12 @@ func set_siege(building: Node2D) -> void:
 
 ## One frame of hunting. Returns the action the shell should take.
 func tick(delta: float) -> Result:
-	# BREACHING (buildings spec §5): besieging a shelter — the door is the
+	# BREACHING (buildings spec §5): besieging a door — the door is the
 	# lowest-priority prey. Handled in its own branch; no pounce, no failsafe.
-	if _siege_building != null:
+	# Keyed on the DOOR, not the building: a gate in plain wall geometry has
+	# no building at all (terrain kit — routing on the building silently
+	# calmed every gate siege).
+	if _siege_door != null:
 		return _tick_breaching(delta)
 
 	# Validate the current target; if it's gone (dead/lost), retarget — the
@@ -116,7 +119,7 @@ func tick(delta: float) -> Result:
 		if not _retarget():
 			# The Mark's BUILDING AGGRO may have begun a siege inside _retarget
 			# (no human target, but a door to pound) — route to the siege loop.
-			if _siege_building != null:
+			if _siege_door != null:
 				return _tick_breaching(delta)
 			return Result.NO_TARGET
 	else:
@@ -288,7 +291,7 @@ func _doors() -> Array:
 
 
 func is_breaching() -> bool:
-	return _siege_building != null
+	return _siege_door != null   # door, not building — gates have no building
 
 
 ## This feral's nearest intact door of `building`, by NAV distance (a back door
