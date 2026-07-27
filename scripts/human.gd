@@ -136,8 +136,6 @@ var is_patrolling: bool = false       ## Whether actively patrolling
 var is_patrol_paused: bool = false    ## Paused at a waypoint
 var patrol_pause_timer: float = 0.0   ## Countdown for the current waypoint pause
 
-## Cached physics space for line-of-sight raycasts.
-var space_state: PhysicsDirectSpaceState2D
 
 ## The fill front (build-plan 3.1) — armed shot mechanic / civilian reaction clock, a
 ## child component ticked by this shell's dispatcher (mirrors the zombie component
@@ -171,9 +169,6 @@ func _ready() -> void:
 
 	# Base Unit init (movement, BOID separation, bounds, selection visuals).
 	super._ready()
-
-	# Cache the physics space for line-of-sight raycasts.
-	space_state = get_world_2d().direct_space_state
 
 	# Behavior components (runtime only — no AI in the editor).
 	if not Engine.is_editor_hint():
@@ -409,16 +404,8 @@ func _add_class_label() -> void:
 
 
 # === LINE OF SIGHT (buildings + intact doors block) ===
-
-## True if no building or intact door blocks the straight line from this human to
-## `target`. global_position — the old local-position rays cast from the wrong spot
-## for units under offset parents (Tier-4 cluster fix).
-func has_line_of_sight_to(target: Unit) -> bool:
-	var query := PhysicsRayQueryParameters2D.create(global_position, target.global_position)
-	query.collision_mask = 17           # Environment (1) + intact-door "DoorLOS" blockers (16)
-	query.exclude = [self, target]
-	return space_state.intersect_ray(query).is_empty()
-
+# The has_line_of_sight_to OVERRIDE is gone (Tier-4 dead code): since the
+# cluster fix it was byte-identical to Unit's — the base method serves.
 
 ## True if no building or intact door blocks the straight line from this human to
 ## `point` (a world-space coordinate, e.g. an escape zone).
@@ -426,7 +413,7 @@ func has_line_of_sight_to_point(point: Vector2) -> bool:
 	var query := PhysicsRayQueryParameters2D.create(global_position, point)
 	query.collision_mask = 17           # Environment (1) + intact-door "DoorLOS" blockers (16)
 	query.exclude = [self]
-	return space_state.intersect_ray(query).is_empty()
+	return get_world_2d().direct_space_state.intersect_ray(query).is_empty()
 
 
 ## THE unified exit set (buildings spec §9): escape zones ∪ shelter doors that are

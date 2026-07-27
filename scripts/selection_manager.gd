@@ -28,7 +28,6 @@ var control_groups: Dictionary = {}
 ## no live RNG. (Was randf_range; replaced in Phase 0.3.)
 var _move_order_counter: int = 0
 
-@onready var camera: Camera2D = get_tree().get_first_node_in_group("camera")
 
 ## The human currently under the cursor while releasable zombies are selected — gets
 ## the "release here" ring (build-plan 2.4 misclick defense). Cached GameManager for
@@ -47,8 +46,16 @@ var _group_route: Array[Vector2] = []
 const FAST_FORWARD_SCALE := 3.0
 const BASE_PHYSICS_TICKS := 60
 
+## RMB this close to the active Mark (with nothing selected) clears it.
+const MARK_CLEAR_RADIUS := 28.0
+
 func _ready() -> void:
 	set_process_input(true)
+
+	# Fast-forward hygiene: Engine singleton state SURVIVES a scene reload — a
+	# restart mid-held-F would otherwise leave the game running at 3×.
+	Engine.time_scale = 1.0
+	Engine.physics_ticks_per_second = BASE_PHYSICS_TICKS
 
 	# Initialize control groups
 	for i in range(1, 10):
@@ -87,6 +94,20 @@ func _input(event: InputEvent) -> void:
 		else:
 			Engine.time_scale = 1.0
 			Engine.physics_ticks_per_second = BASE_PHYSICS_TICKS
+
+	# R = RESTART (spec §5.1 input sheet; Tier-4). Same path as the debug
+	# overlay's Reset button; _ready normalizes the fast-forward state after.
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_R and not event.echo:
+		get_tree().reload_current_scene()
+
+	# Q / E — reserve roundup (Ben's ruling 2026-07-26): Q selects every calm
+	# zombie on the map; E only those on screen. Rounds up fresh risers without
+	# walking back through the killing fields. Ferals excluded (not selectable);
+	# corpses and finishing zombies stay box-select-only for now.
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_Q and not event.echo:
+		_select_all_calm(false)
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_E and not event.echo:
+		_select_all_calm(true)
 
 	# Handle control group hotkeys
 	elif event is InputEventKey and event.pressed:
@@ -316,11 +337,25 @@ func draw_selection_box() -> void:
 	draw_rect(rect, selection_box_border_color, false, selection_box_border_width)
 
 func handle_command(_screen_pos: Vector2) -> void:
-	if selected_units.is_empty():
-		return
-
 	var world_pos := get_global_mouse_position()
 	var gm := get_tree().get_first_node_in_group("game_manager")
+
+	# THE MARK (spec §5.1 input sheet): RMB with NOTHING selected places/moves
+	# it — on a human it rides them, on an occupied building's footprint it
+	# aggros the building (bullseye only), on ground it's a coordinate mark.
+	# RMB on the mark itself clears it.
+	if selected_units.is_empty():
+		if gm == null:
+			return
+		if gm.mark_active() and world_pos.distance_to(gm.mark_position()) <= MARK_CLEAR_RADIUS:
+			gm.clear_mark()
+			return
+		var mark_human := _human_at(world_pos, gm)
+		var mark_building: Node2D = null
+		if mark_human == null:
+			mark_building = _shelter_building_at(world_pos)
+		gm.place_mark(world_pos, mark_human, mark_building)
+		return
 	var append := Input.is_key_pressed(KEY_SHIFT)   # shift+RMB = queue a waypoint/attack (#8)
 	var clicked_human := _human_at(world_pos, gm)
 
@@ -349,7 +384,7 @@ func handle_command(_screen_pos: Vector2) -> void:
 			for z in calm_zombies:
 				(z as Zombie).queued_attack = clicked_human   # fires when its move route ends
 		elif not calm_zombies.is_empty():
-			var slots := calculate_formation_positions(world_pos, calm_zombies)
+			var slots := FormationPlanner.plan(world_pos, calm_zombies, _next_order_salt())
 			for i in range(calm_zombies.size()):
 				calm_zombies[i].queue_move(slots[i])
 		if gm != null:
@@ -392,7 +427,7 @@ func handle_command(_screen_pos: Vector2) -> void:
 		return
 	var movers: Array[Unit] = calm_zombies + finishers
 	if not movers.is_empty():
-		var slots := calculate_formation_positions(world_pos, movers)
+		var slots := FormationPlanner.plan(world_pos, movers, _next_order_salt())
 		for i in range(movers.size()):
 			var z := movers[i] as Zombie
 			if z.can_receive_command():
@@ -426,9 +461,11 @@ func _release(click_pos: Vector2, gm: Node) -> void:
 			candidates.append(h)
 
 	# Ferals to seed: the selected calm zombies, in unit_uid order (determinism).
+	# Specials never go feral (§3.7 insurance) — they stay selected, unreleased.
 	var ferals: Array[Zombie] = []
 	for unit in selected_units:
-		if is_instance_valid(unit) and unit is Zombie and (unit as Zombie).can_receive_command():
+		if is_instance_valid(unit) and unit is Zombie and (unit as Zombie).can_receive_command() \
+				and not (unit as Zombie).is_special:
 			ferals.append(unit)
 	ferals.sort_custom(func(a: Zombie, b: Zombie) -> bool: return a.unit_uid < b.unit_uid)
 
@@ -470,7 +507,8 @@ func _human_at(pos: Vector2, gm: Node) -> Human:
 func _release_at_building(building: Node2D, calm_zombies: Array[Unit]) -> void:
 	var ferals: Array[Zombie] = []
 	for u in calm_zombies:
-		if is_instance_valid(u) and u is Zombie and (u as Zombie).can_receive_command():
+		if is_instance_valid(u) and u is Zombie and (u as Zombie).can_receive_command() \
+				and not (u as Zombie).is_special:
 			ferals.append(u)
 	ferals.sort_custom(func(a: Zombie, b: Zombie) -> bool: return a.unit_uid < b.unit_uid)
 	for z in ferals:
@@ -485,7 +523,8 @@ func _release_at_building(building: Node2D, calm_zombies: Array[Unit]) -> void:
 func _release_at_door(door: Node2D, calm_zombies: Array[Unit]) -> void:
 	var ferals: Array[Zombie] = []
 	for u in calm_zombies:
-		if is_instance_valid(u) and u is Zombie and (u as Zombie).can_receive_command():
+		if is_instance_valid(u) and u is Zombie and (u as Zombie).can_receive_command() \
+				and not (u as Zombie).is_special:
 			ferals.append(u)
 	ferals.sort_custom(func(a: Zombie, b: Zombie) -> bool: return a.unit_uid < b.unit_uid)
 	for z in ferals:
@@ -608,6 +647,39 @@ func remove_unit_from_selection(unit: Unit) -> void:
 			unit.deselect()
 		selection_changed.emit(selected_units)
 
+## Q/E roundup: replaces the selection with every selectable (calm) zombie —
+## optionally only those inside the camera's current world-space view rect.
+func _select_all_calm(on_screen_only: bool) -> void:
+	var gm := _game_manager()
+	if gm == null:
+		return
+	var view := Rect2()
+	if on_screen_only:
+		var cam := get_viewport().get_camera_2d()
+		if cam == null:
+			on_screen_only = false   # no camera → degrade to select-all
+		else:
+			var world_size: Vector2 = get_viewport_rect().size / cam.zoom
+			view = Rect2(cam.get_screen_center_position() - world_size * 0.5, world_size)
+	clear_selection()
+	for z in gm.living_zombies():
+		if not (z as Zombie).is_selectable():
+			continue
+		if on_screen_only and not view.has_point(z.global_position):
+			continue
+		add_unit_to_selection(z)
+
+
+## Sets `units` as control group `number` directly (bypassing the selection) —
+## the ONLY sanctioned way for other systems to write a group (single owner; no
+## cross-owner dict writes). assign_control_group above is the Ctrl+N/selection path.
+func set_control_group(number: int, units: Array) -> void:
+	control_groups[number] = units.duplicate()
+	for u in units:
+		if is_instance_valid(u):
+			u.set_control_group_number(number)
+
+
 func clear_selection() -> void:
 	for unit in selected_units:
 		if is_instance_valid(unit):
@@ -666,68 +738,12 @@ func _join_control_group(unit: Node, group_number: int) -> void:
 	unit.set_control_group_number(group_number)
 
 
-## Calculates formation positions for a group of units
-## Spreads units around the target position to prevent clumping
-## @param target_pos: The central target position clicked by the player
-## @param units: Array of units to position
-## @return: Array of Vector2 positions, one for each unit
-func calculate_formation_positions(target_pos: Vector2, units: Array[Unit]) -> Array[Vector2]:
-	var positions: Array[Vector2] = []
-	var unit_count := units.size()
-	
-	if unit_count == 0:
-		return positions
-	
-	if unit_count == 1:
-		# Single unit - just go to exact target
-		positions.append(target_pos)
-		return positions
-	
-	# Formation parameters
-	var spacing := 40.0  # Distance between units in formation
-	
-	# Calculate how many units per row for a roughly square formation
-	var units_per_row := int(ceil(sqrt(unit_count)))
-	
-	# Calculate grid dimensions
-	var grid_width: float = (units_per_row - 1) * spacing
-	var grid_height: float = (ceil(float(unit_count) / units_per_row) - 1) * spacing
-	
-	# Start position (top-left of grid, centered around target)
-	var start_x: float = target_pos.x - grid_width / 2.0
-	var start_y: float = target_pos.y - grid_height / 2.0
-	
-	# One salt per group order so successive orders vary; captured before the
-	# loop so every unit in THIS order shares it (decorrelated only by unit_uid).
-	var order_salt := _move_order_counter
+## Formation math lives in formation_planner.gd since the Tier-7 splits — this
+## just hands out the per-order DetHash salt (successive orders jitter
+## differently while staying deterministic, §10).
+func _next_order_salt() -> int:
 	_move_order_counter += 1
-
-	# Assign positions in a grid with deterministic jitter (spec §10 — no RNG)
-	for i in range(unit_count):
-		var row := i / units_per_row
-		var col := i % units_per_row
-
-		# Deterministic per-unit jitter so zombies look like a shambling horde,
-		# not a regimented formation. Keyed off unit_uid + order_salt → identical
-		# every run, different per unit and per order.
-		var jitter := DetHash.offset(units[i].unit_uid, order_salt, 15.0)
-
-		var pos := Vector2(
-			start_x + col * spacing + jitter.x,
-			start_y + row * spacing + jitter.y
-		)
-		
-		# Clamp to game bounds — read from WorldBounds autoload so this
-		# stays in sync when level size changes (was hardcoded ±500, broke
-		# multi-unit commands in expanded levels)
-		var bounds_min := WorldBounds.world_bounds_min
-		var bounds_max := WorldBounds.world_bounds_max
-		pos.x = clamp(pos.x, bounds_min.x, bounds_max.x)
-		pos.y = clamp(pos.y, bounds_min.y, bounds_max.y)
-		
-		positions.append(pos)
-	
-	return positions
+	return _move_order_counter - 1
 
 
 ## Clears all selections and control groups

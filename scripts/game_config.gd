@@ -100,7 +100,10 @@ var release_cluster_radius: float = 300.0
 ## Release magnetism (build-plan #1): an RMB within this radius (px) of a human counts
 ## as a RELEASE, pinned to the nearest human; outside it, RMB is a plain calm move order.
 var release_aim_radius: float = 100.0
-var mark_radius: float = 300.0
+## THE MARK's attention field (§5.4 as amended 2026-07-26): ONE circle doing both
+## jobs — ferals INSIDE it prefer prey INSIDE it. (Supersedes the old 300px
+## coordinate-prey-designation-only meaning.)
+var mark_radius: float = 400.0
 
 # === IDLE SHAMBLE ===
 var shamble_leash: float = 5.0

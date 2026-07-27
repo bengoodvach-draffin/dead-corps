@@ -40,7 +40,7 @@ Small, ruled, high-impact. Suggested PATCH bumps (or one v0.43.1 batch — Ben's
 ## Tier 3 — Bigger playtest features
 6. **Corpse commands (3.2).** ✅ DONE 2026-07-12 (6a + 6b). Order a body before it rises. Model: the queued order is a stored **click**, re-resolved at rise via the live release-or-move rule (`release_aim_radius`) — human near → rises feral & attacks; else → rises calm & moves. A selected corpse's risen zombie auto-selects (if calm). 6b: assigning a control group to a corpse tags the entry so the risen zombie joins that group on rise.
 8. **Zombie move-queue / shift-click waypoints.** Shift-click chains multiple move orders for the selected calm reserve, so you set up a route (stage the next encounter, round a corner) without mid-action micro — the pro-flow half of playtest point #3. Calm moves already nav-path, so it also eases the "stuck on corners / micro to avoid enemies" complaint. **Cap: queued moves only — no loops/branches/patrol-editing** (that would drag back toward the planning game the pivot fled). *(Restored 2026-07-12 — was dropped when the corner-stuck half of point #3 was cut.)*
-7. **Select-all-non-feral hotkey (3.1).** ⏸️ PARKED — only ever a soft "maybe / catch-all"; corpse commands (#6) may make it unnecessary. Revisit if grabbing risers still feels fiddly after #6.
+7. **Select-all-non-feral hotkey (3.1).** ✅ DONE 2026-07-26 as TWO keys (Ben's design): **Q** = select all calm zombies, **E** = select all calm zombies on screen — the riser-roundup answer. Corpses/finishers remain box-select-only.
 
 ## Tier 4 — Housekeeping bug batch (any time, one commit)
 - **A4** teardown "Defeat!" (extend the reset-guard to skip `not is_alive` exits).

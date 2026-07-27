@@ -94,8 +94,8 @@ class_name LevelConfig
 @export var release_cluster_radius: float = 300.0
 ## Release magnetism (#1): RMB within this radius (px) of a human = a release pinned to the nearest one; outside it = a move order.
 @export var release_aim_radius: float = 100.0
-## Coordinate-mark reach (px) for feral retarget preference (Phase 7 — unused until the Mark).
-@export var mark_radius: float = 300.0
+## THE MARK's attention field (px): ferals inside the circle prefer prey inside the circle.
+@export var mark_radius: float = 400.0
 
 # === IDLE SHAMBLE ===
 ## How far (px) an idle calm zombie wanders from its anchor.

@@ -114,6 +114,10 @@ func tick(delta: float) -> Result:
 			_begin_siege(building)
 			return _tick_breaching(delta)
 		if not _retarget():
+			# The Mark's BUILDING AGGRO may have begun a siege inside _retarget
+			# (no human target, but a door to pound) — route to the siege loop.
+			if _siege_building != null:
+				return _tick_breaching(delta)
 			return Result.NO_TARGET
 	else:
 		# Target still alive: peel onto a closer FRESH straggler if one crosses our
@@ -164,6 +168,17 @@ func _tick_breaching(delta: float) -> Result:
 			_end_siege()
 			set_target(prey)
 			return Result.PURSUING
+		# THE MARK's siege-pull (Ben's ruling 2026-07-26): a besieger INSIDE the
+		# field abandons its door for the field's human prey — ORDERED sieges
+		# included. Checked after the fresh-prey scan, so genuinely closer live
+		# prey still wins organically (the override rule's spirit).
+		var gm_pull := _game_manager()
+		if gm_pull != null:
+			var pulled: Node = gm_pull.mark_prey_for(_owner)
+			if pulled is Human and _is_candidate(pulled):
+				_end_siege()
+				set_target(pulled)
+				return Result.PURSUING
 
 	# 2. Siege validity — three prey bases (terrain kit): an ORDERED siege needs
 	#    nothing (the click was the commitment); a door-obstacle siege needs its
@@ -173,7 +188,7 @@ func _tick_breaching(delta: float) -> Result:
 			and _siege_building.is_occupied()
 	if not _ordered_siege and not occupied and not _target_valid():
 		_end_siege()
-		if not _retarget():
+		if not _retarget(false):
 			return Result.NO_TARGET
 		return Result.PURSUING
 
@@ -188,7 +203,7 @@ func _tick_breaching(delta: float) -> Result:
 		_end_siege()
 		if _target_valid():
 			return Result.PURSUING
-		if _retarget():
+		if _retarget(false):
 			return Result.PURSUING
 		var occupant := _nearest_occupant(building)
 		if occupant != null:
@@ -450,8 +465,12 @@ func _is_candidate(h: Human) -> bool:
 
 ## Picks the nearest valid candidate from local scan ∪ hunt pool. Returns true if
 ## a new target was set. Candidates are sorted by unit_uid so distance ties resolve
-## deterministically (§10).
-func _retarget() -> bool:
+## deterministically (§10). THE MARK (§5.4, field model) is consulted here: a
+## feral inside the field prefers the field's prey unless some candidate is
+## strictly closer AND within its own local scan; a building-aggro mark begins a
+## siege as the last resort (the caller routes on _siege_building when we return
+## false). `allow_mark_building` is off for calls from inside the siege loop.
+func _retarget(allow_mark_building: bool = true) -> bool:
 	var gm := _game_manager()
 	if gm == null:
 		return false
@@ -480,6 +499,26 @@ func _retarget() -> bool:
 
 	candidates.sort_custom(func(a, b): return a.unit_uid < b.unit_uid)
 
+	# THE MARK (§5.4, field model): inside the field, the field's HUMAN prey is
+	# preferred — beaten only by a candidate strictly closer to this feral AND
+	# within its own local scan (genuinely closer prey wins organically). The
+	# marked prey need not be in the pool at all — that's the influence.
+	var marked: Node = gm.mark_prey_for(_owner)
+	if marked is Human and _is_candidate(marked):
+		var m := marked as Human
+		var marked_d := _owner.global_position.distance_to(m.global_position)
+		var closer_in_scan := false
+		for h in candidates:
+			if h == m:
+				continue
+			var d := _owner.global_position.distance_to(h.global_position)
+			if d < marked_d and d <= GameConfig.chain_scan_radius and _owner.has_line_of_sight_to(h):
+				closer_in_scan = true
+				break
+		if not closer_in_scan:
+			set_target(m)
+			return true
+
 	# Pick the best PATH target — keeps momentum up our heading after a kill instead of
 	# whipping around. path_score prefers humans ahead; ones behind carry a large but
 	# finite penalty, so a feral hemmed in with only prey behind it still engages (last
@@ -496,6 +535,12 @@ func _retarget() -> bool:
 	if best != null:
 		set_target(best)
 		return true
+
+	# BUILDING AGGRO (the Mark on an occupied building): nothing else bid — the
+	# field's attention points at the walls themselves. Begin the siege; the
+	# caller routes to the siege loop on our false return (no human target).
+	if allow_mark_building and marked != null and not (marked is Human):
+		_begin_siege(marked)
 	return false
 
 

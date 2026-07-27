@@ -4,7 +4,6 @@ class_name GameManager
 ## Main game manager that coordinates all gameplay systems
 ## Handles zombie conversion, spawning, escape tracking, and game state
 
-signal human_escaped()
 signal game_won()
 signal game_lost()
 
@@ -19,11 +18,14 @@ var all_humans: Array[Human] = []
 ## _on_zombie_killed_human; finalized at game end. The ComboHUD + end screen read it.
 var combo: ComboSystem = null
 
-## Pending risers (spec §3.6, build-plan 2.6): killed humans waiting to stand back
-## up as CALM zombies. Each entry = { "corpse": Human, "pos": Vector2, "time_left":
-## float }. Filled on a kill (clock starts at the pounce landing), counted down in
-## _physics_process (fixed timestep → deterministic, §10), and raised at zero.
-var _pending_risers: Array[Dictionary] = []
+## Component children (Tier-7 manager splits): the hunt pool (§3.4 pursuit
+## claims + pool queries) and the violence pipeline (§3.3 contagion + gunfire,
+## §3.6 risers + corpse commands). GameManager keeps one-line delegates for
+## their public APIs, so callers never changed. The Mark system (Phase 7) lands
+## as a third sibling.
+var _hunt: HuntPool = null
+var _violence: ViolencePipeline = null
+var _mark: MarkSystem = null
 
 ## Monotonic source for unit_uid. Assigned in registration order and never
 ## reused — this is what makes the registry's query results stable-ordered (§10).
@@ -32,17 +34,12 @@ var _next_unit_uid: int = 0
 ## Counter for humans that successfully escaped to the safe zone
 var escaped_humans: int = 0
 
-## Number of zombies at game start (usually 6)
-var starting_zombie_count: int = 0
-
 ## Timer tracking how long the game has been running (in seconds)
 var game_time: float = 0.0
 
 ## Whether the game has ended (prevents multiple end screens)
 var game_ended: bool = false
 
-## Cached SelectionManager (corpse commands, 6a) — for auto-select + rise-order handoff.
-var _selection_mgr: Node = null
 
 func _ready() -> void:
 	# Find or create units parent
@@ -52,6 +49,20 @@ func _ready() -> void:
 		units_parent.name = "Units"
 		add_child(units_parent)
 	
+	# Component children (Tier-7 splits): hunt pool + violence pipeline.
+	_hunt = HuntPool.new()
+	_hunt.name = "HuntPool"
+	add_child(_hunt)
+	_hunt.setup(self)
+	_violence = ViolencePipeline.new()
+	_violence.name = "ViolencePipeline"
+	add_child(_violence)
+	_violence.setup(self)
+	_mark = MarkSystem.new()
+	_mark.name = "MarkSystem"
+	add_child(_mark)
+	_mark.setup(self)
+
 	# Scoring (4.2): the combo system + its runtime HUD. Combo first so the HUD finds it.
 	combo = ComboSystem.new()
 	combo.name = "ComboSystem"
@@ -88,7 +99,7 @@ func _physics_process(delta: float) -> void:
 	NavigationServer2D.map_force_update(get_viewport().find_world_2d().navigation_map)
 	# Riser countdowns tick on the physics step (fixed timestep → deterministic).
 	if not game_ended:
-		_tick_risers(delta)
+		_violence.tick(delta)
 
 func spawn_zombie(pos: Vector2) -> Zombie:
 	if not zombie_scene:
@@ -150,164 +161,57 @@ func _register_human(human: Human) -> void:
 	if not human.human_died.is_connected(_on_human_died):
 		human.human_died.connect(_on_human_died)
 
+## Pounce-kill signal handler: the violence pipeline handles contagion + the
+## riser; the combo (GM's child) scores it here — gunfire deaths never reach
+## this (the player's losses, unscored).
 func _on_zombie_killed_human(human: Human, zombie: Zombie) -> void:
-	# Violence contagion (spec §3.3, build-plan 2.5): a kill ignites idle zombies
-	# near the kill site.
-	# (The gunfire-death half of the trigger waits for Phase 3.)
-	_apply_contagion(human.global_position, zombie)
-
-	# Risers (spec §3.6, build-plan 2.6): the corpse stands back up CALM after
-	# rise_time, measured from this instant (= the pounce landing, where the kill
-	# signal fires). Position captured now so a freed corpse can't strand the rise.
-	_pending_risers.append({
-		"corpse": human,
-		"pos": human.global_position,
-		"time_left": GameConfig.rise_time,
-		# Corpse commands (6a/#8): a queued ROUTE, re-resolved (release-or-move on the FIRST
-		# waypoint) when it rises; [] = no order.
-		"queued_route": [],
-		# Corpse commands (6b): a queued control group (-1 = none) the risen zombie joins.
-		"queued_group": -1,
-	})
-	# The corpse is now a selectable, commandable body until it stands (6a).
-	human.mark_pending_rise()
-
-	# Scoring (spec §6.1, build-plan 4.2): a pounce kill feeds the combo (gunfire deaths
-	# don't reach here — they're the player's losses, not scored).
+	_violence.register_pounce_kill(human, zombie)
 	if combo != null:
 		combo.register_kill(human)
 
 
-## Counts down pending risers each physics frame and raises any whose clock hit zero
-## (spec §3.6). Fixed timestep keeps timing deterministic (§10). A risen corpse is
-## freed and replaced by a fresh CALM zombie at the death spot — governed by normal
-## rules from then on (a later nearby kill's contagion may grab it; no auto-rally).
-func _tick_risers(delta: float) -> void:
-	if _pending_risers.is_empty():
-		return
-	# Iterate back-to-front so removals don't skip entries.
-	for i in range(_pending_risers.size() - 1, -1, -1):
-		var entry: Dictionary = _pending_risers[i]
-		entry.time_left -= delta
-		if entry.time_left <= 0.0:
-			_pending_risers.remove_at(i)
-			_raise(entry)
+# === VIOLENCE PIPELINE DELEGATES (owner: violence_pipeline.gd) ===
 
-
-## Raises one corpse: frees the dead human (if still valid) and spawns a CALM zombie
-## where it fell. The new zombie idle-shambles from its spawn anchor like any calm
-## unit and is fully subject to normal rules (contagion, release) from this moment.
-func _raise(entry: Dictionary) -> void:
-	# UNTYPED read: entry.corpse may be a previously-freed instance (e.g. a human freed by
-	# an escape-zone entry the same frame its pounce landed, or a scene reset). A TYPED
-	# local (`var corpse: Human = ...`) validates the object on assignment and crashes on a
-	# freed instance BEFORE the is_instance_valid guard below can run — that was the captured
-	# crash (game_manager.gd:175). Read untyped, then guard.
-	var corpse = entry.corpse
-	var sel := _selection_manager()
-	# Auto-select (6a): if the corpse was still selected, the risen zombie should inherit that
-	# selection so control carries across the rise. Note it BEFORE freeing, and drop the
-	# about-to-be-invalid corpse ref from the selection.
-	var was_selected := false
-	if is_instance_valid(corpse):
-		if sel != null:
-			was_selected = sel.is_selected(corpse)
-			if was_selected:
-				sel.remove_unit_from_selection(corpse)
-		corpse.queue_free()
-	else:
-		# Diagnostic (rule 2 — confirm the trigger on replication): a corpse freed before it
-		# could rise. Log the spot so we can tell an escape-rim race (pos AT an exit) from a
-		# benign scene reset. The rise still proceeds from the captured pos (§3.6 intent).
-		push_warning("⚠️ _raise: corpse already freed before rise at %s (escape-rim race?)" % entry.pos)
-	var zombie := spawn_zombie(entry.pos)
-	# 6a: replay the queued click (release-or-move) on the fresh zombie, and re-select it if
-	# it stayed calm (a reclick that lands on prey ignites it feral → released, not selected).
-	if zombie != null and sel != null:
-		sel.apply_rise_order(zombie, entry, was_selected)
-
-
-## The selectable corpses (build-plan 6a): valid pending-rise humans, unit_uid-ordered (§10)
-## for a stable selection order. SelectionManager includes these alongside calm zombies.
-func rising_corpses() -> Array:
-	var out: Array = []
-	for entry in _pending_risers:
-		var c = entry.corpse
-		if is_instance_valid(c) and (c as Human).is_selectable_corpse():
-			out.append(c)
-	out.sort_custom(func(a, b): return a.unit_uid < b.unit_uid)
-	return out
-
-
-## Replaces the corpse's rise route with a single waypoint (plain RMB, build-plan 6a/#8). The
-## route lives on the ENTRY (not the corpse node) so a freed corpse can't strand it; _raise
-## re-resolves it (release-or-move on the first waypoint) at rise. Mirrors it for the viz.
-func set_rise_route(corpse: Human, point: Vector2) -> void:
-	for entry in _pending_risers:
-		if entry.corpse == corpse:
-			entry["queued_route"] = [point]
-			if is_instance_valid(corpse):
-				corpse.set_queued_route(entry["queued_route"])
-			return
-
-
-## Appends a waypoint to the corpse's rise route (shift+RMB, #8), respecting the cap.
-func queue_rise_waypoint(corpse: Human, point: Vector2) -> void:
-	for entry in _pending_risers:
-		if entry.corpse == corpse:
-			var route: Array = entry["queued_route"]
-			if route.size() < Unit.MAX_WAYPOINTS:
-				route.append(point)   # Array is by-ref → the entry updates in place
-				if is_instance_valid(corpse):
-					corpse.set_queued_route(route)
-			return
-
-
-## Records a control group on the corpse's riser entry (build-plan 6b). The risen zombie
-## joins that group on rise (apply_rise_order) — stored on the ENTRY, not the corpse node,
-## so a corpse ref never goes stale in a control group.
-func queue_rise_group(corpse: Human, group_number: int) -> void:
-	for entry in _pending_risers:
-		if entry.corpse == corpse:
-			entry["queued_group"] = group_number
-			return
-
-
-## Lazily resolves the SelectionManager (corpse commands, 6a). Cached after first use.
-func _selection_manager() -> Node:
-	if _selection_mgr == null or not is_instance_valid(_selection_mgr):
-		_selection_mgr = get_tree().get_first_node_in_group("selection_manager")
-	return _selection_mgr
-
-
-## Ignites every CALM zombie within contagion_radius of the kill site into the frenzy
-## (spec §3.3). The killer is excluded; already-feral neighbours are skipped by the CALM
-## guard (a reserve hit by sequential kills ignites once per zombie). Deterministic:
-## neighbours_within returns unit_uid order, no RNG (§10).
-## `seed_target`, when given, is the human each woken zombie pursues (the gunfire shooter
-## — see report_gunfire_kill); null means wake targetless and let FeralBrain retarget the
-## nearest prey (the human-kill case, where prey is right there at the kill). Either way,
-## after igniting, normal §3.4 feral rules + peel-off govern.
-func _apply_contagion(kill_pos: Vector2, killer: Zombie, seed_target: Human = null) -> void:
-	for u in neighbours_within(kill_pos, GameConfig.contagion_radius, &"zombies", killer):
-		var z := u as Zombie
-		if z != null and z.current_state == Zombie.State.CALM:
-			z.ignite_feral(seed_target)
-
-
-## A defender's fill front shot a zombie (build-plan 3.1). Delivers the binary kill,
-## then fires the gunfire-death half of violence contagion (spec §3.3 — the trigger
-## deferred from 2.5), SEEDING the woken zombies at the shooter. Without the seed they
-## wake targetless and instantly calm, since the ranged shooter is usually outside the
-## scan radius — so a gunshot draws the nearby horde onto the gunman. The killed zombie
-## is marked dead before the query (registry excludes it); no riser (gunfire kills a
-## zombie, not a human).
 func report_gunfire_kill(zombie: Zombie, shooter: Human) -> void:
-	if not is_instance_valid(zombie) or not zombie.is_alive:
-		return
-	var death_pos := zombie.global_position
-	zombie.take_damage(1.0)
-	_apply_contagion(death_pos, null, shooter)
+	_violence.report_gunfire_kill(zombie, shooter)
+
+
+func rising_corpses() -> Array:
+	return _violence.rising_corpses()
+
+
+func set_rise_route(corpse: Human, point: Vector2) -> void:
+	_violence.set_rise_route(corpse, point)
+
+
+func queue_rise_waypoint(corpse: Human, point: Vector2) -> void:
+	_violence.queue_rise_waypoint(corpse, point)
+
+
+func queue_rise_group(corpse: Human, group_number: int) -> void:
+	_violence.queue_rise_group(corpse, group_number)
+
+
+# === MARK DELEGATES (owner: mark_system.gd) ===
+
+func mark_prey_for(feral: Zombie) -> Node:
+	return _mark.prey_for(feral)
+
+
+func place_mark(pos: Vector2, human: Human, building: Node2D) -> void:
+	_mark.place(pos, human, building)
+
+
+func clear_mark() -> void:
+	_mark.clear()
+
+
+func mark_active() -> bool:
+	return _mark.is_active()
+
+
+func mark_position() -> Vector2:
+	return _mark.centre()
 
 func _on_human_died(human: Human) -> void:
 	# Remove from tracking array
@@ -317,21 +221,12 @@ func _on_human_died(human: Human) -> void:
 	check_win_condition()
 
 
-## Called when a zombie is removed from the scene tree (died)
-## Triggers lose condition check
+## Called when a zombie leaves the scene tree — registry bookkeeping ONLY. The
+## lose verdict is judged at the death instant (report_gunfire_kill), never here:
+## tree exits also happen during scene-reset teardowns, where a draining registry
+## spuriously read as "all zombies eliminated" (A4).
 func _on_zombie_removed(zombie: Zombie) -> void:
-	# Remove from tracking array
 	all_zombies.erase(zombie)
-
-	# A still-alive zombie leaving the tree means a scene teardown/reload (e.g. the
-	# debug Reset button), not a death — don't judge the game during teardown or the
-	# draining registry spuriously reads as "all zombies eliminated". Real deaths go
-	# through die() (is_alive=false before queue_free), so they still reach the check.
-	if is_instance_valid(zombie) and zombie.is_alive:
-		return
-
-	# Check lose condition
-	check_lose_condition()
 
 
 ## Called when a human successfully escapes to the safe zone
@@ -341,8 +236,7 @@ func on_human_escaped(human: Human) -> void:
 	all_humans.erase(human)
 	# A fleeing human can be mid-pursuit when it reaches the exit (3.2+) — drop its
 	# hunt-pool entry so the freed instance doesn't linger as a stale pursuit key.
-	_pursuit_counts.erase(human)
-	human_escaped.emit()
+	_hunt.drop(human)
 	print("Human escaped! Total escaped: ", escaped_humans)
 	
 	# Check win condition (all humans either dead or escaped)
@@ -390,10 +284,7 @@ func setup_test_scenario() -> void:
 	spawn_zombie(Vector2(-140, 0))
 	spawn_zombie(Vector2(-90, 40))
 	spawn_zombie(Vector2(-110, -40))
-	
-	# Record starting zombie count for scoring
-	starting_zombie_count = get_all_zombies().size()
-	
+
 	# Auto-assign control groups to starting zombies (for testing convenience)
 	await get_tree().process_frame  # Wait for zombies to be fully initialized
 	auto_assign_starting_control_groups()
@@ -416,14 +307,11 @@ func auto_assign_starting_control_groups() -> void:
 		push_warning("SelectionManager not found - cannot auto-assign control groups")
 		return
 	
-	# Assign first 6 zombies to groups 1-6
+	# Assign first 6 zombies to groups 1-6, through the SelectionManager's own
+	# method (single owner of the groups dict — no cross-owner writes).
 	for i in range(min(6, zombies.size())):
-		var zombie := zombies[i]
 		var group_number := i + 1  # Groups are 1-indexed
-		
-		# Manually assign to control group (simulating Ctrl+1 through Ctrl+6)
-		selection_manager.control_groups[group_number] = [zombie]
-		zombie.set_control_group_number(group_number)
+		selection_manager.set_control_group(group_number, [zombies[i]])
 		print("Auto-assigned zombie to control group ", group_number)
 
 func get_all_zombies() -> Array[Zombie]:
@@ -488,69 +376,35 @@ func neighbours_within(pos: Vector2, radius: float, team: StringName, exclude: U
 
 
 ## === HUNT POOL (V2, spec §3.4) ===
-## Which humans are being hunted, for feral retargeting. Ferals report up here
-## (rule 5) instead of peeking into each other's FeralBrain (rule 8 — the registry
-## is the discovery mechanism). A count per human (several ferals may pursue one).
-
-var _pursuit_counts: Dictionary = {}   ## Human → number of ferals pursuing it
+## Delegates to hunt_pool.gd (the single owner since the Tier-7 splits). Ferals
+## report up here (rule 5) instead of peeking into each other's FeralBrain.
 
 
-## A feral started pursuing this human.
 func add_pursuit(human: Human) -> void:
-	var was: int = _pursuit_counts.get(human, 0)
-	_pursuit_counts[human] = was + 1
-	# First pursuer → light the "targeted" readability ring (build-plan 2.4).
-	if was == 0 and is_instance_valid(human):
-		human.set_hunted(true)
+	_hunt.add_pursuit(human)
 
 
-## A feral stopped pursuing this human (retargeted away, calmed, or died).
 func remove_pursuit(human: Human) -> void:
-	if not _pursuit_counts.has(human):
-		return
-	var c: int = _pursuit_counts[human] - 1
-	if c <= 0:
-		_pursuit_counts.erase(human)
-		# Last pursuer gone → clear the ring.
-		if is_instance_valid(human):
-			human.set_hunted(false)
-	else:
-		_pursuit_counts[human] = c
+	_hunt.remove_pursuit(human)
 
 
-## Living humans currently pursued by at least one feral — the {pursued} half of
-## the hunt pool. Built by filtering living_humans() so the result is unit_uid
-## ordered (§10) and never includes dead/freed humans (stale count keys are ignored).
 func pursued_humans() -> Array[Human]:
-	var result: Array[Human] = []
-	for h in living_humans():
-		if _pursuit_counts.has(h):
-			result.append(h)
-	return result
+	return _hunt.pursued_humans()
 
 
-## True if any feral is currently pursuing this human — the peel-off scan (2.4)
-## skips already-pursued humans so each straggler draws exactly one peeler.
 func is_pursued(human: Human) -> bool:
-	return _pursuit_counts.has(human)
+	return _hunt.is_pursued(human)
 
 
-## The {FLEEING} half of the hunt pool (build-plan 3.2): living humans in the FLEEING
-## rout. Filtering living_humans() keeps the result unit_uid ordered (§10) and free of
-## dead/freed humans. Ferals retarget onto these with no LOS/distance gate, so a broken
-## human draws the hunt across the map (the "overwhelm → produces a runner to chase").
 func fleeing_humans() -> Array[Human]:
-	var result: Array[Human] = []
-	for h in living_humans():
-		if h.current_state == Human.State.FLEEING:
-			result.append(h)
-	return result
+	return _hunt.fleeing_humans()
 
 
-## Total zombies for the lose condition (spec §8): living zombies + corpses about to
-## rise. Risers count, so there's no false loss in the gap between a kill and the rise.
+## Total zombies for the lose condition (spec §8): LIVING zombies + corpses about
+## to rise. Living, not registered (A5) — dead zombies linger in all_zombies for
+## their corpse-linger frames, which coupled the verdict's timing to framerate.
 func get_total_zombie_count() -> int:
-	return get_all_zombies().size() + _pending_risers.size()
+	return living_zombies().size() + _violence.pending_count()
 
 
 ## Shelter adoption (Ben's ruling 2026-07-26): humans PLACED inside an intact
