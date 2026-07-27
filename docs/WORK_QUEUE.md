@@ -74,4 +74,4 @@ Approved to execute (rule-9 signalled); no version bump. Two are **code-gated** 
 - §4.1 decay clause (gun cools when no zombie *visible*), §4.3 threat-biased exit, §3.4 failsafe wording (bucketed, not rolling).
 - ✅ After **A1**: implementer-guide invariant "a feral's death releases BOTH claims — pounce (abort) + pursuit (clear)." (added 2026-07-23)
 - After **A2**: implementer-guide invariant "an armed human halts while the front is reached — stop-to-fire is the design."
-- CLAUDE.md 2D-isometric wording (3D migration) — still Ben-gated.
+- ✅ CLAUDE.md 2D-isometric wording (3D migration) — done 2026-07-27 (Ben signalled in the trope-ideation session: "there is no longer going to be 3D — document that"). Header + Current-focus tail rewritten; CLAUDE.md now flags the stale 3D wording elsewhere as superseded. Remaining references (GDD §11.15, PROJECT_CONTEXT, CODEBASE_REVIEW, V2 spec §13) — still Ben-gated with the rest of the doc sync.
