@@ -73,6 +73,10 @@ this branch. Faithfulness to the spec there is worth the more capable model.
 - **A feral's death releases BOTH claims** — the pounce claim (`_pounce.abort()`)
   and the pursuit claim (`_feral.clear()`), in `die()`. Leaking either strands a
   human as permanently claimed/pursued and silently corrupts the peel-off model.
+- **An armed human halts while the front is reached** — stop-to-fire is the
+  design (A2 ruling): movement must never overwrite aim rotation while
+  `is_reached()`, or a moving defender can't fire more than ~21° off its travel
+  direction. Dormant until patrols return, but do not "simplify" it away.
 - **Cowering humans are local-scan only** — never in the global hunt pool.
 - **The break is committed the instant the fear threshold trips:** fill cancels
   immediately, line vanishes, no shot can land during the reaction beat.

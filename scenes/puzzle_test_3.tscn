@@ -88,12 +88,6 @@ building_width = 1680.0
 building_height = 20.0
 metadata/_edit_lock_ = true
 
-[node name="Building17" parent="TestLevel/Perimeter" unique_id=1214163587 instance=ExtResource("9_e3ked")]
-position = Vector2(-3523, 612)
-rotation = 1.5707964
-building_width = 570.0
-building_height = 20.0
-
 [node name="Building18" parent="TestLevel/Perimeter" unique_id=657341129 instance=ExtResource("9_e3ked")]
 position = Vector2(-1279, -1665)
 rotation = 1.5707964
@@ -458,6 +452,9 @@ defender_class = 1
 [node name="Human15" parent="TestLevel/Encounters/Marketplace" unique_id=1450355823 instance=ExtResource("7_tknvt")]
 position = Vector2(444, 98)
 defender_class = 1
+
+[node name="Zombie" parent="TestLevel/Encounters/Marketplace" unique_id=818075516 instance=ExtResource("6_w3d7j")]
+position = Vector2(-768, 362)
 
 [node name="Choice" type="Node2D" parent="TestLevel/Encounters" unique_id=28036015]
 position = Vector2(-2283, 544)
@@ -1184,14 +1181,54 @@ position = Vector2(634, -356)
 [node name="Human45" parent="TestLevel/Encounters/Choice" unique_id=1450931369 instance=ExtResource("7_tknvt")]
 position = Vector2(542, -199)
 
+[node name="3rd - to be renamed" type="Node2D" parent="TestLevel/Encounters" unique_id=1319795464]
+position = Vector2(-3587, -532)
+
+[node name="Wall3" type="Polygon2D" parent="TestLevel/Encounters/3rd - to be renamed" unique_id=1337206859]
+position = Vector2(-27, 957)
+rotation = 1.5707964
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-105, -99, 471.00003, -99, 471.00003, -91, -105, -91)
+script = ExtResource("11_5df1r")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall4" type="Polygon2D" parent="TestLevel/Encounters/3rd - to be renamed" unique_id=148784171]
+position = Vector2(-19, 251)
+rotation = 1.5707964
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-292.00003, -179, 420, -179, 468, -179, 476, -179, 476, -91, 468, -91, 468, -171, -292.00003, -171)
+script = ExtResource("11_5df1r")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Human" parent="TestLevel/Encounters/3rd - to be renamed" unique_id=1938906450 instance=ExtResource("7_tknvt")]
+position = Vector2(-24, 589)
+
+[node name="Human2" parent="TestLevel/Encounters/3rd - to be renamed" unique_id=1752893275 instance=ExtResource("7_tknvt")]
+position = Vector2(8, 643)
+
+[node name="Human3" parent="TestLevel/Encounters/3rd - to be renamed" unique_id=1087749367 instance=ExtResource("7_tknvt")]
+position = Vector2(25, 563)
+
+[node name="Wall" type="Polygon2D" parent="TestLevel/Encounters/3rd - to be renamed" unique_id=1379926254]
+position = Vector2(-48, 340)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-79, -96, -80, -128, 48, -128, 48, -112, -64, -112, -64, 128, -79, 128)
+script = ExtResource("11_5df1r")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall2" type="Polygon2D" parent="TestLevel/Encounters/3rd - to be renamed" unique_id=1999183568]
+position = Vector2(-80, 20)
+rotation = 3.1415927
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-79, -96, -80, -128, 48, -128, 48, -112, -64, -112, -64, 128, -79, 128)
+script = ExtResource("11_5df1r")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
 [node name="Escape Zones" type="Node" parent="TestLevel" unique_id=1359137202]
 
 [node name="Humans" type="Node" parent="TestLevel" unique_id=827267819]
 
 [node name="Zombies" type="Node" parent="TestLevel" unique_id=393150134]
-
-[node name="Zombie" parent="TestLevel/Zombies" unique_id=818075516 instance=ExtResource("6_w3d7j")]
-position = Vector2(-5400, 858)
 
 [node name="Units" type="Node2D" parent="." unique_id=1968361044 groups=["units_parent"]]
 

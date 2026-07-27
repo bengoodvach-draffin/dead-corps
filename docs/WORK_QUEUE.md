@@ -1,6 +1,6 @@
 # Dead Corps — v2-poc Work Queue
 
-**Updated:** 2026-07-12 · **Branch:** `v2-poc` @ v0.43.0
+**Updated:** 2026-07-27 · **Branch:** `v2-poc` @ v0.45.0 *(since 07-12: enterable buildings slice 1 + terrain kit v0.44.0 — see `V2_ENTERABLE_BUILDINGS_SPEC.md` §16; Tier 4 batch done; manager splits + the Mark v0.45.0)*
 **What this is:** the single **prioritized** to-do for the branch — it merges the **2026-07-02 architecture review** bugs with the **2026-07-12 friends'-playtest** feature requests into one tier order. Fixes that are small or impactful come first; larger features and the phase-gated work follow.
 
 **Companion docs (detail lives there, not here):**
@@ -42,14 +42,13 @@ Small, ruled, high-impact. Suggested PATCH bumps (or one v0.43.1 batch — Ben's
 8. **Zombie move-queue / shift-click waypoints.** Shift-click chains multiple move orders for the selected calm reserve, so you set up a route (stage the next encounter, round a corner) without mid-action micro — the pro-flow half of playtest point #3. Calm moves already nav-path, so it also eases the "stuck on corners / micro to avoid enemies" complaint. **Cap: queued moves only — no loops/branches/patrol-editing** (that would drag back toward the planning game the pivot fled). *(Restored 2026-07-12 — was dropped when the corner-stuck half of point #3 was cut.)*
 7. **Select-all-non-feral hotkey (3.1).** ✅ DONE 2026-07-26 as TWO keys (Ben's design): **Q** = select all calm zombies, **E** = select all calm zombies on screen — the riser-roundup answer. Corpses/finishers remain box-select-only.
 
-## Tier 4 — Housekeeping bug batch (any time, one commit)
-- **A4** teardown "Defeat!" (extend the reset-guard to skip `not is_alive` exits).
-- **A5** lose verdict coupled to render framerate (filter lose-count by `is_alive`, keep `+ _pending_risers`).
-- Cross-owner control-group write (route through a SelectionManager method).
-- **R = Restart** (spec §5.1) — unimplemented; reuse the debug-overlay reset path.
+## Tier 4 — Housekeeping bug batch ✅ DONE 2026-07-26 (landed with v0.45.0)
+- ✅ **A4 + A5** — solved together: the lose verdict moved to the death instant (`report_gunfire_kill`, the only zombie-death source) — frame-exact, framerate-independent, teardown-immune; `_on_zombie_removed` is bookkeeping only; `get_total_zombie_count` = living + pending risers.
+- ✅ Cross-owner control-group write — GM rise-handoff routes via new `SelectionManager.set_control_group`.
+- ✅ **R = Restart** — `reload_current_scene`; `_ready` re-normalizes `time_scale`/`physics_ticks` (Engine state survives reloads — a restart mid-held-F stayed at 3×).
 - ✅ `position`→`global_position` cluster — DONE 2026-07-23 (exposed by puzzle_test_3's offset `Marketplace` container: click/box selection missed nested units entirely, incl. corpses; nested humans steered/raycast in the wrong frame). Fixed: selection_manager click/box (×4), unit.gd move_to_target + clamp_position_to_bounds + _ready target init, human.gd both LOS raycasts, game_manager spawn_* (world→parent-frame conversion). The dormant-code *deletions* remain Tier 5 (rule-2 refactor).
-- Dead code (shadowing LOS overrides + `space_state`, `@onready camera`, `starting_zombie_count`, unused `human_escaped` signal); stale comments.
-- One-line `is_special` guard in `_apply_contagion` + `_release` (spec §3.7 insurance).
+- ✅ Dead code (shadowing LOS overrides + `space_state`, `@onready camera`, `starting_zombie_count`, unused `human_escaped` signal) — removed 2026-07-26.
+- ✅ One-line `is_special` guard in contagion + all three release collectors (spec §3.7 insurance) — 2026-07-26.
 
 ## Tier 5 — Phase 5 (readability + refactor, while in those files)
 - **5.1 vision_renderer migration** — move rings/fill-lines/tints/labels off the units into `vision_renderer.gd` (accessor seam already exists); takes `human.gd` back under 400.
@@ -63,15 +62,16 @@ Small, ruled, high-impact. Suggested PATCH bumps (or one v0.43.1 batch — Ben's
 - **Calm-mass-break re-judge** (is herd-everyone-out a hollow zero-score non-strategy now scoring exists?); **full Phase 3 test re-run** (see `phase3-test-criteria` memory); **crash watch** (keep console polled).
 
 ## Tier 7 — Phase 7 (M2: the Mark)
-- **Manager splits first:** GameManager (hunt pool + violence pipeline out) and SelectionManager (formation planner out) — both over the tripwire and Phase 7 routes new systems at both.
+- ✅ **Manager splits** — DONE 2026-07-26: `hunt_pool.gd` + `violence_pipeline.gd` out of GameManager (one-line delegates kept, no caller changed; 595→~430) and `formation_planner.gd` (static) out of SelectionManager. Siege regression byte-identical. SM stays ~750 until the Phase-5 viz migration (accepted).
 - **A3 — GameConfig override leak** — LevelConfig pushes into the autoload and nothing resets it; must land before a 2nd level exists.
-- **The Mark + LMB fill-inspect** → validation Q6 + full pass → **pivot verdict**.
+- 🔶 **The Mark** — BUILT 2026-07-27 (v0.45.0, attention-field model — direction spec §5.4) but **first play found it confusing; grammar moved behind the C key (mark mode + crosshair cursor) to keep it out of the way. NEEDS A DESIGN WORKSHOP before validation Q6 can be judged.**
+- **LMB fill-inspect** (M2's other half) — not yet built → then validation Q6 + full pass → **pivot verdict**.
 
 ---
 
 ## Trailing — doc sync (⏳ pending items from the 2026-07-02 batch)
 Approved to execute (rule-9 signalled); no version bump. Two are **code-gated** — land them *after* the code fix:
-- §4.1 decay clause (gun cools when no zombie *visible*), §4.3 threat-biased exit, §3.4 failsafe wording (bucketed, not rolling).
+- ✅ §4.1 decay clause (gun cools when no zombie *visible*), §4.3 threat-biased exit-set clause, §3.4 failsafe wording (bucketed, not rolling) — landed 2026-07-27 with the v0.45.0 doc sync (which also rewrote direction-spec §5.1/§5.4 to the as-built Mark and added buildings-spec §16 as-built amendments).
 - ✅ After **A1**: implementer-guide invariant "a feral's death releases BOTH claims — pounce (abort) + pursuit (clear)." (added 2026-07-23)
 - After **A2**: implementer-guide invariant "an armed human halts while the front is reached — stop-to-fire is the design."
 - ✅ CLAUDE.md 2D-isometric wording (3D migration) — done 2026-07-27 (Ben signalled in the trope-ideation session: "there is no longer going to be 3D — document that"). Header + Current-focus tail rewritten; CLAUDE.md now flags the stale 3D wording elsewhere as superseded. Remaining references (GDD §11.15, PROJECT_CONTEXT, CODEBASE_REVIEW, V2 spec §13) — still Ben-gated with the rest of the doc sync.

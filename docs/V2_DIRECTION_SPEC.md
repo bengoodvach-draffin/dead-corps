@@ -3,6 +3,7 @@
 **Version:** 2.0-draft4 (final review complete June 12, 2026 — pool = plain nearest, instant retarget on shared kills, rotation-gated radial front)
 **Date:** June 12, 2026
 **Status:** Design locked pending PoC validation. Supersedes core-loop sections of GDD v6.1 (Sections 3, 6, and parts of 11). GDD is NOT updated until the PoC validates this direction.
+**Doc-sync 2026-07-27 (v0.45.0):** §5.1 input sheet and §5.4 (the Mark) rewritten to the as-built attention-field model + C-key mark mode; §3.4 failsafe, §4.1 decay, and §4.3 exit-set clauses synced to code; §9 mark_radius → 400, fire-cooldown row added; stale 3D-migration wording corrected (cancelled 2026-07-12).
 **Origin:** Playtest finding — the game played like Commandos with zombies ("ninja commando zombies"), while the single most engaging moment was sending five zombies into gunfire and watching the horde get thinned, not knowing if enough would survive. This spec rebuilds the core loop around that moment.
 
 ---
@@ -46,9 +47,9 @@ NOT triggers: proximity to humans, being aimed at (fill in progress), being near
 
 1. **Movement-vector targeting (the "bullet").** Every target choice — seeding, peeling, retargeting — ranks candidates by an *along-the-path* score, not raw distance: `score = forward + perp × feral_offaxis_penalty`, where `forward` is the candidate's distance along the feral's heading and `perp` its perpendicular offset from that heading (`feral_offaxis_penalty` v0: 2.0 — the bullet-vs-splay dial). Humans **behind** the heading are rejected — hard-skipped on a peel, and given a large but finite last-resort penalty on a post-kill retarget so a hemmed-in feral still engages rather than calming. Effect: the horde drives up the *centre* of a block and splays outward only as the central column clears, and never runs backward out of the swarm. Heading = the feral's current velocity; at release it is feral→click.
 2. **Continuous peel-off (opportunistic retarget).** A feral does **not** blindly commit to its target until the kill. On a `feral_divert_interval` (v0: 0.25s) cadence it re-scans within `chain_scan_radius` (250px, LOS) for a **fresh** straggler — alive, not pounce-claimed, and **not already pursued by another feral** — and peels onto it if its path-score is meaningfully better than the current target's (by factor `feral_divert_hysteresis`, v0: 0.8; the hysteresis kills target-jitter). Because a peeled straggler is immediately *pursued* (claimed), every other feral's scan skips it: the nearest feral peels off to handle each straggler while the bulk keeps its momentum. **Peel = one zombie per straggler**, emergent from the pursuit claim. *(This reverses the original "pursued and unpursued treated identically / nearest wins" call — the un-pursued-first preference is exactly what produces the peel-off feel. It applies to the mid-pursuit peel only, so predictability holds.)*
-3. **On kill / target loss, retarget** among the **local scan** (living humans within 250px with LOS, includes cowering) ∪ the **hunt pool** {humans pursued by any feral} ∪ {FLEEING humans anywhere} — ranked by the **same path-score** so momentum carries through the kill. Target loss = the kill lands, or the target enters an escape zone (pursuer halts at the boundary). Cowering humans are local-scan only — never in the global pool ("what's frozen waits for deliberate collection"). **Shared kills:** if two ferals chase the same human and one lands the pounce, the other **instantly retargets** per this rule — no idle beat. **Mark influence** (§5.4, unbuilt) sits on top of this — player intent reorders the menu.
+3. **On kill / target loss, retarget** among the **local scan** (living humans within 250px with LOS, includes cowering) ∪ the **hunt pool** {humans pursued by any feral} ∪ {FLEEING humans anywhere} — ranked by the **same path-score** so momentum carries through the kill. Target loss = the kill lands, or the target enters an escape zone (pursuer halts at the boundary). Cowering humans are local-scan only — never in the global pool ("what's frozen waits for deliberate collection"). **Shared kills:** if two ferals chase the same human and one lands the pounce, the other **instantly retargets** per this rule — no idle beat. **Mark influence** (§5.4, built — the attention field) sits on top of this — player intent reorders the menu.
 4. **No target + empty pool → instant calm.** Control returns on the spot. No wind-down timer (animation sells it).
-5. **No timers anywhere in the frenzy.** One engineering failsafe (not design fiction), defined as *no tangible progress*: a feral whose distance-to-target has not decreased by at least `failsafe_min_progress` (v0: 40px) over a rolling `failsafe_window` (v0: 2.0s) drops the target and calms. Same detector pattern as cowering — robust to jitter and orbiting. Currently doubles as the stopgap for the no-pursuit-pathing gap (ferals move straight-line and can wedge on obstacles); will rarely fire once pursuit pathing lands.
+5. **No timers anywhere in the frenzy.** One engineering failsafe (not design fiction), defined as *no tangible progress*: a feral whose distance-to-target has not decreased by at least `failsafe_min_progress` (v0: 40px) per `failsafe_window` (v0: 2.0s) drops the target and calms — **as built the window is bucketed** (discrete consecutive windows), not a rolling buffer; same intent, simpler state. Pursuit is nav-pathed now, so the failsafe is pure insurance; BREACHING is exempt from it, and the clock pauses while the blocking collider is another feral (doorway queues — buildings spec §5.4).
 
 Pocket isolation is emergent: the pool only ever contains humans being hunted or fleeing, and FLEEING humans only exist where violence already happened. The frenzy reaches exactly as far as the consequences of the player's actions. The only way chaos jumps to a quiet area is a runner physically dragging pursuit there — the sanctioned chaos vector.
 
@@ -79,7 +80,7 @@ The leap survives as the kill delivery. There is no HP, no damage values, no att
 - **360° detection.** Per-class awareness range (a circle), LOS-gated — buildings and LOS-blocking obstacles cut it.
 - **The fill is a radial front, not a target lock** (reconceived during final review to answer the bait exploit — see note below). While any zombie is in range, a threat front expands outward from the human at the class fill speed. **It fires at the first zombie the front reaches** (front radius ≥ that zombie's current distance, LOS checked at fire time). On firing: that zombie dies, the front resets to zero and grows again.
 - Distance is still time: close zombies are reached sooner; a charging zombie compresses its own clock. The visible fill line points at the zombie the front will reach first (the nearest) — rendering is unchanged.
-- **Decay:** the front decays (~2× fill speed back toward zero) only when NO zombie is in range at all. While any threat is in range the gun stays hot — it never decays and never resets except by firing. (A zombie in range but with no clear lane keeps the gun hot but produces no shot — see LOS rule below.)
+- **Decay:** the front decays (~2× fill speed back toward zero) only when NO zombie is **visible** in range (range + LOS — a zombie hidden behind a building does not hold the gun hot; as built). While any threat is visible in range the gun stays hot — it never decays and never resets except by firing. (A zombie in range but with no clear lane keeps the gun hot but produces no shot — see LOS rule below.)
 - **Humans block line of sight (added 2026-06-17, extends the §4.1 LOS rule).** An armed human cannot fire *through* other humans — the fire/LOS check is blocked by the environment **and** by other (living, upright) humans, but not by zombies (the target is the nearest, so a zombie can never screen it; excluding zombies is just so the ray doesn't trip on the target itself). Consequence: a clumped knot of defenders is *less* lethal per head — only those with a clear lane fire, so approach angle and where defenders stand matter, and herding that bunches humans up weakens their return fire. Resolution: the human fires at the nearest zombie that is both reached by the front **and** has a clear lane; if the nearest is screened by a friendly it targets the next-nearest with a clear lane; if none are clear the gun holds hot (no shot) until a lane opens. Corpses and cowering (dropped) humans do **not** block; fleeing humans (upright) **do**. The fear count (§4.2) stays non-LOS. *(Lowers a cluster's effective firepower — feeds the Phase 6 sacred-ratio sweep.)*
 - **Why this kills the bait:** under a target-lock model, one far zombie pins the human's aim while chargers close for free. Under the front model, the bait *raises the front* — and any charger entering inside the front's current radius gets shot almost immediately (the gun was already hot). Baiting now donates the defender a fast first kill. The peek exploit dies the same way: ducking back into cover doesn't cool a hot gun while other zombies remain visible, and re-emerging inside the front radius is near-instant death.
 - **On completion, the class response:** armed classes **fire** as above; **civilians flee** (their "front" is a pure reaction clock — first zombie it reaches triggers the rout).
@@ -93,7 +94,7 @@ Independent of the fill, checked continuously:
 - Civilians: N = 0 — any zombie inside their fear radius breaks them. Civilians therefore have two flee paths: the fill (seen at distance) and the fear count (ambushed up close, e.g., a zombie emerging from behind cover). Both kept deliberately.
 
 ### 4.3 Fleeing = permanent rout
-- A broken human paths to the **nearest escape zone** — no LOS requirement (they live here; they know the exits). Flee vectors bend the route around zombies — this is what makes humans herdable.
+- A broken human picks from the **unified exit set** (escape zones ∪ intact unlocked shelter-building doors — buildings spec §9): **nearest, with the threat-aware bias** (`flee_exit_threat_bias` — an exit whose approach runs through zombies scores worse). No LOS requirement (they live here; they know the exits). The route is nav-pathed; flee vectors bend it around zombies — this is what makes humans herdable.
 - No shooting while fleeing. No recovery, ever. Broken is broken.
 
 ### 4.4 Cornered: COWER
@@ -128,15 +129,20 @@ Patrol routes survive purely as **positioning over time** — where humans are w
 
 ### 5.1 Input sheet
 
+*(Synced to the build 2026-07-27 — v0.45.0.)*
+
 | Input | Verb |
 |---|---|
-| LMB / drag | Select (calm zombies only) |
-| **LMB on a human** | Toggle **fill-line inspect** — emphasizes that human's fill line (brighter/thicker) for detailed reading. Preserves current zombie selection. Click again to clear; click another human to move it. |
-| RMB on ground (zombies selected) | Move (calm) |
-| RMB on a human (zombies selected) | **RELEASE** — cursor telegraphs on hover |
-| RMB on human or ground (**nothing selected**) | Place / move the **Mark** |
-| RMB on the Mark (nothing selected) | Clear the Mark |
-| Ctrl+1–9 / 1–9 | Control groups (recall calm members only) |
+| LMB / drag | Select (calm zombies, FINISHING zombies mid pounce-recovery, and pending-rise corpses) |
+| **LMB on a human** | Toggle **fill-line inspect** — emphasizes that human's fill line (brighter/thicker) for detailed reading. Preserves current zombie selection. Click again to clear; click another human to move it. **(M2 — not yet built.)** |
+| RMB on ground (zombies selected) | Move (calm; formation slots). **Shift+RMB queues waypoints** — move-queue only, no loops/patrols (work-queue #8). |
+| RMB on a human (zombies selected) | **RELEASE** — magnetism: within `release_aim_radius` (100px) of a human pins to the nearest one; hover ring telegraphs |
+| RMB on an **occupied intact building** (zombies selected) | **RELEASE-at-the-building** — each released feral besieges its own nearest door (buildings spec §5.1; footprint hover telegraph) |
+| RMB on an **intact door** (zombies selected) | **RELEASE-at-the-door** — ordered siege of that door (terrain-kit ruling; hover telegraph) |
+| **C** | Arm/disarm **MARK MODE** — crosshair cursor while armed; the next LMB places/moves the Mark (on a human it rides them > occupied-building bullseye = aggro > ground point); LMB on the mark clears it; C again / Esc / RMB cancels. *(Interim grammar, 2026-07-27 — supersedes the RMB-with-nothing-selected placement, which collided with the selection grammar in play. The Mark verb is parked for a workshop.)* |
+| Q / E | Select **all calm zombies** / all calm zombies **on screen** (riser roundup) |
+| F (hold) | **Fast-forward 3×** — tick-identical (paired `physics_ticks_per_second` × `time_scale`, §10-safe) |
+| Ctrl+1–9 / 1–9 | Control groups (recall calm members only; assigning a group to a corpse tags its riser) |
 | R | Restart |
 
 Release is unmodified and uncancelable — its weight is carried by consequence, not input friction. Pre-click telegraphing is the misclick defense: **as built (v0.34.0), the single human under the cursor gets a "release here" ring** while releasable zombies are selected — no cursor swap, and deliberately *no* cluster preview (reading the 300px reach is player skill). A faint "targeted" ring also marks any human a feral is currently hunting (driven by the hunt pool), so the player can read the engagement. Both rings are drawn by the Human itself for now — interim home; they move to the `vision_renderer` readability layer in §7. Shelved fallback if playtests produce rage-misclicks: a ~100ms hover debounce before release registers.
@@ -150,12 +156,16 @@ Release is unmodified and uncancelable — its weight is carried by consequence,
 ### 5.3 In-storm verbs (the spectator-problem answer)
 "You command the calm, you influence the storm." During a frenzy the player: **reinforces** (releases fresh waves/risers into the fight), **intercepts** (places reserves ahead of runners), **herds** (flee vectors avoid zombies — every calm placement bends the routes of everyone running; the player controls the geometry of fear and the hunt follows it), and **marks**. Specials add **deploy** post-PoC.
 
-### 5.4 The Mark
-- One active mark, on a human or a coordinate. Placed/moved/cleared freely (see input sheet).
-- **Scope rule (decided):** at retarget, a feral prefers the Mark's prey — the marked human, or the nearest valid human within `mark_radius` (v0: 300px) of a marked coordinate — **unless another human is strictly closer to that feral AND within the 250px local scan.** Genuinely closer prey still wins organically; the Mark wins everything else, including ties of attention at range. No weighting math — pure priority with a proximity override.
-- Consequence: a marked human 200px from a feral IS taken over an unmarked human at 220px (no closer human exists). A marked human at 400px loses to an unmarked one at 150px (closer and in scan). Predictable both ways.
-- **Never interrupts an active pursuit. Zero effect if no prey is near it** — the Mark reorders the menu; it never moves a zombie anywhere prey isn't.
-- Affects feral retargeting only. Reserve commands, release seeding, and contagion ignore it.
+### 5.4 The Mark — the ATTENTION FIELD *(rewritten 2026-07-26/27; BUILT v0.45.0, flagged for a workshop — first play found it confusing)*
+
+- One active mark, on a **human** (it rides them), an **occupied building** (bullseye on the footprint = aggro; a building merely overlapped by the ring is ignored), or a **ground point**. Placed/moved/cleared via mark mode (C — see input sheet).
+- **The field model (supersedes the original global-priority rule):** the Mark projects **one circle of `mark_radius` (v0: 400px)** around itself, and the whole rule compresses to one sentence: **ferals INSIDE the circle prefer prey INSIDE the circle.** For a human mark that prey is the marked human; for a ground mark it is the nearest valid human to the mark's centre within the circle; for a building mark the field's answer is "siege this building" when a feral finds no live prey.
+- **Ferals outside the circle never notice it.** Two separated packs stay independently manageable — marking one fight cannot yank the other across the map. Conscious trade-off: **no cross-map recall**; if you want a distant pack's attention, walk the mark to the pack.
+- **The proximity override survives:** a candidate strictly closer to the feral AND within the 250px local scan AND in LOS still wins — genuinely closer prey beats attention. Consulted at retarget only; an active pursuit is never interrupted.
+- **Siege-pull (the buildings-spec relief valve, now real):** a besieging feral inside the field — ordered sieges included — abandons its door for a valid marked human. This is the influence answer to over-committed sieges (amends the old "never interrupts an active pursuit" for BREACHING, which pursues nothing that moves).
+- **Auto-clear:** the mark dissolves when the marked human dies or reaches safe shelter, or the marked building empties.
+- Affects feral retargeting only. Reserve commands, release seeding, and contagion ignore it. Zero effect if no prey is in the field — it reorders the menu; it never moves a zombie anywhere prey isn't.
+- Read: purple field ring + riding circle on a marked human / decal dot on ground and buildings.
 - Fiction: the pack instinct's attention — a pointed hunger, not an order.
 
 ---
@@ -222,8 +232,9 @@ All values live in **`level_config.gd`** — a NEW per-level @tool node (name ch
 | Cower: min displacement / window | 40 px / 2.0 s |
 | Combo: window / burst / kill base / tier size | 4 s / 1.5 s / 10 pts / 5 kills |
 | Flee herding: repel radius / strength / exit-threat bias | 180 px / 1.5 / 1.5 |
-| Release cluster radius | 300 px |
-| Mark radius (coordinate marks) | 300 px |
+| Release cluster radius / aim (magnetism) radius | 300 px / 100 px |
+| Mark radius (the attention field — §5.4) | 400 px |
+| Fire cooldown: Civ / Mil / Pol / GI | 0 / 0.8 / 0.6 / 0.4 s (gates the shot, not the front) |
 | Shamble leash / speed / pause | 5 px / 7 px/s / 3.0 s (±50%) |
 | Fill front decay (only when no zombie visible) | 2× fill speed |
 | Turn speed / facing tolerance | 360°/s / 15° |
@@ -270,7 +281,7 @@ Files with major work: `human.gd` (rewrite of behavior core), `zombie.gd` (feral
 
 ## 12. PoC VALIDATION SLICE
 
-**Built 2D-first** in the current codebase. 3D migration waits until the pivot validates — and inherits the simplification (far less to port).
+**Built 2D-first** in the current codebase. *(2026-07-12 update: the 3D migration is **CANCELLED** — Dead Corps ships 2D isometric; see `docs/ISO_MIGRATION_PLAN.md`.)*
 
 **Roster:** Civilian, Militia, Police, GI. No specials, no Spec Ops, no pressure systems.
 
@@ -291,7 +302,7 @@ Files with major work: `human.gd` (rewrite of behavior core), `zombie.gd` (feral
 
 ## 13. PARKED REGISTER (post-PoC)
 
-Pressure systems wholesale (noise propagation via radii, civilian evacuation, hardening/hardpoints, killable clocks, radio operator, Spec Ops reinforcement squads, alert-changes-position-never-power rule), convoy escorts, specials re-audit (Traffic Controller vs Mark overlap; `is_costumed` fear exemption; specials-as-embedded-agents framing; specials-nested-in-groups as the abilities replacement), full scoring balance + time bonuses, fear-fill texture ("race of two fills"), fleeing-ally +1 fear patch, tier-decaying combo window, smooth Mark weighting (replaced by the closer-within-scan override rule, §5.4), contagion-as-difficulty-modifier, release hover-debounce, roster reduction, militia-arming-civilians, snipers, building transformation system, remaining 9 specials, 3D migration.
+Pressure systems wholesale (noise propagation via radii, civilian evacuation, hardening/hardpoints, killable clocks, radio operator, Spec Ops reinforcement squads, alert-changes-position-never-power rule), convoy escorts, specials re-audit (Traffic Controller vs Mark overlap; `is_costumed` fear exemption; specials-as-embedded-agents framing; specials-nested-in-groups as the abilities replacement), full scoring balance + time bonuses, fear-fill texture ("race of two fills"), fleeing-ally +1 fear patch, tier-decaying combo window, smooth Mark weighting (replaced by the closer-within-scan override rule, §5.4), contagion-as-difficulty-modifier, release hover-debounce, roster reduction, militia-arming-civilians *(partially un-parked — the armory is buildings-spec slice 2)*, snipers, building transformation system *(un-parked — built as ShelterBuilding, see V2_ENTERABLE_BUILDINGS_SPEC.md)*, remaining 9 specials. *(~~3D migration~~ — cancelled 2026-07-12, ships 2D isometric.)*
 
 ---
 

@@ -46,16 +46,26 @@ var _group_route: Array[Vector2] = []
 const FAST_FORWARD_SCALE := 3.0
 const BASE_PHYSICS_TICKS := 60
 
-## RMB this close to the active Mark (with nothing selected) clears it.
+## A mark-mode click this close to the active Mark clears it.
 const MARK_CLEAR_RADIUS := 28.0
+
+## MARK MODE (Ben's ruling 2026-07-27, supersedes the RMB-with-nothing-selected
+## placement — that grammar was confusing in play): C arms placement, the cursor
+## becomes a crosshair, and the NEXT LMB click places/moves/clears the mark
+## (then disarms). C again / Esc / RMB cancels without placing. Interim shape —
+## the verb is parked pending a workshop.
+var _mark_mode: bool = false
 
 func _ready() -> void:
 	set_process_input(true)
 
 	# Fast-forward hygiene: Engine singleton state SURVIVES a scene reload — a
-	# restart mid-held-F would otherwise leave the game running at 3×.
+	# restart mid-held-F would otherwise leave the game running at 3×. The
+	# cursor shape is the same kind of global (a restart mid-mark-mode would
+	# strand the crosshair).
 	Engine.time_scale = 1.0
 	Engine.physics_ticks_per_second = BASE_PHYSICS_TICKS
+	Input.set_default_cursor_shape(Input.CURSOR_ARROW)
 
 	# Initialize control groups
 	for i in range(1, 10):
@@ -69,6 +79,20 @@ func _process(_delta: float) -> void:
 	queue_redraw()   # keep the group-route viz anchored as the selection moves (#8)
 
 func _input(event: InputEvent) -> void:
+	# MARK MODE intercepts the mouse while armed: LMB places, RMB/Esc cancels.
+	# Checked first so an armed click can never start a box-select underneath.
+	if _mark_mode:
+		if event.is_action_pressed("select"):
+			_place_mark_at_cursor()
+			_set_mark_mode(false)
+			get_viewport().set_input_as_handled()
+			return
+		if event.is_action_pressed("command") \
+				or (event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE):
+			_set_mark_mode(false)
+			get_viewport().set_input_as_handled()
+			return
+
 	# Handle selection
 	if event.is_action_pressed("select"):
 		start_selection(event.position)
@@ -108,6 +132,10 @@ func _input(event: InputEvent) -> void:
 		_select_all_calm(false)
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_E and not event.echo:
 		_select_all_calm(true)
+
+	# C — arm/disarm MARK MODE (Ben's ruling 2026-07-27).
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_C and not event.echo:
+		_set_mark_mode(not _mark_mode)
 
 	# Handle control group hotkeys
 	elif event is InputEventKey and event.pressed:
@@ -259,6 +287,10 @@ func update_selection_box(_screen_pos: Vector2) -> void:
 	queue_redraw()
 
 func end_selection(_screen_pos: Vector2) -> void:
+	# A release with no live press is a stray (e.g. the release of a consumed
+	# mark-mode placement click) — acting on it would select from stale coords.
+	if not is_box_selecting:
+		return
 	box_current_pos = get_global_mouse_position()
 	
 	var box_size := (box_current_pos - box_start_pos).length()
@@ -336,25 +368,38 @@ func draw_selection_box() -> void:
 	# Draw border
 	draw_rect(rect, selection_box_border_color, false, selection_box_border_width)
 
+# === MARK MODE (C) ===
+
+## Arm/disarm mark placement. The crosshair cursor is the armed tell.
+func _set_mark_mode(armed: bool) -> void:
+	_mark_mode = armed
+	Input.set_default_cursor_shape(Input.CURSOR_CROSS if armed else Input.CURSOR_ARROW)
+
+
+## The armed LMB click: clear if on the mark, else place/move it — same
+## resolution as always (human rides > occupied-building bullseye > ground).
+func _place_mark_at_cursor() -> void:
+	var gm := get_tree().get_first_node_in_group("game_manager")
+	if gm == null:
+		return
+	var world_pos := get_global_mouse_position()
+	if gm.mark_active() and world_pos.distance_to(gm.mark_position()) <= MARK_CLEAR_RADIUS:
+		gm.clear_mark()
+		return
+	var mark_human := _human_at(world_pos, gm)
+	var mark_building: Node2D = null
+	if mark_human == null:
+		mark_building = _shelter_building_at(world_pos)
+	gm.place_mark(world_pos, mark_human, mark_building)
+
+
 func handle_command(_screen_pos: Vector2) -> void:
 	var world_pos := get_global_mouse_position()
 	var gm := get_tree().get_first_node_in_group("game_manager")
 
-	# THE MARK (spec §5.1 input sheet): RMB with NOTHING selected places/moves
-	# it — on a human it rides them, on an occupied building's footprint it
-	# aggros the building (bullseye only), on ground it's a coordinate mark.
-	# RMB on the mark itself clears it.
+	# The Mark is NOT placed here anymore — placement lives behind C (mark
+	# mode, Ben's 2026-07-27 ruling). RMB with nothing selected does nothing.
 	if selected_units.is_empty():
-		if gm == null:
-			return
-		if gm.mark_active() and world_pos.distance_to(gm.mark_position()) <= MARK_CLEAR_RADIUS:
-			gm.clear_mark()
-			return
-		var mark_human := _human_at(world_pos, gm)
-		var mark_building: Node2D = null
-		if mark_human == null:
-			mark_building = _shelter_building_at(world_pos)
-		gm.place_mark(world_pos, mark_human, mark_building)
 		return
 	var append := Input.is_key_pressed(KEY_SHIFT)   # shift+RMB = queue a waypoint/attack (#8)
 	var clicked_human := _human_at(world_pos, gm)

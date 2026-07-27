@@ -1,7 +1,7 @@
 # DEAD CORPS — ENTERABLE BUILDINGS SPEC (Shelters, Sieges & Breaches)
 
-**Version:** 1.0-draft1 (design session 2026-07-23 — all rulings Ben's, recorded inline)
-**Status:** Design scoped, pending Ben's review of this document. **Build AFTER the Phase 6 M1 verdict**, as its own milestone. Nothing here is in scope for Phases 5–7 of the PoC build plan.
+**Version:** 1.1 (design session 2026-07-23; as-built sync 2026-07-27)
+**Status:** **SLICE 1 BUILT AND PLAY-VERIFIED (v0.44.0)** — pulled forward ahead of Phase 5/6 by Ben's 2026-07-23 timing ruling (overrides the original "build after the M1 verdict" gate below). The **terrain kit** (§16) and the **Mark siege-pull** (v0.45.0) landed on top. Slice 2 (§7.4 armory + barricade) stays parked until slice 1 has been played at level scale. **§16 records every as-built amendment** — where it contradicts the 2026-07-23 text, §16 wins.
 **Relationship to V2_DIRECTION_SPEC.md:** extends it; changes no existing rule except the two explicitly amended in §5.4 and §6.3 (failsafe and cower pause-rules). Un-parks three Parked Register entries by name: *building transformation system*, *hardening/hardpoints*, *militia-arming-civilians*. Adds one new parked entry (§13).
 
 ---
@@ -86,7 +86,7 @@ Narrative ruling: passive/calm demolition is wrong — in the genre, pursuing zo
 
 1. **Continuous peel-off stays LIVE (hard requirement, ruled).** A besieging feral keeps its 0.25s scan cadence; live prey within the 250px scan with LOS pulls it off the door via the normal peel rules. The door is the feral's lowest-priority prey — it pounds only while nothing moves nearby. (The farmhouse horde turns as one when the guy runs for the truck.)
 2. **On breach**, besieging ferals enter and normal §3.4 feral rules take over — scan, retarget, peel — now with interior LOS through the doorway. Room-by-room hunting is the existing feral system in tighter geometry. Interior cleared + empty pool → instant calm, inside the building: the player now owns controllable zombies in the new play area. No post-siege rules needed.
-3. **Feral capture is accepted (ruled):** one human diving through a door can convert an entire pursuing wave into a long siege. Released-is-released — no recall off a door. This is release-weight working (a real cost buildings impose on sloppy releases). **Planned relief valve, NOT in this milestone:** the Mark luring ferals off a door. Today's Mark rule ("never interrupts an active pursuit") doesn't cover BREACHING — a besieging feral pursues nothing that moves — so a Mark exception is the influence-not-command answer to over-committed sieges. Spec it when the Mark lands (M2/Phase 7); parked here (§13).
+3. **Feral capture is accepted (ruled):** one human diving through a door can convert an entire pursuing wave into a long siege. Released-is-released — no recall off a door. This is release-weight working (a real cost buildings impose on sloppy releases). **The relief valve is now BUILT (v0.45.0): the Mark siege-pull** — a besieging feral inside the Mark's 400px attention field (ordered sieges included) abandons its door for a valid marked human (direction spec §5.4). Influence, not command: it only fires when the field designates real prey.
 4. If the building's occupants all die or flush out (§8) while the door holds: the pool logic governs as normal — flushed humans are FLEEING (global pool; the besiegers at the *other* door retarget onto them per normal rules); an emptied building ends its siege via rule 1/normal calm (no prey proxy without prey — a feral besieging a now-empty building drops BREACHING and calms).
 
 ### 5.3 Fear counts
@@ -234,7 +234,7 @@ Mirror of §5.4.2, same detector class, same fix: **the cower clock does not acc
 
 ## 13. PARKED (from this feature — do not build)
 
-- **Mark-lures-ferals-off-doors** — the influence valve for over-committed sieges; spec alongside the Mark (M2/Phase 7). Requires amending "never interrupts an active pursuit" to exclude BREACHING.
+- ✅ **Mark-lures-ferals-off-doors** — UN-PARKED and built (v0.45.0) as the Mark **siege-pull**; see §5.2.3 and direction spec §5.4.
 - **Costume Zombie as door-walking infiltrator** — the sanctioned Trojan; goes to the post-PoC specials re-audit.
 - **Boards-on-doors visual language** (§4.4) — art pass; mechanics already chunk-quantized for it.
 - **Interior door mechanics** (locking/breaching room doors) — flatly recommended against for v1; revisit only if room-by-room play proves too fast.
@@ -285,4 +285,44 @@ Sweep jobs for this feature: siege duration feel (pound math), garrison toll (~3
 
 ---
 
-**END OF SPEC** — supersedes nothing until built; the direction spec's §12 PoC validation verdict remains the gate before this milestone starts.
+## 16. AS-BUILT AMENDMENTS (2026-07-23 → 27, all rulings Ben's — this section wins over §1–§15 where they differ)
+
+### 16.1 Structure
+- **ShelterBuilding is a mouse-editable `Polygon2D`** (`shelter_building.gd`, `@tool`), not a container of Wall segments: the drawn footprint IS the building — wall quads auto-generate from its edges minus door gaps, nav outlines merge from the same geometry, and `Door` nodes snap and slide along the perimeter. Any shape, not just rectangles.
+- **Scale self-heal:** `_normalize_scale()` folds any editor-applied node scale into the polygon + child positions at load (restoring winding) — a scaled building can no longer silently corrupt geometry.
+- **Occupied-building targeting:** with zombies selected, the **whole footprint** is the release target (hover outline telegraph) — no picking individuals through walls.
+- **Shelter adoption:** hand-placed humans inside an intact `is_shelter` building become SHELTERED occupants at boot (`GameManager._adopt_shelter_residents`; nearest intact door = notional entry). Patrollers, dumb boxes, and ruined buildings are skipped. This closes the "spawned-inside humans act oblivious" gap and makes pre-placed garrisons real.
+
+### 16.2 The terrain kit (2026-07-25 ruling — one door mechanic, many terrain shapes)
+- **Gates:** a standalone `Door` in plain `Wall` geometry (hand-carved gap; no building). Full barrier/lock/pound/breach mechanics; no shelter semantics; no inside-burst (no "inside" exists).
+- **Dumb boxes:** `is_shelter = false` on ShelterBuilding — enterable geometry whose doors never join the flee exit set and never convert entrants to SHELTERED. Pure terrain. (This soft-deprecates perimeter-mode `Wall`; `Wall.solid` now defaults `true`.)
+- **Door dials:** per-door `integrity_override` and `thickness`; **`starts_open`** = a pure portal, born breached — no barriers, no lock, no leaf. Consequence (ruled): an open door is a permanent hole, so its building **counts breached from birth and never shelters** — otherwise `is_safely_sheltered` would protect occupants of a walk-in building.
+- **Prey-beyond-door pounding (both sides):** a feral wedged at any intact door with a live target beyond it converts to pounding it — gates get besieged from either side.
+- **RMB-release-on-door:** an ordered siege of a specific intact door (you can't building-click a wall). Hover telegraph. Still the one attack verb.
+
+### 16.3 Siege & breach behavior
+- **Pour-in at breach (supersedes the interim calm-at-the-door):** the siege COMMITS. At breach a besieger retargets normally first; on an empty scan it takes the **nearest living occupant** of its besieged building, no LOS gate (occupants aren't in the global pool), preferring un-pursued occupants (the peel philosophy indoors). Once one is pursued the rest converge via the pool.
+- **Breach-frame race fix:** the dying door zeroes its barrier collision layers **before** `queue_free` — the same-frame LOS raycast otherwise still hit the freed blocker and calmed besiegers at the mouth.
+- **Inside burst:** any living zombie (calm included) in the **inside** half of an intact door's arc breaks it open **instantly** — the body price was paid at the entry breach; pursuit flows out the back. (Supersedes symmetric-barrier wedging at back doors. Standalone gates excluded.)
+- **Engagement arc is double-sided** for the prey-beyond-door case; pre-breach, only the outside half locks/pounds a shelter door.
+- **Failsafe status:** the §5.4.1 BREACHING exemption is live; the §5.4.2 feral-collider pause and §8.3 fleeing-queue pause are implemented but **latent** (units have no unit-unit body collision yet).
+
+### 16.4 Human side
+- **Fear and cower are FULLY suspended while SHELTERED** (sharpens §6.1) — fear ticking inside caused a 60Hz break→re-enter loop (door-gap humans sit inside the DoorLOS body; outward rays leak via hit-from-inside). Civilian fear re-arms only at `not is_safely_sheltered()` (breach); armed humans stay suspended forever (§7.2 last stand as specced).
+- **Sight-only breach fear (sharpens §8.2):** inside a breached building the 250px fear cap **drops** — the count is all living zombies, LOS-only. Interior walls still stage the room-by-room sweep; outdoor fear keeps its radius. (Big-building civilians otherwise didn't flush until ferals were halfway in.)
+- **The flush is routed, two-leg:** `_threat_direction` inside a breached shelter is uncapped + sight-gated, and the flush commits a **door-leg route** — first waypoint = the just-outside point of the building's best passable door (threat-scored like exits), then the committed exit. Cures the "charge the breach, reverse, die" dither. Single-door flush jams remain designed (§8.1 jam → cower).
+- **Exit churn re-path:** a fleeing human tracks its committed exit NODE and re-picks via the threat-aware picker whenever that exit drops out (engaged/locked/breached) or a better one returns.
+- **Door-watch arms only from the claimed spot** (`at_shelter_spot()` gate) — mid-walk entrants were drawing phantom fill lines through the door (the same hit-from-inside ray leak).
+
+### 16.5 Combat numbers & feel
+- **Per-class `fire_cooldown`** (v0: Civ 0 / Mil 0.8 / Pol 0.6 / GI 0.4s) gates the **shot, not the front** — point-blank refills (~0.07s) let a lone militia shred waves; at range (fill time > cooldown) nothing changes. Direction-spec §9 table updated.
+- **Pounce lunge speed** derives from `pounce_range / flight_time × 1.5` (was zombie_speed — slow configs landed short, killing "from afar").
+- **Finishing zombies** (pounce recovery) are box-selectable; orders are **stored** and apply at calm, dropped if the hunt continues — the corpse-command model applied to the recovery beat.
+- **Door integrity bar** renders on a z-10 layer (above units), chunk-decrement + pulse per §4.4; locked doors tint the leaf dark-red; doors and buildings hover-outline as release telegraphs.
+
+### 16.6 Status of the acceptance scenarios (§15)
+Scenarios 1–6, 8, 9 verified in play/headless across 2026-07-23→26 (scripted end-to-end siege = `scenes/shelter_test_siege.tscn`, kept as the standing boot-twice regression; fast-forward determinism harness = `shelter_test_siege_ff.tscn`). Scenario 7 (gunfire-summons) observed emergent during play — an explicit staged verify remains a Phase 6 item.
+
+---
+
+**END OF SPEC** — slice 1 + terrain kit are live on `v2-poc` (v0.44.0→v0.45.0); slice 2 remains gated on level-scale play.
