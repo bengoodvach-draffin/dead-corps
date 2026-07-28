@@ -1,7 +1,7 @@
-[gd_scene load_steps=3 format=3 uid="uid://fat_zombie_scene"]
+[gd_scene format=3]
 
-[ext_resource type="Script" path="res://scripts/fat_zombie.gd" id="1_fatzombie"]
-[ext_resource type="PackedScene" path="res://scenes/fat_zombie_corpse.tscn" id="2_corpse"]
+[ext_resource type="Script" uid="uid://5q3o7t4yco1" path="res://scripts/fat_zombie.gd" id="1_fatzombie"]
+[ext_resource type="PackedScene" path="res://scenes/V1/fat_zombie_corpse.tscn" id="2_corpse"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_fat"]
 radius = 25.0

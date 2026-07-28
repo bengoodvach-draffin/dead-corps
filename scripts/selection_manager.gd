@@ -75,8 +75,40 @@ func _ready() -> void:
 ## Per-frame: keep the release-hover highlight in sync with the cursor (recomputed
 ## each frame so it tracks both cursor and human movement). Cheap — one radius query.
 func _process(_delta: float) -> void:
+	_prune_selection()
 	_update_release_hover()
 	queue_redraw()   # keep the group-route viz anchored as the selection moves (#8)
+
+
+## Selection hygiene (the ordered-besieger retention's other half, 2026-07-28):
+## drop members that stopped being selection-worthy — freed/dead units and
+## ferals off on a genuine hunt (a besieger that peeled to live prey, a selected
+## calm zombie ignited by contagion). Ordered besiegers are KEPT — that's the
+## point: they ride the selection through the pound and are already selected
+## when the breach calms them. Pure UI, no sim effect.
+func _prune_selection() -> void:
+	var removed := false
+	for i in range(selected_units.size() - 1, -1, -1):
+		var u: Unit = selected_units[i]
+		if is_instance_valid(u) and _selection_keeps(u):
+			continue
+		selected_units.remove_at(i)
+		if is_instance_valid(u):
+			u.deselect()
+		removed = true
+	if removed:
+		selection_changed.emit(selected_units)
+
+
+## Whether a (valid) selected unit still belongs in the selection: calm zombies,
+## finishers, ordered besiegers, pending-rise corpses.
+func _selection_keeps(u: Unit) -> bool:
+	if u is Zombie:
+		var z := u as Zombie
+		return z.is_selectable() or z.is_finishing_kill() or z.is_ordered_besieging()
+	if u is Human:
+		return (u as Human).is_selectable_corpse()
+	return true
 
 func _input(event: InputEvent) -> void:
 	# MARK MODE intercepts the mouse while armed: LMB places, RMB/Esc cancels.
@@ -565,6 +597,12 @@ func _release_at_building(building: Node2D, calm_zombies: Array[Unit]) -> void:
 
 ## RELEASE-ON-DOOR: ignite the calm zombies onto one specific door (ordered
 ## siege — persists until the door falls). Deterministic: unit_uid order.
+## Unlike the prey releases, the selection is KEPT (Ben's ruling 2026-07-28, the
+## finisher precedent extended): an ordered siege has no prey — the besiegers
+## predictably calm the instant the door falls, so clearing the selection here
+## only forces a re-box at the breach. While FERAL they take no commands (every
+## verb re-filters on can_receive_command); a peel-off to live prey is a real
+## hunt and the selection prune drops the peeler.
 func _release_at_door(door: Node2D, calm_zombies: Array[Unit]) -> void:
 	var ferals: Array[Zombie] = []
 	for u in calm_zombies:
@@ -575,8 +613,7 @@ func _release_at_door(door: Node2D, calm_zombies: Array[Unit]) -> void:
 	for z in ferals:
 		z.ignite_feral_at_door(door)
 	if not ferals.is_empty():
-		print("🔥 RELEASE: %d zombies onto door %s" % [ferals.size(), door.name])
-	clear_selection()
+		print("🔥 RELEASE: %d zombies onto door %s (selection kept)" % [ferals.size(), door.name])
 
 
 ## The intact door under/near `pos` (within its half-width + a small pad), or

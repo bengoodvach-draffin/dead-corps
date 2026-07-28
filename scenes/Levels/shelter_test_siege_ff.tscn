@@ -1,6 +1,6 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene format=3]
 
-[ext_resource type="PackedScene" uid="uid://0abcm55rf54k" path="res://scenes/shelter_test_siege.tscn" id="1_siege"]
+[ext_resource type="PackedScene" uid="uid://0abcm55rf54k" path="res://scenes/Levels/shelter_test_siege.tscn" id="1_siege"]
 
 [sub_resource type="GDScript" id="GDScript_ff"]
 script/source = "extends Node

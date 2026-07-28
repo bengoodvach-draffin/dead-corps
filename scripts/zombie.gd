@@ -101,6 +101,16 @@ func is_finishing_kill() -> bool:
 	return current_state == State.FERAL and _pounce != null and _pounce.is_recovering()
 
 
+## ORDERED-BESIEGER retention (Ben's ruling 2026-07-28, the finisher precedent
+## extended): a feral pounding a door it was RMB-ordered onto STAYS in the
+## selection — an ordered siege has no prey, so the besieger predictably calms
+## the instant the door falls, already selected. Still not commandable while
+## FERAL; a peel-off to live prey ends this (the hunt wins, the selection
+## prune drops it).
+func is_ordered_besieging() -> bool:
+	return current_state == State.FERAL and _feral != null and _feral.is_ordered_breaching()
+
+
 ## Stored order for a finishing zombie (see is_finishing_kill). The attack case
 ## reuses queued_attack (consumed by _tick_calm once idle).
 var _pending_calm_move: Vector2 = Vector2.ZERO

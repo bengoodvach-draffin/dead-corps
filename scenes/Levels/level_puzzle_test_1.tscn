@@ -11,8 +11,8 @@
 [ext_resource type="PackedScene" uid="uid://bmw8qx5r2n8pk" path="res://scenes/building.tscn" id="8_l07ew"]
 [ext_resource type="Script" uid="uid://cax0dih7wnxe0" path="res://scripts/selection_manager.gd" id="11_8xmie"]
 [ext_resource type="Script" uid="uid://yd0ofoh8ih30" path="res://scripts/nav_baker.gd" id="11_g1k1b"]
-[ext_resource type="PackedScene" uid="uid://di2wxa5t7dmxv" path="res://scenes/debug_overlay.tscn" id="12_irsvf"]
-[ext_resource type="PackedScene" uid="uid://cpxw4y8m7n5pk" path="res://scenes/end_game_overlay.tscn" id="13_cu6wa"]
+[ext_resource type="PackedScene" uid="uid://di2wxa5t7dmxv" path="res://scenes/UI/debug_overlay.tscn" id="12_irsvf"]
+[ext_resource type="PackedScene" uid="uid://cpxw4y8m7n5pk" path="res://scenes/UI/end_game_overlay.tscn" id="13_cu6wa"]
 [ext_resource type="PackedScene" uid="uid://bvx8qw2m7n5pk" path="res://scenes/escape_zone.tscn" id="14_ranx7"]
 [ext_resource type="Script" uid="uid://cvde25j0ujcg" path="res://scripts/wall.gd" id="14_wall"]
 

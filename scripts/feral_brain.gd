@@ -294,6 +294,12 @@ func is_breaching() -> bool:
 	return _siege_door != null   # door, not building — gates have no building
 
 
+## ORDERED sieges only (release-on-door) — the selection-retention predicate.
+## Wedge and building-proxy sieges are genuine hunts and don't qualify.
+func is_ordered_breaching() -> bool:
+	return _siege_door != null and _ordered_siege
+
+
 ## This feral's nearest intact door of `building`, by NAV distance (a back door
 ## through a wall is not "near"). Deterministic: fixed mesh, scene-order ties.
 func _nearest_door(building: Node2D) -> Node2D:
