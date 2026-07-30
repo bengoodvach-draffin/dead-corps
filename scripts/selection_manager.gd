@@ -80,12 +80,11 @@ func _process(_delta: float) -> void:
 	queue_redraw()   # keep the group-route viz anchored as the selection moves (#8)
 
 
-## Selection hygiene (the ordered-besieger retention's other half, 2026-07-28):
-## drop members that stopped being selection-worthy — freed/dead units and
-## ferals off on a genuine hunt (a besieger that peeled to live prey, a selected
-## calm zombie ignited by contagion). Ordered besiegers are KEPT — that's the
-## point: they ride the selection through the pound and are already selected
-## when the breach calms them. Pure UI, no sim effect.
+## Selection hygiene (2026-07-28): drop members that stopped being
+## selection-worthy — freed/dead units, and ferals off on a genuine hunt (a
+## selected calm zombie ignited by contagion, say). Calm door-breachers are
+## simply calm, so they ride the selection through the pound and are still
+## selected when the door falls. Pure UI, no sim effect.
 func _prune_selection() -> void:
 	var removed := false
 	for i in range(selected_units.size() - 1, -1, -1):
@@ -101,11 +100,11 @@ func _prune_selection() -> void:
 
 
 ## Whether a (valid) selected unit still belongs in the selection: calm zombies,
-## finishers, ordered besiegers, pending-rise corpses.
+## finishers, pending-rise corpses.
 func _selection_keeps(u: Unit) -> bool:
 	if u is Zombie:
 		var z := u as Zombie
-		return z.is_selectable() or z.is_finishing_kill() or z.is_ordered_besieging()
+		return z.is_selectable() or z.is_finishing_kill()
 	if u is Human:
 		return (u as Human).is_selectable_corpse()
 	return true
@@ -492,15 +491,16 @@ func handle_command(_screen_pos: Vector2) -> void:
 			(f as Zombie).queue_finish_move(world_pos)
 		_release_at_building(clicked_building, calm_zombies)
 		return
-	# RELEASE-ON-DOOR (terrain kit / spec §5.1's original verb): RMB on any
-	# INTACT door — a gate in a wall, an empty building's door — is an ordered
-	# siege release: the selected calm zombies go break that specific door.
-	# Deliberate pre-breaching is a herding spend (denying an exit in advance).
+	# ORDERED CALM BREACH (Ben's ruling 2026-07-30, supersedes release-on-door):
+	# RMB on any INTACT door — a gate in a wall, an empty building's door — sends
+	# the selected calm zombies to break that specific one. They stay CALM: this
+	# is the explicit form of what a move order does incidentally, not a release.
+	# Release is for prey (humans, occupied buildings); orders are for terrain.
 	var clicked_door := _door_at(world_pos)
 	if clicked_door != null and not calm_zombies.is_empty():
 		for f in finishers:
 			(f as Zombie).queue_finish_move(world_pos)
-		_release_at_door(clicked_door, calm_zombies)
+		_order_breach_at_door(clicked_door, calm_zombies)
 		return
 	var movers: Array[Unit] = calm_zombies + finishers
 	if not movers.is_empty():
@@ -595,25 +595,26 @@ func _release_at_building(building: Node2D, calm_zombies: Array[Unit]) -> void:
 	clear_selection()
 
 
-## RELEASE-ON-DOOR: ignite the calm zombies onto one specific door (ordered
-## siege — persists until the door falls). Deterministic: unit_uid order.
-## Unlike the prey releases, the selection is KEPT (Ben's ruling 2026-07-28, the
-## finisher precedent extended): an ordered siege has no prey — the besiegers
-## predictably calm the instant the door falls, so clearing the selection here
-## only forces a re-box at the breach. While FERAL they take no commands (every
-## verb re-filters on can_receive_command); a peel-off to live prey is a real
-## hunt and the selection prune drops the peeler.
-func _release_at_door(door: Node2D, calm_zombies: Array[Unit]) -> void:
-	var ferals: Array[Zombie] = []
+## ORDERED CALM BREACH: send the calm zombies to break one specific door. A
+## plain calm order — they stay CALM, stay selected, and any new order cancels
+## it; nothing here is a commitment. Deterministic: unit_uid order.
+##
+## This is what release-on-door became (Ben's ruling 2026-07-30). The old verb
+## ignited them, which cost the player the crew for no mechanical gain — the
+## pound damage is identical either way, so the frenzy bought nothing. It also
+## read as backwards next to calm auto-breach: clicking the door deliberately
+## gave you LESS control than blundering into it.
+func _order_breach_at_door(door: Node2D, calm_zombies: Array[Unit]) -> void:
+	var crew: Array[Zombie] = []
 	for u in calm_zombies:
 		if is_instance_valid(u) and u is Zombie and (u as Zombie).can_receive_command() \
 				and not (u as Zombie).is_special:
-			ferals.append(u)
-	ferals.sort_custom(func(a: Zombie, b: Zombie) -> bool: return a.unit_uid < b.unit_uid)
-	for z in ferals:
-		z.ignite_feral_at_door(door)
-	if not ferals.is_empty():
-		print("🔥 RELEASE: %d zombies onto door %s (selection kept)" % [ferals.size(), door.name])
+			crew.append(u)
+	crew.sort_custom(func(a: Zombie, b: Zombie) -> bool: return a.unit_uid < b.unit_uid)
+	for z in crew:
+		z.order_breach(door)
+	if not crew.is_empty():
+		print("🔨 BREACH ORDER: %d zombies onto door %s" % [crew.size(), door.name])
 
 
 ## The intact door under/near `pos` (within its half-width + a small pad), or

@@ -36,6 +36,7 @@ var is_special: bool = false
 var _shamble: ShambleBehavior = null   ## calm idle wander
 var _feral: FeralBrain = null          ## feral pursuit / target
 var _pounce: PounceBehavior = null     ## the lunge / kill-at-landing / recovery
+var _breach: CalmBreach = null         ## calm auto-breach of a door in the way
 
 ## Tracks whether we were executing a commanded move last frame, so the shamble
 ## anchor can reset to the arrival point the moment a move completes (spec §3.2).
@@ -80,6 +81,11 @@ func _ready() -> void:
 	_pounce.setup(self)
 	_pounce.landed_kill.connect(_on_pounce_kill)
 
+	_breach = CalmBreach.new()
+	_breach.name = "CalmBreach"
+	add_child(_breach)
+	_breach.setup(self)
+
 
 ## Whether this zombie can receive a player command. Calm only.
 func can_receive_command() -> bool:
@@ -101,14 +107,11 @@ func is_finishing_kill() -> bool:
 	return current_state == State.FERAL and _pounce != null and _pounce.is_recovering()
 
 
-## ORDERED-BESIEGER retention (Ben's ruling 2026-07-28, the finisher precedent
-## extended): a feral pounding a door it was RMB-ordered onto STAYS in the
-## selection — an ordered siege has no prey, so the besieger predictably calms
-## the instant the door falls, already selected. Still not commandable while
-## FERAL; a peel-off to live prey ends this (the hunt wins, the selection
-## prune drops it).
-func is_ordered_besieging() -> bool:
-	return current_state == State.FERAL and _feral != null and _feral.is_ordered_breaching()
+## True while this CALM zombie is pounding a door that blocks its ordered move
+## (calm auto-breach). Stays selectable and commandable throughout — this is
+## terrain clearing, not a siege. Readability / debug hook.
+func is_calm_breaching() -> bool:
+	return current_state == State.CALM and _breach != null and _breach.is_breaching()
 
 
 ## Stored order for a finishing zombie (see is_finishing_kill). The attack case
@@ -164,6 +167,13 @@ func _physics_process(delta: float) -> void:
 ## CALM: execute a commanded move if we have one, otherwise idle-shamble. When a
 ## commanded move just completed, reset the shamble anchor to the arrival point.
 func _tick_calm(delta: float) -> void:
+	# CALM BREACH: a door that blocks this route, or one the player clicked
+	# directly, gets broken down without leaving calm control. It drives movement
+	# on the frames it pounds, and hands control back the frame the door falls.
+	if _breach.tick(has_target, target_position, delta):
+		_was_moving = true
+		return
+
 	if has_target:
 		# Commanded move at the chase speed (§9 zombie_speed). Read live from config
 		# (robust to LevelConfig push order) — same speed as feral pursuit. Nav-pathed
@@ -220,6 +230,7 @@ func ignite_feral(target: Human = null) -> void:
 	_was_moving = false
 	move_queue.clear()      # released is released — drop any queued route (#8)
 	queued_attack = null    # and any deferred attack
+	_breach.cancel()        # and any calm breach — the hunt owns the door rules now
 	_feral.set_target(target)
 	modulate = FERAL_TINT
 
@@ -234,21 +245,29 @@ func ignite_feral_at_building(building: Node2D) -> void:
 	_was_moving = false
 	move_queue.clear()
 	queued_attack = null
+	_breach.cancel()
 	_feral.set_siege(building)
 	modulate = FERAL_TINT
 
 
-## Release-on-door (terrain kit / spec §5.1's original verb): ignite FERAL with
-## a specific door as the ordered siege target — gates in plain walls, empty
-## buildings, any intact door. Released is released.
-func ignite_feral_at_door(door: Node2D) -> void:
-	current_state = State.FERAL
+## ORDERED CALM BREACH (Ben's ruling 2026-07-30): RMB on an intact door sends
+## this zombie to break that specific one — a plain calm order, not a release.
+## Release is for prey; orders are for terrain. It stays selectable and
+## commandable throughout, and any new order cancels the job instantly.
+##
+## Replaces release-on-door as the door click's verb: a door isn't prey (it
+## doesn't move, doesn't fight back, doesn't feed the combo, and pounds for the
+## same damage either way), so going feral to break one bought nothing but the
+## loss of control.
+func order_breach(door: Node2D) -> void:
+	if not can_receive_command():
+		return
+	# A plain command replaces any route, exactly like a move order does.
 	has_target = false
 	_was_moving = false
 	move_queue.clear()
 	queued_attack = null
-	_feral.set_door_siege(door)
-	modulate = FERAL_TINT
+	_breach.order(door)
 
 
 ## The pounce landed a kill — relay it as the zombie's kill signal (feeds
@@ -364,6 +383,8 @@ func die() -> void:
 	# clear() is null-safe and also used by _set_calm, so it's safe on any death path.
 	if _feral != null:
 		_feral.clear()
+	if _breach != null:
+		_breach.cancel()
 	# Living zombies stop being pushed by this corpse via the BOID separation skip
 	# (dead units excluded by is_alive in the registry), not collision layers.
 	await get_tree().create_timer(0.3).timeout

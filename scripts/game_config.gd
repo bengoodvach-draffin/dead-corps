@@ -18,9 +18,15 @@ extends Node
 ## Per-class arrays are indexed by DefenderClass: CIV=0, MILITIA=1, POLICE=2,
 ## GI=3 (the PoC roster; v1's SPEC_OPS is dropped — Phase 1.1 rebuilds the enum
 ## to these four). Keep this index order in sync everywhere.
+##
+## BASELINE (2026-07-30): these are no longer the spec's untested v0.1 numbers.
+## Ten knobs were rebased onto the values Ben tuned by hand on level_docks, so a
+## new level starts from playtested ground instead of from paper — see the
+## "docks baseline" notes below. level_config.gd's @export defaults mirror them.
 
 # === MOVEMENT ===
-var zombie_speed: float = 200.0
+## Docks baseline (was the spec's 200) — the pace the chase actually reads at.
+var zombie_speed: float = 140.0
 var human_flee_speed: float = 90.0
 
 # === HUMAN AWARENESS / DEFENSE (per-class: [CIV, MILITIA, POLICE, GI]) ===
@@ -37,7 +43,8 @@ var civilian_reaction: float = 0.75
 ## growing during the cooldown — at range (fill time > cooldown) nothing changes;
 ## this is the close-range fire-rate floor (point-blank refills in ~0.07s and a
 ## lone militia was shredding whole waves — Ben's playtest, 2026-07-24).
-var fire_cooldown: Array[float] = [0.0, 0.8, 0.6, 0.4]
+## Docks baseline: slowed a further quarter-second per class (was [_, .8, .6, .4]).
+var fire_cooldown: Array[float] = [0.0, 1.0, 0.8, 0.6]
 
 # === FEAR ===
 var fear_radius: float = 250.0
@@ -49,16 +56,32 @@ var fear_reaction: float = 0.3
 ## bend pushes vs the goal pull (low = punches to the exit ignoring your wall; high =
 ## easily herded, can be shoved backward into a dead end → cower).
 var flee_repel_radius: float = 180.0
-var flee_repel_strength: float = 1.5
+## Docks baseline: 3.0 (was 1.5) — markedly more herdable.
+var flee_repel_strength: float = 3.0
 ## Threat-aware exit choice: how strongly a broken human avoids picking an exit that's
 ## BEHIND the horde that scared it (so it flees away from the danger, not through it).
 ## Scores each exit by distance × (1 + bias × alignment-with-threat). 0 = OFF (pure
 ## nearest-exit, no threat consideration).
-var flee_exit_threat_bias: float = 1.5
+## Docks baseline: 6.0 (was 1.5) — routs commit hard to running AWAY from you.
+## KEPT high alongside exit_block_radius below: the two solve different halves of
+## the problem. This one is about the ROUTE (don't sprint through the horde to
+## reach something behind it, Ben's playtest 2026-07-30); the block radius is
+## about the DOOR itself. Neither substitutes for the other.
+var flee_exit_threat_bias: float = 6.0
+## "Zombies at the door" (Ben's ruling 2026-07-30): an exit with a living zombie
+## within this radius is struck off the list entirely — a bunged-up door is not
+## an exit, so walling one with bodies genuinely closes it. Deliberately TIGHT:
+## it should mean standing in the doorway, not merely nearby, or a single wanderer
+## sends runners on an absurd cross-map detour. If EVERY exit is blocked the set
+## is used unfiltered (a desperate run at the least-bad one beats freezing; the
+## cower detector corners them within cower_window regardless).
+var exit_block_radius: float = 120.0
 
 # === CONTAGION / HUNT ===
 var contagion_radius: float = 150.0
-var chain_scan_radius: float = 250.0
+## Docks baseline: 150 (was 250) — a tighter feral nose, so the horde keeps its
+## line instead of every feral seeing half the level.
+var chain_scan_radius: float = 150.0
 ## Peel-off (continuous opportunistic retarget): how often a pursuing feral re-scans
 ## for a closer fresh straggler (seconds), and how much closer that straggler must be
 ## to make it peel (fraction of the current target's distance — 0.8 = must be ≥20%
@@ -70,7 +93,8 @@ var feral_divert_hysteresis: float = 0.8
 ## ones (× the perpendicular offset in the path score). 0 = pure nearest (splays
 ## across the front rank); higher = more bullet-like (drives up the centre, spreads
 ## only once the central column is taken).
-var feral_offaxis_penalty: float = 2.0
+## Docks baseline: 1.5 (was 2.0) — a slightly less bullet-like, wider front.
+var feral_offaxis_penalty: float = 1.5
 
 # === POUNCE ===
 var pounce_range: float = 40.0
@@ -84,7 +108,8 @@ var rise_time: float = 2.5
 
 # === COWER ===
 var cower_min_displacement: float = 40.0
-var cower_window: float = 2.0
+## Docks baseline: 1.2 (was 2.0) — cornered humans give up quicker.
+var cower_window: float = 1.2
 
 # === SCORING ===
 var combo_window: float = 4.0
@@ -96,14 +121,17 @@ var kill_base: int = 10
 var combo_tier_size: int = 5
 
 # === RELEASE / MARK ===
-var release_cluster_radius: float = 300.0
+## Docks baseline: 150 (was 300) — a release seeds a tighter cluster.
+var release_cluster_radius: float = 150.0
 ## Release magnetism (build-plan #1): an RMB within this radius (px) of a human counts
 ## as a RELEASE, pinned to the nearest human; outside it, RMB is a plain calm move order.
-var release_aim_radius: float = 100.0
+## Docks baseline: 50 (was 100) — less magnetism, so a near-miss click stays a move.
+var release_aim_radius: float = 50.0
 ## THE MARK's attention field (§5.4 as amended 2026-07-26): ONE circle doing both
 ## jobs — ferals INSIDE it prefer prey INSIDE it. (Supersedes the old 300px
 ## coordinate-prey-designation-only meaning.)
-var mark_radius: float = 400.0
+## Docks baseline: 300 (was 400).
+var mark_radius: float = 300.0
 
 # === IDLE SHAMBLE ===
 var shamble_leash: float = 5.0
@@ -123,6 +151,18 @@ var facing_tolerance: float = 15.0
 # === NO-PROGRESS FAILSAFE ===
 var failsafe_min_progress: float = 40.0
 var failsafe_window: float = 2.0
+
+# === DOOR WEDGE (the breach trigger, Ben's ruling 2026-07-29) ===
+## How long a zombie must gain no ground toward its goal, while sitting in an
+## intact door's engagement arc, before it starts pounding. SPLIT from the
+## failsafe above deliberately: the give-up clock has to tolerate a slow or
+## queued chase before abandoning a hunt, while hitting a door should convert to
+## pounding almost immediately. Feral pursuit and calm ordered moves share it.
+var door_wedge_window: float = 0.5
+## Ground (px) that counts as "getting somewhere" within a wedge window. Keeps
+## the failsafe's 20px/s rate (40px per 2s), so it's the same tolerance judged
+## four times as often — not a stricter test.
+var door_wedge_min_progress: float = 10.0
 
 # === ENTERABLE BUILDINGS (buildings spec §14, v0 defaults) ===
 ## Depth (px) of the door engagement arc — the zone in front of a door where a

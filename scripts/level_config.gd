@@ -16,10 +16,16 @@ class_name LevelConfig
 ##
 ## Per-class arrays are indexed by DefenderClass: CIV=0, MILITIA=1, POLICE=2,
 ## GI=3 (PoC roster). Keep this index order in sync with GameConfig.
+##
+## BASELINE (2026-07-30): ten of these defaults were rebased onto the values Ben
+## tuned by hand on level_docks, so a NEW LevelConfig node starts from playtested
+## ground. Note the consequence for EXISTING levels: a .tscn only stores values
+## that differ from the default, so any of these a level left alone now follows
+## the docks baseline too. Each level's explicitly-set values are untouched.
 
 # === MOVEMENT ===
 ## Zombie speed (px/s) — calm commanded moves AND feral pursuit both use this.
-@export var zombie_speed: float = 200.0
+@export var zombie_speed: float = 140.0
 ## Speed (px/s) a broken human runs to the exit.
 @export var human_flee_speed: float = 90.0
 
@@ -33,7 +39,7 @@ class_name LevelConfig
 ## Seconds a civilian sees a zombie before fleeing (their "fill" is a pure reaction clock).
 @export var civilian_reaction: float = 0.75
 ## Per-class [CIV, MIL, POL, GI] minimum seconds between shots — the close-range fire-rate floor. CIV unused.
-@export var fire_cooldown: Array[float] = [0.0, 0.8, 0.6, 0.4]
+@export var fire_cooldown: Array[float] = [0.0, 1.0, 0.8, 0.6]
 
 # === FEAR ===
 ## Radius (px) for the fear count. Zombies (any state, building-LOS gated) inside it feed the break.
@@ -45,21 +51,23 @@ class_name LevelConfig
 ## Fleeing humans bend their route away from zombies within this radius (px) — the herding mechanic.
 @export var flee_repel_radius: float = 180.0
 ## THE herdability dial: how hard the flee route bends around zombies vs pulling to the exit. Higher = easier to herd/corner.
-@export var flee_repel_strength: float = 1.5
-## How strongly a broken human avoids an exit BEHIND the horde that scared it. 0 = pure nearest exit.
-@export var flee_exit_threat_bias: float = 1.5
+@export var flee_repel_strength: float = 3.0
+## How strongly a broken human avoids an exit BEHIND the horde that scared it. 0 = pure nearest exit. Governs the ROUTE.
+@export var flee_exit_threat_bias: float = 6.0
+## An exit with a living zombie within this radius (px) is struck off the list — wall a door with bodies and it closes. Keep tight (doorway, not "nearby").
+@export var exit_block_radius: float = 120.0
 
 # === CONTAGION / HUNT ===
 ## A kill or a zombie gunfire-death ignites calm zombies within this radius (px).
 @export var contagion_radius: float = 150.0
 ## Feral local-scan / peel radius (px): reach for retargeting AND opportunistic straggler peel-off.
-@export var chain_scan_radius: float = 250.0
+@export var chain_scan_radius: float = 150.0
 ## How often (s) a pursuing feral re-scans for a closer fresh straggler to peel onto.
 @export var feral_divert_interval: float = 0.25
 ## A straggler must score this fraction of the current target's path-score to peel (0.8 = ≥20% better). Kills jitter.
 @export var feral_divert_hysteresis: float = 0.8
 ## Bullet-vs-splay: how strongly targeting prefers humans along the swarm's path. 0 = splay across the front rank; higher = drive up the centre.
-@export var feral_offaxis_penalty: float = 2.0
+@export var feral_offaxis_penalty: float = 1.5
 
 # === POUNCE ===
 ## Distance (px) at which a feral lunges into a pounce.
@@ -77,7 +85,7 @@ class_name LevelConfig
 ## A fleeing human that net-moves less than this (px) over cower_window gets cornered → cower.
 @export var cower_min_displacement: float = 40.0
 ## Rolling window (s) for the cower net-displacement check.
-@export var cower_window: float = 2.0
+@export var cower_window: float = 1.2
 
 # === SCORING ===
 ## Seconds after a kill the combo chain stays alive (refreshed each kill). On expiry it banks pot × multiplier.
@@ -91,11 +99,11 @@ class_name LevelConfig
 
 # === RELEASE / MARK ===
 ## On release, humans within this radius (px) of the aim point are seeded as targets.
-@export var release_cluster_radius: float = 300.0
+@export var release_cluster_radius: float = 150.0
 ## Release magnetism (#1): RMB within this radius (px) of a human = a release pinned to the nearest one; outside it = a move order.
-@export var release_aim_radius: float = 100.0
+@export var release_aim_radius: float = 50.0
 ## THE MARK's attention field (px): ferals inside the circle prefer prey inside the circle.
-@export var mark_radius: float = 400.0
+@export var mark_radius: float = 300.0
 
 # === IDLE SHAMBLE ===
 ## How far (px) an idle calm zombie wanders from its anchor.
@@ -118,6 +126,12 @@ class_name LevelConfig
 @export var failsafe_min_progress: float = 40.0
 ## Window (s) for the no-progress failsafe check.
 @export var failsafe_window: float = 2.0
+
+# === DOOR WEDGE (the breach trigger) ===
+## Seconds of no ground gained, while pressed in a door's arc, before a zombie starts pounding it. Much shorter than failsafe_window by design.
+@export var door_wedge_window: float = 0.5
+## Ground (px) that counts as progress within a wedge window (10px/0.5s = the failsafe's 20px/s rate).
+@export var door_wedge_min_progress: float = 10.0
 
 # === ENTERABLE BUILDINGS ===
 ## Depth (px) of the door engagement arc — where a besieging feral pounds (and, step 4, what locks the door).
@@ -157,6 +171,7 @@ func _ready() -> void:
 	GameConfig.flee_repel_radius = flee_repel_radius
 	GameConfig.flee_repel_strength = flee_repel_strength
 	GameConfig.flee_exit_threat_bias = flee_exit_threat_bias
+	GameConfig.exit_block_radius = exit_block_radius
 
 	GameConfig.contagion_radius = contagion_radius
 	GameConfig.chain_scan_radius = chain_scan_radius
@@ -192,6 +207,9 @@ func _ready() -> void:
 
 	GameConfig.failsafe_min_progress = failsafe_min_progress
 	GameConfig.failsafe_window = failsafe_window
+
+	GameConfig.door_wedge_window = door_wedge_window
+	GameConfig.door_wedge_min_progress = door_wedge_min_progress
 
 	GameConfig.door_engagement_depth = door_engagement_depth
 	GameConfig.pound_interval = pound_interval

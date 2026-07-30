@@ -1,6 +1,6 @@
 # Dead Corps — v2-poc Work Queue
 
-**Updated:** 2026-07-27 · **Branch:** `v2-poc` @ v0.45.0 *(since 07-12: enterable buildings slice 1 + terrain kit v0.44.0 — see `V2_ENTERABLE_BUILDINGS_SPEC.md` §16; Tier 4 batch done; manager splits + the Mark v0.45.0)*
+**Updated:** 2026-07-30 · **Branch:** `v2-poc` @ v0.47.0 *(since 07-12: enterable buildings slice 1 + terrain kit v0.44.0 — see `V2_ENTERABLE_BUILDINGS_SPEC.md` §16; Tier 4 batch done; manager splits + the Mark v0.45.0; the breach + flee batch v0.45.3–v0.47.0 — see Tier 3.5)*
 **What this is:** the single **prioritized** to-do for the branch — it merges the **2026-07-02 architecture review** bugs with the **2026-07-12 friends'-playtest** feature requests into one tier order. Fixes that are small or impactful come first; larger features and the phase-gated work follow.
 
 **Companion docs (detail lives there, not here):**
@@ -18,12 +18,16 @@
 - **Release = pin to the nearest human at the click** (a direct hit is the degenerate case); needs an aim/magnetism radius.
 - **Stop-to-fire** is the chosen A2 fix.
 - **Tiered combo base is correct as built**; the spec syncs to the code.
+- **Release is for prey, orders are for terrain** (2026-07-30). RMB on a human or occupied building = a release (feral, committed); RMB on a door or bare ground = a calm order. Breaking a door is terrain clearing, not an attack — release-on-door was deleted.
+- **Flushed humans hiding DEEPER into an interior shelter is intended, not a bug** (2026-07-30). Nesting depth is a level-design lever, not an engine rule. Removal proposed twice, declined twice.
+- **`flee_exit_threat_bias` stays 6.0** — it governs the route (no sprinting through the horde); `exit_block_radius` governs the door. Not redundant.
 - **CUT for now (Ben deprioritized):** zombies getting stuck on geometry — the corner-stuck investigation *and* the zombie-pursuit-nav asymmetry. Not queued.
 
 ## Blocked on Ben
 - **The Mark design workshop** — the Mark is built (v0.45.0, attention field, behind C) but first play found it confusing; validation Q6 can't be judged until the verb is re-designed.
 - **Phase 6 level questions** — scale/roster/building-density/difficulty for the §12 PoC level.
-- **Deter-knob test (Point 1, parked):** Ben tests `flee_repel_strength` (1.5→2.5–3.0) / `flee_repel_radius` (180→220) to judge whether steering-only is enough or body collision is needed. *(Corpse-commands A/B/C — resolved; feature shipped 2026-07-12.)*
+- ✅ **Deter-knob test (Point 1)** — effectively answered 2026-07-30: Ben settled on `flee_repel_strength` 3.0 in play and it is now the default (docks rebaseline). Steering-only stands; body collision still not needed.
+- **Deter-knob remainder:** `flee_repel_radius` (180→220) untested if herding ever feels short-reach. *(Corpse-commands A/B/C — resolved; feature shipped 2026-07-12.)*
 
 ---
 
@@ -42,6 +46,15 @@ Small, ruled, high-impact. Suggested PATCH bumps (or one v0.43.1 batch — Ben's
 6. **Corpse commands (3.2).** ✅ DONE 2026-07-12 (6a + 6b). Order a body before it rises. Model: the queued order is a stored **click**, re-resolved at rise via the live release-or-move rule (`release_aim_radius`) — human near → rises feral & attacks; else → rises calm & moves. A selected corpse's risen zombie auto-selects (if calm). 6b: assigning a control group to a corpse tags the entry so the risen zombie joins that group on rise.
 8. **Zombie move-queue / shift-click waypoints.** ✅ DONE (confirmed in code 2026-07-27): shift+RMB chains move orders (`Unit.queue_move`, capped queue, fixed-coord route viz line); shift+RMB on a human = an attack terminal deferred to the end of the route. Queued moves only — no loops/branches/patrol-editing, per the cap.
 7. **Select-all-non-feral hotkey (3.1).** ✅ DONE 2026-07-26 as TWO keys (Ben's design): **Q** = select all calm zombies, **E** = select all calm zombies on screen — the riser-roundup answer. Corpses/finishers remain box-select-only.
+
+## Tier 3.5 — Breach + flee batch ✅ DONE 2026-07-29/30 (v0.45.3 → v0.47.0)
+Unplanned; came out of playtesting the terrain kit at docks scale. All parse-gated + boot-checked.
+- ✅ **v0.45.3 — selection retention.** An ordered gate siege used to clear the selection at the click, forcing a re-box at every breach. Selection is kept; a new per-frame `_prune_selection` drops members that stop being selection-worthy (also fixes contagion-ignited zombies lingering as ghost members).
+- ✅ **v0.46.0 — calm door-breaching + the door-click grammar.** New `calm_breach.gd` (`CalmBreach` component) + `door_breach.gd` (`DoorBreach` static: arc lookup, pound stagger, the reusable `Wedge` bucket). A calm zombie breaks a door blocking its ordered move, or one you RMB directly, **without leaving calm control**. `door_wedge_window` (0.5s) split out of `failsafe_window` (2s) so a feral wedged at a door converts to pounding at once instead of after two seconds. Release-on-door **deleted** (dormant 07-30, removed same day once Ben confirmed).
+- ✅ **v0.46.0 — docks config rebaseline.** Ten hand-tuned `level_docks` values promoted to `GameConfig`/`LevelConfig` defaults. NOTE the knock-on: a `.tscn` only stores non-default values, so every existing level now follows the docks baseline for knobs it never set explicitly (each level's own overrides survive). `puzzle_test_3` is now effectively identical to docks.
+- ✅ **v0.47.0 — flee exit rules.** Three-pass exit choice: availability → the **zombie-at-the-door filter** (new `exit_block_radius`, 120px; all-blocked → unfiltered fallback so nobody freezes) → threat-biased distance. Plus the **no-return latch** (a flushed runner committing to the street writes off every shelter inside the breached footprint — outermost when nested — and written-off doors can't absorb it on the walk past) and the **flush door-leg fix** (the "get out of the building first" leg no longer fires when the destination is inside that same building — the out-and-back bug).
+
+**Still open from this batch (not scheduled):** nested-building click resolution — `_shelter_building_at` returns the first group-order building whose footprint contains the click, so RMB on a shop inside a market can target the market. Fix would be innermost/smallest-footprint wins. Same first-match shape affects the Mark's building aggro.
 
 ## Tier 4 — Housekeeping bug batch ✅ DONE 2026-07-26 (landed with v0.45.0)
 - ✅ **A4 + A5** — solved together: the lose verdict moved to the death instant (`report_gunfire_kill`, the only zombie-death source) — frame-exact, framerate-independent, teardown-immune; `_on_zombie_removed` is bookkeeping only; `get_total_zombie_count` = living + pending risers.

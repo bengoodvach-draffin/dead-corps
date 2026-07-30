@@ -28,30 +28,33 @@ var _owner: Zombie = null
 var _target: Human = null
 var _gm: Node = null
 
-## BREACHING (buildings spec §5): the siege sub-state. Three ways in, one loop:
+## BREACHING (buildings spec §5): the siege sub-state. Two ways in, one loop:
 ##   - building proxy — pursued prey sheltered (§5.1) or release-at-the-building
 ##     (_siege_building set, _target cleared);
 ##   - door OBSTACLE (terrain kit) — the pursuit wedged on an intact door with
 ##     the target still live beyond it (_target KEPT: the chase resumes the
-##     moment the door falls);
-##   - ORDERED — release-on-door: the click IS the commitment (persists with no
-##     prey until the door falls; §5.1's original verb, works on gates and
-##     empty buildings — deliberate pre-breaching is a herding spend).
+##     moment the door falls).
+##
+## There is no ORDERED feral siege: the door click is a CALM order now (Ben's
+## ruling 2026-07-30, CalmBreach) — a feral only ever besieges a door because
+## prey is behind it.
 var _siege_building: Node2D = null
 var _siege_door: Node2D = null
-var _ordered_siege: bool = false
 ## Countdown to the next pound; starts DetHash-staggered so a crowd never
 ## strikes in robotic unison (§4.3). No RNG.
 var _pound_timer: float = 0.0
-## Doors (incl. gates), fetched once from the group — static per level.
-var _doors_cache: Array = []
-var _doors_cached: bool = false
 
 ## No-progress failsafe (§3.4.4): if distance-to-target hasn't dropped by
 ## failsafe_min_progress over a failsafe_window, the feral gives up the hunt and
 ## calms. Should never fire in normal play — the safety net for a wedged feral.
 var _progress_ref_dist: float = INF
 var _progress_timer: float = 0.0
+
+## The SHORT door-wedge bucket (Ben's ruling 2026-07-29) — independent of the
+## give-up failsafe above, and much faster: a pursuit stopped dead at a door
+## should start pounding within half a second, while the give-up clock still
+## needs 2s of tolerance before abandoning a hunt.
+var _wedge := DoorBreach.Wedge.new()
 
 ## Peel-off cadence (§2.4): countdown to the next opportunistic divert scan. Starts at
 ## 0 so a freshly-released feral peels onto its nearest fresh straggler immediately.
@@ -73,6 +76,7 @@ func set_target(human: Human) -> void:
 		_game_manager().add_pursuit(human)
 		_progress_ref_dist = _owner.global_position.distance_to(human.global_position)
 		_progress_timer = GameConfig.failsafe_window
+		_wedge.reset(_progress_ref_dist)
 
 
 func current_target() -> Human:
@@ -130,15 +134,24 @@ func tick(delta: float) -> Result:
 		# unreachable target. The real fix is pursuit pathing (flagged); once that
 		# lands a real chase closes ~400px in 2s so this rarely fires.
 		_maybe_divert(delta)
-		if _check_failsafe(delta):
-			# Prey beyond a barred door (terrain kit): a wedged pursuit at an
-			# intact door converts to pounding THAT door — from either side
-			# (gates are symmetric; a building's inside never wedges, the
-			# instant burst preempts it). The target is KEPT: the chase
-			# resumes the moment the door falls.
-			var wedge_door := _door_wedged_on()
+		# Prey beyond a barred door (terrain kit): a pursuit that stops gaining
+		# ground while pressed in an intact door's arc converts to pounding THAT
+		# door — from either side (gates are symmetric; a building's inside never
+		# wedges, the instant burst preempts it). The target is KEPT: the chase
+		# resumes the moment the door falls. On the SHORT wedge window, not the
+		# 2s give-up clock, so it reads as hitting the door and clawing at it.
+		if _wedge.check(_owner.global_position.distance_to(_target.global_position), delta):
+			var wedge_door := DoorBreach.door_in_arc(_owner)
 			if wedge_door != null:
-				_begin_door_siege(wedge_door, false)
+				_begin_door_siege(wedge_door)
+				return Result.PURSUING
+		if _check_failsafe(delta):
+			# Standing in a door's arc at the give-up moment converts rather than
+			# abandoning the hunt (the wedge bucket may have just re-baselined) —
+			# a feral never walks away from prey it can still smell through a door.
+			var late_door := DoorBreach.door_in_arc(_owner)
+			if late_door != null:
+				_begin_door_siege(late_door)
 				return Result.PURSUING
 			return Result.NO_TARGET
 
@@ -183,13 +196,13 @@ func _tick_breaching(delta: float) -> Result:
 				set_target(pulled)
 				return Result.PURSUING
 
-	# 2. Siege validity — three prey bases (terrain kit): an ORDERED siege needs
-	#    nothing (the click was the commitment); a door-obstacle siege needs its
-	#    KEPT target; a building proxy needs occupants (§5.2.4). None left →
-	#    retarget or calm.
+	# 2. Siege validity — two prey bases (terrain kit): a door-obstacle siege needs
+	#    its KEPT target; a building proxy needs occupants (§5.2.4). Neither left →
+	#    retarget or calm. Every feral siege has a prey basis; a door with nothing
+	#    behind it is a job for the calm crew.
 	var occupied: bool = _siege_building != null and is_instance_valid(_siege_building) \
 			and _siege_building.is_occupied()
-	if not _ordered_siege and not occupied and not _target_valid():
+	if not occupied and not _target_valid():
 		_end_siege()
 		if not _retarget(false):
 			return Result.NO_TARGET
@@ -238,66 +251,34 @@ func _begin_siege(building: Node2D) -> void:
 		return
 	_siege_building = building
 	_siege_door = door
-	_ordered_siege = false
 	# First pound lands after a DetHash-staggered fraction of the interval (§4.3).
-	_pound_timer = DetHash.hash01(_owner.unit_uid, 4501) * GameConfig.pound_interval
+	_pound_timer = DoorBreach.first_pound_delay(_owner.unit_uid)
 	print("🔍 SIEGE: %s besieges %s at %s" % [_owner.name, building.name, door.name])
 
 
 func _end_siege() -> void:
 	_siege_building = null
 	_siege_door = null
-	_ordered_siege = false
+	# Leaving a door: re-baseline the wedge window so a resumed chase (kept
+	# target pouring through the breach) doesn't inherit a stale reference
+	# distance and instantly "wedge" on the door it just knocked down.
+	_wedge.reset(INF)
 
 
-## Release-on-door (§5.1's original verb, terrain kit): ignite straight into an
-## ORDERED siege of this specific door — gates, empty buildings, anything
-## intact. The click is the commitment; peel rules still apply en route.
-func set_door_siege(door: Node2D) -> void:
-	_release_pursuit()
-	_target = null
-	_begin_door_siege(door, true)
-
-
-## Starts pounding `door`. Ordered sieges persist until the door falls;
-## unordered (wedge) sieges keep _target as their prey basis. The building may
-## be null — a gate in plain wall geometry.
-func _begin_door_siege(door: Node2D, ordered: bool) -> void:
+## Starts pounding `door` — the WEDGE siege (prey beyond a barred door). The
+## KEPT target is the prey basis, so the chase resumes the moment it falls. The
+## building may be null: a gate in plain wall geometry has none.
+func _begin_door_siege(door: Node2D) -> void:
 	if door == null or not is_instance_valid(door) or not door.is_intact():
 		return
 	_siege_door = door
 	_siege_building = door.building()
-	_ordered_siege = ordered
-	_pound_timer = DetHash.hash01(_owner.unit_uid, 4501) * GameConfig.pound_interval
-	print("🔍 SIEGE: %s pounds %s%s" % [_owner.name, door.name, " (ordered)" if ordered else " (prey beyond)"])
-
-
-## The intact door whose engagement arc contains this feral, or null — the
-## wedge→pound conversion reads this when the failsafe fires. Stable scene order.
-func _door_wedged_on() -> Node2D:
-	for door in _doors():
-		if is_instance_valid(door) and door.is_intact() and door.in_engagement_arc(_owner.global_position):
-			return door
-	return null
-
-
-## The level's doors (gates included), fetched once from the group — static per
-## level (one-time wiring, rule 8).
-func _doors() -> Array:
-	if not _doors_cached:
-		_doors_cached = true
-		_doors_cache = _owner.get_tree().get_nodes_in_group("shelter_doors")
-	return _doors_cache
+	_pound_timer = DoorBreach.first_pound_delay(_owner.unit_uid)
+	print("🔍 SIEGE: %s pounds %s (prey beyond)" % [_owner.name, door.name])
 
 
 func is_breaching() -> bool:
 	return _siege_door != null   # door, not building — gates have no building
-
-
-## ORDERED sieges only (release-on-door) — the selection-retention predicate.
-## Wedge and building-proxy sieges are genuine hunts and don't qualify.
-func is_ordered_breaching() -> bool:
-	return _siege_door != null and _ordered_siege
 
 
 ## This feral's nearest intact door of `building`, by NAV distance (a back door

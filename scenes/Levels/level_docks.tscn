@@ -18,9 +18,9 @@
 [ext_resource type="PackedScene" uid="uid://di2wxa5t7dmxv" path="res://scenes/UI/debug_overlay.tscn" id="13_8alqj"]
 [ext_resource type="PackedScene" uid="uid://cpxw4y8m7n5pk" path="res://scenes/UI/end_game_overlay.tscn" id="14_lcafa"]
 
-[sub_resource type="NavigationPolygon" id="NavigationPolygon_yxdyl"]
-vertices = PackedVector2Array(-4202, 729, -4252, 729, -5119, 725, -4959, 725, -4589, 341, -4409, 339, -4299, 339, -4300, 401, -4410, 401, -4445, 400, -4590, 533, -4410, 531, -4300, 531, -4300, 593, -4410, 593, -4445, 592, -4590, 725, -4410, 723, -4300, 723, -5119, 533, -5102, 532, -4992, 532, -4959, 533, -4992, 594, -5102, 594, -4444, 338, -4554, 338, -4445, 530, -4555, 530, -4445, 722, -4555, 722, -1509, 615, 4629, 881, -3500, 881, -1989, 615, -4700, 403, -4719, 402, -4848, 341, -4828, 340, -4718, 340, -4699, 341, -4590, 403, -4700, 595, -4719, 594, -4849, 533, -4829, 532, -4719, 532, -4700, 533, -4590, 595, -4719, 724, -4700, 725, -4849, 725, -4829, 724, -3572, -289, -3572, -335, -3571.5234, -369, -3450, -588, -3450, 172, -3499.0234, 171.92188, -4299, 209, -4252, 216, -4252, 646, -3688, 340, -3688, 300, -3670, 300, -3670, 340, -3573, -416, -3573, -655, 4636, -1640, 4636, -1690, 9985, -4982, 9985, 4988, -9985, -4982, -3794, -1690, -3538, 340, -3538, 881, -4202, 646, -3830, 340, -4589, 211, -4554, 208, -4555, 400, -4555, 592, -5119, 403, -5102, 402, -4699, 211, -4718, 210, -5248, 339, -5229, 210, -5229, 340, -5248, 402, -5248, 209, -5229, 403, -5229, 533, -5248, 532, -5229, 595, -5229, 725, -5248, 724, -5248, 594, -4848, 211, -4828, 210, -4829, 402, -4849, 403, -4849, 595, -4829, 594, -4958, 211, -4958, 341, -4991, 340, -4991, 210, -4959, 403, -4992, 402, -4959, 595, -4992, 724, -4409, 209, -4444, 208, -5119, 340, -5101, 340, -3730, -369, -3730.4766, -335, -3498.8984, 211.97656, -3498.9063, 210, -3412, 210, -1564.9766, 404.07813, -1560, 404.0625, -1560, 565, -1989, 565, -2094.8594, 404, -2017.8594, 404, -2109, 565, -1566.2188, -100, -1565.0625, 364, -2017.8594, 364, -1682.0781, -100, -1716.0781, -100, -1682.0781, -140, -2245, -100, -2094.8594, 364, -3539, 172, -3539, 172.04688, -3627, 172.25781, -3627, -20, -3627, 212.25781, -3539, 212.04688, -3539, 300, -3627, 212.3125, -3633, 300, -3633, 265.5, -3794, -1687, -3814, -1687, -3814, 94, -5478, 94, -9985, 4988, -5478, 931, 4629, 931, -1509, 565, -1510, 565, -1510, -324, -1509, -324, -1509, -374, -1510, -374, -1510, -376, -1560, -376, -1560, -374, -1989, -374, -3764, -1640, -1989, -324, -1560, -324, -1560, -140, -1716.0781, -140, -2250, -140, -2034, -324, -2250, -324, -2034, -374, -2514, -324, -2300, -324, -2300, -140, -2530.289, -140, -2530.289, -100, -2310, -100, -2310, 252, -2466, 252, -2466, 292, -2532, 292, -2532, 252, -2780, 252, -2780, 51, -2818, 51, -2818, 252, -2982, 252, -2982, 23, -2780, 23, -2780, -15, -2561.289, -100, -2982, -15, -2982, -100, -2561.289, -140, -2560, -324, -2990, -140, -2990, -324, -2514, -374, -2560, -374, -3040, 613, -3039, 613, -3039, 615, -2597, 501, -2597, 565, -2990, 565, -2990, 292, -2597, 292, -2597, 492, -2559, 501, -2559, 492, -2559, 292, -2439, 565, -2300, 292, -2300, 565, -2250, 565, -2250, 404, -2211.1406, 404, -2211.1406, 364, -2245, 364, -1564.9766, 404, -2147.1406, 364, -2147.1406, 404, -2109, 615, -2439, 615, -3500, 340, -3499, 340, -3499, 211.97656, -3618, -655, -3618, -415, -3730, -415, -3684, -49, -3684, -289, -3499.0234, 172, -3519.0703, 172, -3734, -20, -3729, -49, -3734, 20, -3667, 20, -3667, 114, -3711, 114, -3711, 148, -3667, 148, -3667, 172.32031, -3667.0781, 172.32031, -3633, 252.59375, -3633, 212.3125, -3667, 252.59375, -3667, 265.5, -3667, 300, -5358, 339, -5358, 402, -4202, 881, -4252, 881, -5428, 881, -5281, 833, -5428, 833, -5281, 783, -5358, 724, -5428, 783, -5428, 144, -5358, 594, -3848, 300, -3931, 300, -3931, 148, -3720, 148, -3720, 114, -3755, 114, -3755, 20, -3752, 20, -3752, -20, -3764, -20, -2559, 615, -3040, -374, -3412, -588, -3667, 192.38281, -3830, 300, -3729, -288, -3848, 340, -3971, 340, -4202, 216, -3971, 144, -5358, 532, -5119, 595, -5101, 210, -5119, 210, -5358, 209, -5102, 724)
-polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3), PackedInt32Array(4, 5, 6, 7, 8, 9), PackedInt32Array(10, 11, 12, 13, 14, 15), PackedInt32Array(16, 17, 18, 0), PackedInt32Array(19, 20, 21, 22, 23, 24), PackedInt32Array(25, 5, 4, 26), PackedInt32Array(27, 11, 10, 28), PackedInt32Array(29, 17, 16, 30), PackedInt32Array(31, 32, 33, 34), PackedInt32Array(35, 36, 37, 38, 39, 40, 41), PackedInt32Array(42, 43, 44, 45, 46, 47, 48), PackedInt32Array(49, 50, 51, 52), PackedInt32Array(53, 54, 55, 56, 57, 58), PackedInt32Array(6, 59, 60, 61), PackedInt32Array(12, 6, 61, 13), PackedInt32Array(6, 12, 7), PackedInt32Array(62, 63, 64, 65), PackedInt32Array(56, 55, 66, 67), PackedInt32Array(68, 69, 70, 71), PackedInt32Array(72, 70, 69, 73), PackedInt32Array(74, 75, 0, 76, 65), PackedInt32Array(62, 65, 76), PackedInt32Array(77, 62, 76), PackedInt32Array(26, 4, 78, 79), PackedInt32Array(80, 28, 10, 41, 4), PackedInt32Array(30, 16, 48, 81), PackedInt32Array(20, 19, 82, 83), PackedInt32Array(84, 40, 39, 85), PackedInt32Array(86, 87, 88, 89), PackedInt32Array(87, 86, 90), PackedInt32Array(35, 47, 46, 36), PackedInt32Array(91, 92, 93, 89), PackedInt32Array(42, 50, 49, 43), PackedInt32Array(94, 95, 96, 97), PackedInt32Array(38, 37, 98, 99), PackedInt32Array(100, 45, 44, 101, 37), PackedInt32Array(52, 51, 102, 103), PackedInt32Array(104, 105, 106, 107), PackedInt32Array(108, 22, 21, 109), PackedInt32Array(110, 3, 111, 23), PackedInt32Array(112, 5, 25, 113), PackedInt32Array(8, 11, 27, 9), PackedInt32Array(14, 17, 29, 15), PackedInt32Array(4, 9, 80), PackedInt32Array(40, 4, 41), PackedInt32Array(37, 36, 100), PackedInt32Array(105, 37, 101, 108, 109), PackedInt32Array(114, 115, 105, 109, 83), PackedInt32Array(88, 114, 83, 82, 91, 89), PackedInt32Array(116, 55, 54, 117), PackedInt32Array(118, 119, 120), PackedInt32Array(121, 122, 123, 124), PackedInt32Array(125, 126, 121, 124, 127), PackedInt32Array(128, 129, 130, 131), PackedInt32Array(131, 130, 132, 133), PackedInt32Array(134, 132, 130, 135), PackedInt32Array(136, 137, 138, 139, 53), PackedInt32Array(140, 141, 142, 143), PackedInt32Array(143, 142, 144, 145), PackedInt32Array(73, 146, 147, 72), PackedInt32Array(147, 148, 149, 72), PackedInt32Array(150, 72, 149, 151), PackedInt32Array(71, 150, 151, 152), PackedInt32Array(68, 71, 152, 32), PackedInt32Array(68, 32, 31, 153), PackedInt32Array(153, 154, 155, 156), PackedInt32Array(68, 153, 156), PackedInt32Array(68, 156, 157), PackedInt32Array(157, 158, 159, 68), PackedInt32Array(160, 161, 162, 163), PackedInt32Array(164, 165, 166, 133), PackedInt32Array(133, 132, 167), PackedInt32Array(164, 133, 167), PackedInt32Array(164, 167, 168, 169), PackedInt32Array(168, 170, 169), PackedInt32Array(162, 164, 169, 171), PackedInt32Array(172, 173, 174, 175), PackedInt32Array(176, 177, 178, 179), PackedInt32Array(179, 180, 181, 182, 176), PackedInt32Array(182, 183, 184, 176), PackedInt32Array(185, 186, 187, 188), PackedInt32Array(185, 188, 189, 184), PackedInt32Array(176, 184, 189), PackedInt32Array(176, 189, 190, 191), PackedInt32Array(190, 192, 193, 191), PackedInt32Array(175, 176, 191, 194, 195), PackedInt32Array(194, 196, 197, 195), PackedInt32Array(198, 172, 175, 195, 199), PackedInt32Array(200, 201, 202), PackedInt32Array(203, 204, 205, 206), PackedInt32Array(206, 207, 208), PackedInt32Array(203, 206, 208), PackedInt32Array(209, 203, 208, 210), PackedInt32Array(210, 211, 181, 212), PackedInt32Array(180, 213, 214, 212), PackedInt32Array(127, 215, 216, 217), PackedInt32Array(218, 219, 134), PackedInt32Array(126, 220, 121), PackedInt32Array(130, 126, 125, 135), PackedInt32Array(134, 135, 221), PackedInt32Array(218, 134, 221), PackedInt32Array(217, 218, 221, 222), PackedInt32Array(127, 217, 222), PackedInt32Array(127, 222, 125), PackedInt32Array(223, 127, 124, 34), PackedInt32Array(223, 34, 33), PackedInt32Array(224, 223, 33), PackedInt32Array(202, 33, 225, 226, 200), PackedInt32Array(226, 227, 118), PackedInt32Array(228, 229, 230, 163), PackedInt32Array(231, 232, 53, 139), PackedInt32Array(57, 233, 58), PackedInt32Array(53, 58, 234, 136), PackedInt32Array(231, 139, 235, 236), PackedInt32Array(237, 238, 239, 240), PackedInt32Array(241, 242, 243, 244), PackedInt32Array(245, 246, 143), PackedInt32Array(245, 143, 145), PackedInt32Array(247, 245, 145, 248), PackedInt32Array(248, 249, 64), PackedInt32Array(250, 86, 89, 251), PackedInt32Array(75, 252, 0), PackedInt32Array(76, 0, 18, 61), PackedInt32Array(61, 18, 13), PackedInt32Array(10, 15, 81), PackedInt32Array(10, 81, 48, 47), PackedInt32Array(44, 43, 103), PackedInt32Array(22, 44, 103, 102, 110, 23), PackedInt32Array(1, 253, 254, 255), PackedInt32Array(254, 256, 255), PackedInt32Array(95, 2, 1, 255, 257), PackedInt32Array(258, 96, 95, 257, 259), PackedInt32Array(258, 259, 260, 261), PackedInt32Array(262, 263, 264, 265), PackedInt32Array(266, 267, 268, 269), PackedInt32Array(270, 271, 163, 230, 116, 117), PackedInt32Array(226, 118, 120, 200), PackedInt32Array(248, 64, 63), PackedInt32Array(181, 180, 212), PackedInt32Array(209, 210, 212), PackedInt32Array(272, 209, 212, 224), PackedInt32Array(272, 224, 33), PackedInt32Array(202, 272, 33), PackedInt32Array(273, 200, 120, 274), PackedInt32Array(163, 68, 159, 160), PackedInt32Array(163, 162, 171), PackedInt32Array(163, 171, 198), PackedInt32Array(163, 198, 199), PackedInt32Array(163, 199, 273, 274), PackedInt32Array(163, 274, 56, 67), PackedInt32Array(163, 67, 228), PackedInt32Array(92, 19, 24), PackedInt32Array(265, 241, 244, 275, 247, 276, 262), PackedInt32Array(248, 63, 276, 247), PackedInt32Array(270, 117, 277, 236, 235), PackedInt32Array(270, 235, 237, 269), PackedInt32Array(266, 269, 237, 240), PackedInt32Array(266, 240, 241, 265), PackedInt32Array(262, 276, 77, 278), PackedInt32Array(278, 77, 76), PackedInt32Array(279, 278, 76), PackedInt32Array(279, 76, 280, 281), PackedInt32Array(97, 282, 93, 92, 24, 283, 94), PackedInt32Array(281, 280, 60, 59), PackedInt32Array(260, 281, 59, 112, 113), PackedInt32Array(260, 113, 79), PackedInt32Array(260, 79, 78, 84, 85), PackedInt32Array(260, 85, 99), PackedInt32Array(260, 99, 98, 104, 107), PackedInt32Array(260, 107, 284), PackedInt32Array(285, 87, 90, 260), PackedInt32Array(115, 106, 105), PackedInt32Array(284, 115, 114, 285), PackedInt32Array(260, 284, 285), PackedInt32Array(260, 90, 286), PackedInt32Array(260, 286, 250), PackedInt32Array(260, 250, 251), PackedInt32Array(260, 251, 282), PackedInt32Array(261, 260, 282), PackedInt32Array(97, 261, 282), PackedInt32Array(283, 24, 287, 2), PackedInt32Array(2, 287, 111, 3), PackedInt32Array(0, 3, 51), PackedInt32Array(0, 51, 50), PackedInt32Array(0, 50, 16)])
+[sub_resource type="NavigationPolygon" id="NavigationPolygon_0yd0l"]
+vertices = PackedVector2Array(3084, -1201, 3084, -1641, 4598, -1641, 4598, 881, 1996, 881, 1996, 497, 3084, -1065, 1958, 497, 1958, 881, 140, 881, 140, -1065, 1958, -1065, 1958, 399, 1996, 399, 1996, -1065, 3084, -1103, -1972, -1103, -1972, -1641, 3046, -1201, 3046, -1641, 102, -1065, 102, 489, -2868, 489, -2868, -87, -3828, -1065, -3828, -87, -3828, -1585, -3828, -1487, -3866, -1487, -4656, -1521, -3866, -1585, -3052, 369, -3466, 369, -4404, 271, -4370, 271, -3866, -87, -4562, -87, -4656, -173, -4656, -335.03906, -2906, -49, -2906, 521, -2914, 521, -3052, 271, -3052, 121, -4818, -15, -4818, 271, -4916, 135, -4916, -15, 4636, 911, 9985, -4982, 9985, 4988, 4629, 931, 4636, -1679, -9985, -4982, -5481, -1679, -9985, 4988, -5482, -1671, -4656, -945, -4656, -1423, -4694, -1521, -4694, -1423, -2906, 817, -2906, 911, -3052, 903, -3052, 753, -478, 881, -478, 931, -2868, 911, -2868, 817, -5481, -1671, -5482, 911, -5144, 911, -5182, 857, -5182, 873, -5362, 873, -5362, 791, -5397, 791, -5397, 873, -5444, 873, -5444, 711, -5397, 711, -5397, 773, -5362, 773, -5362, 711, -5182, 711, -5182, 839, -5144, 857, -5144, 839, -5444, 673, -5444, 151, -5300, 151, -5338, 88, -5338, 113, -5444, 113, -5444, 41, -5396, 41, -5396, 7, -5444, 7, -5444, -49, -5417, -49, -5417, -87, -5444, -87, -5444, -1641, -5398, -1619, -5398, -433, -3828, -1641, -2010, -1641, -2010, -1103, -3828, -1103, -4656, -1619, -3866, -1641, -5360, -433, -5360, -1581, -4694, -1581, -4694, -945, -4694, -335.03906, -4694, -211, -5360, -211, -5360, -415, -5398, -173, -4770, -173, -4770, -87, -5399, -87, -5399, -49, -5377, -49, -5377, 7, -5382, 7, -5342, 41, -5342, -49, -5338, -49, -5338, 70, -4660, -87, -4724, -87, -4724, -173, -4660, -49, -4562, -49, -3132, 121, -3132, -15, -3466, -15, -3466, 271, -3500, 271, -3500, -15, -3594, -15, -3594, 121, -3660, 121, -3660, -15, -3914, -15, -2914, 559, -2910, 559, -2910, 617, -2952, 617, -2952, 559, -2932, 559, -2932, 521, -2990, 521, -2990, 655, -3052, 655, -2906, 655, -2906, 703, -3674, 519, -3594, 519, -3594, 655, -3740, 655, -4290, 369, -4290, 505, -4370, 505, -4404, 369, -4724, 655, -4724, 519, -4658, 519, -4658, 655, -5170, 369, -5170, 505, -5236, 505, -5236, 369, -2868, 703, -2868, 527, 102, 527, 102, 881, -4916, 655, -4818, 655, -3466, 753, -3466, 903, -3500, 903, -3500, 753, -5330, 655, -3594, 753, -5144, 673, 4629, 911, -4656, -433.03906, -4694, -433.03906, -4694, -847, -5382, 41, -4656, -847, -5398, -415, -5300, 88, -5300, 70, -5250, 135, -4818, 369, -4916, 369, -3466, 655, -3500, 655, -3500, 369, -3674, 369, -3914, 271, -3956, 271, -3956, -15, -4130, -15, -4130, 271, -4196, 271, -4196, -15, -4370, -15, -5300, -49, -4404, -15, -5250, -15, -5330, 369, -3740, 369, -3914, 369, -3914, 655, -3956, 655, -3956, 369, -4370, 655, -4404, 655, -3594, 903, -3660, 903, -3660, 753, -3914, 753, -3914, 903, -3956, 903, -3956, 753, -4210, 753, -4916, 903, -5090, 903, -5090, 753, -4916, 753, -4210, 903, -4276, 903, -4276, 753, -4370, 753, -4370, 903, -4404, 903, -4404, 753, -4818, 753, -4818, 903)
+polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3), PackedInt32Array(3, 4, 5, 6), PackedInt32Array(7, 8, 9, 10), PackedInt32Array(10, 11, 12), PackedInt32Array(7, 10, 12, 5), PackedInt32Array(5, 12, 13), PackedInt32Array(13, 14, 6), PackedInt32Array(15, 16, 17, 18), PackedInt32Array(17, 19, 18), PackedInt32Array(15, 18, 0, 3), PackedInt32Array(6, 15, 3), PackedInt32Array(6, 5, 13), PackedInt32Array(20, 21, 22, 23), PackedInt32Array(24, 20, 23, 25), PackedInt32Array(26, 27, 28, 29, 30), PackedInt32Array(31, 32, 33, 34), PackedInt32Array(35, 36, 37, 38), PackedInt32Array(39, 40, 41, 42, 43), PackedInt32Array(44, 45, 46, 47), PackedInt32Array(48, 49, 50, 51), PackedInt32Array(49, 48, 52), PackedInt32Array(53, 49, 52, 54), PackedInt32Array(55, 53, 54, 56), PackedInt32Array(57, 58, 28, 35), PackedInt32Array(59, 29, 28, 58, 60), PackedInt32Array(61, 62, 63, 64), PackedInt32Array(65, 66, 67, 68), PackedInt32Array(54, 69, 56), PackedInt32Array(55, 56, 70), PackedInt32Array(50, 55, 70, 71, 66), PackedInt32Array(72, 73, 74, 75), PackedInt32Array(76, 77, 78, 79), PackedInt32Array(79, 80, 81), PackedInt32Array(76, 79, 81), PackedInt32Array(75, 76, 81, 82), PackedInt32Array(82, 83, 84, 85), PackedInt32Array(72, 75, 82, 85, 86), PackedInt32Array(86, 85, 87), PackedInt32Array(88, 89, 90), PackedInt32Array(91, 92, 93, 94, 95), PackedInt32Array(96, 97, 98, 99), PackedInt32Array(100, 101, 102, 103, 104), PackedInt32Array(26, 105, 106, 107), PackedInt32Array(107, 108, 27), PackedInt32Array(26, 107, 27), PackedInt32Array(30, 29, 109, 110), PackedInt32Array(102, 110, 109, 103), PackedInt32Array(111, 112, 113, 59), PackedInt32Array(111, 59, 60), PackedInt32Array(111, 60, 114), PackedInt32Array(115, 116, 117, 118), PackedInt32Array(119, 120, 121, 122), PackedInt32Array(123, 124, 125, 126), PackedInt32Array(127, 128, 129, 130), PackedInt32Array(131, 132, 133, 37), PackedInt32Array(134, 131, 37, 36, 135), PackedInt32Array(43, 136, 137, 39), PackedInt32Array(135, 39, 137, 138), PackedInt32Array(138, 139, 140, 141), PackedInt32Array(135, 138, 141), PackedInt32Array(135, 141, 142), PackedInt32Array(142, 143, 144, 145), PackedInt32Array(135, 142, 145), PackedInt32Array(135, 145, 146), PackedInt32Array(147, 148, 149, 150), PackedInt32Array(150, 151, 152), PackedInt32Array(147, 150, 152, 41), PackedInt32Array(41, 152, 153), PackedInt32Array(42, 41, 153), PackedInt32Array(42, 153, 154, 31), PackedInt32Array(154, 155, 156, 31), PackedInt32Array(139, 42, 31), PackedInt32Array(155, 157, 158), PackedInt32Array(159, 160, 161, 162), PackedInt32Array(163, 164, 165, 166), PackedInt32Array(167, 168, 169, 170), PackedInt32Array(171, 172, 173, 174), PackedInt32Array(175, 176, 177, 178, 65), PackedInt32Array(175, 65, 68, 158), PackedInt32Array(158, 68, 61, 64), PackedInt32Array(179, 180, 158, 64, 181), PackedInt32Array(181, 182, 183, 184), PackedInt32Array(179, 181, 184), PackedInt32Array(185, 179, 184, 186, 187), PackedInt32Array(51, 188, 48), PackedInt32Array(189, 35, 38, 190), PackedInt32Array(190, 38, 115, 118), PackedInt32Array(191, 190, 118, 111), PackedInt32Array(192, 127, 130, 91), PackedInt32Array(35, 189, 193), PackedInt32Array(57, 35, 193, 114), PackedInt32Array(114, 193, 191), PackedInt32Array(111, 114, 191), PackedInt32Array(104, 111, 118, 194), PackedInt32Array(100, 104, 194), PackedInt32Array(100, 194, 119, 122, 99), PackedInt32Array(99, 122, 123), PackedInt32Array(96, 99, 123, 126), PackedInt32Array(95, 96, 126, 192), PackedInt32Array(91, 95, 192), PackedInt32Array(195, 91, 130, 196), PackedInt32Array(197, 46, 45, 198, 199), PackedInt32Array(66, 51, 50), PackedInt32Array(156, 155, 158), PackedInt32Array(200, 156, 158), PackedInt32Array(200, 158, 201), PackedInt32Array(32, 200, 201, 202), PackedInt32Array(33, 32, 202), PackedInt32Array(33, 202, 203, 45), PackedInt32Array(140, 139, 31), PackedInt32Array(204, 140, 31), PackedInt32Array(204, 31, 205), PackedInt32Array(146, 204, 205, 206), PackedInt32Array(135, 146, 206), PackedInt32Array(135, 206, 207), PackedInt32Array(208, 205, 31), PackedInt32Array(208, 31, 209), PackedInt32Array(207, 208, 209, 210), PackedInt32Array(135, 207, 210), PackedInt32Array(135, 210, 211, 134), PackedInt32Array(212, 134, 211, 213), PackedInt32Array(34, 209, 31), PackedInt32Array(211, 34, 33, 213), PackedInt32Array(212, 213, 44), PackedInt32Array(212, 44, 47), PackedInt32Array(212, 47, 214), PackedInt32Array(196, 212, 214, 197), PackedInt32Array(195, 196, 197), PackedInt32Array(90, 195, 197), PackedInt32Array(88, 90, 197, 215), PackedInt32Array(161, 201, 158), PackedInt32Array(161, 158, 162), PackedInt32Array(159, 162, 216, 203), PackedInt32Array(45, 203, 216), PackedInt32Array(45, 216, 217), PackedInt32Array(218, 162, 158), PackedInt32Array(218, 158, 219), PackedInt32Array(217, 218, 219, 220), PackedInt32Array(45, 217, 220), PackedInt32Array(45, 220, 163), PackedInt32Array(182, 63, 62), PackedInt32Array(221, 219, 158), PackedInt32Array(221, 158, 222), PackedInt32Array(165, 221, 222, 166), PackedInt32Array(45, 163, 166), PackedInt32Array(45, 166, 198), PackedInt32Array(170, 222, 158), PackedInt32Array(167, 170, 158), PackedInt32Array(180, 167, 158), PackedInt32Array(198, 180, 179, 199), PackedInt32Array(197, 199, 171), PackedInt32Array(197, 171, 174), PackedInt32Array(197, 174, 215), PackedInt32Array(88, 215, 185), PackedInt32Array(187, 88, 185), PackedInt32Array(183, 182, 62), PackedInt32Array(223, 183, 62), PackedInt32Array(223, 62, 224), PackedInt32Array(186, 223, 224, 225), PackedInt32Array(187, 186, 225), PackedInt32Array(187, 225, 226), PackedInt32Array(227, 224, 62), PackedInt32Array(227, 62, 228), PackedInt32Array(226, 227, 228, 229), PackedInt32Array(187, 226, 229), PackedInt32Array(187, 229, 230), PackedInt32Array(62, 67, 66), PackedInt32Array(231, 62, 66, 71, 232), PackedInt32Array(232, 71, 86, 233), PackedInt32Array(233, 86, 87), PackedInt32Array(233, 87, 187), PackedInt32Array(234, 233, 187), PackedInt32Array(235, 228, 62), PackedInt32Array(235, 62, 236), PackedInt32Array(230, 235, 236, 237), PackedInt32Array(187, 230, 237), PackedInt32Array(187, 237, 238), PackedInt32Array(239, 236, 62), PackedInt32Array(239, 62, 240), PackedInt32Array(238, 239, 240, 241), PackedInt32Array(187, 238, 241), PackedInt32Array(187, 241, 242), PackedInt32Array(234, 187, 242), PackedInt32Array(234, 242, 243, 231), PackedInt32Array(62, 231, 243), PackedInt32Array(62, 243, 240)])
 cell_size = 6.0
 agent_radius = 15.0
 
@@ -43,13 +43,9 @@ bounds_max = Vector2(10000, 5000)
 [node name="LevelConfig" type="Node2D" parent="." unique_id=1080841229]
 position = Vector2(-3, 3)
 script = ExtResource("3_2h14b")
-zombie_speed = 140.0
-fire_cooldown = Array[float]([0.0, 1.0, 0.8, 0.6])
-chain_scan_radius = 150.0
-feral_offaxis_penalty = 1.5
-cower_window = 1.2
-release_aim_radius = 50.0
-mark_radius = 300.0
+exit_block_radius = null
+door_wedge_window = null
+door_wedge_min_progress = null
 metadata/_custom_type_script = "uid://dlqe4p8ushalq"
 
 [node name="Initializer" type="Node" parent="." unique_id=1515215272]
@@ -147,7 +143,7 @@ metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
 [node name="Wall" type="Polygon2D" parent="TestLevel/Carpark/ShelterBuilding" unique_id=1753148393]
 position = Vector2(56, 3)
 color = Color(0.4, 0.4, 0.4, 1)
-polygon = PackedVector2Array(-100, -103, -98, -103, -98, -15, -100, -15)
+polygon = PackedVector2Array(-103, -103, -98, -103, -98, -17, -103, -17)
 script = ExtResource("9_irb5a")
 metadata/_custom_type_script = "uid://cvde25j0ujcg"
 
@@ -155,7 +151,7 @@ metadata/_custom_type_script = "uid://cvde25j0ujcg"
 position = Vector2(-159, 88)
 rotation = 1.5707964
 color = Color(0.4, 0.4, 0.4, 1)
-polygon = PackedVector2Array(-100, -63, -98, -63, -98, -15, -100, -15)
+polygon = PackedVector2Array(-102, -63, -98, -63, -98, -15, -102, -15)
 script = ExtResource("9_irb5a")
 metadata/_custom_type_script = "uid://cvde25j0ujcg"
 
@@ -163,7 +159,7 @@ metadata/_custom_type_script = "uid://cvde25j0ujcg"
 position = Vector2(-75, 88)
 rotation = 1.5707964
 color = Color(0.4, 0.4, 0.4, 1)
-polygon = PackedVector2Array(-100, -33, -98, -33, -98, -23, -100, -23)
+polygon = PackedVector2Array(-102, -33, -98, -33, -98, -23, -102, -23)
 script = ExtResource("9_irb5a")
 metadata/_custom_type_script = "uid://cvde25j0ujcg"
 
@@ -190,14 +186,62 @@ script = ExtResource("12_2h14b")
 thickness = 8.0
 metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
 
-[node name="Walls and doors" type="Node2D" parent="TestLevel/Carpark" unique_id=338594479]
+[node name="ShelterBuilding3" type="Polygon2D" parent="TestLevel/Carpark" unique_id=1440130009]
+position = Vector2(-2893, 537)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(-78, 3, 2, 3, 2, 99, -78, 99)
+script = ExtResource("11_ss5kf")
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
 
-[node name="Wall" type="Polygon2D" parent="TestLevel/Carpark/Walls and doors" unique_id=1721204773]
-position = Vector2(-5275, 744)
+[node name="ShelterSpot" type="Node2D" parent="TestLevel/Carpark/ShelterBuilding3" unique_id=1127140017]
+position = Vector2(-62, 83)
+rotation = -1.1082841
+script = ExtResource("13_0yd0l")
+is_guard = true
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot3" type="Node2D" parent="TestLevel/Carpark/ShelterBuilding3" unique_id=528871713]
+position = Vector2(-22, 83)
+script = ExtResource("13_0yd0l")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="Door2" type="Node2D" parent="TestLevel/Carpark/ShelterBuilding3" unique_id=648993635]
+position = Vector2(-30, 2.9999924)
+script = ExtResource("12_2h14b")
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="ShelterBuilding2" type="Polygon2D" parent="TestLevel/Carpark" unique_id=603545783]
+position = Vector2(-5313, 792)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(-150, -100, 150, -100, 150, 100, -150, 100)
+script = ExtResource("11_ss5kf")
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="Wall5" type="Polygon2D" parent="TestLevel/Carpark/ShelterBuilding2" unique_id=187497606]
+position = Vector2(31, 7)
 color = Color(0.4, 0.4, 0.4, 1)
-polygon = PackedVector2Array(-112, -80, -104, -80, -104, 152, -112, 152)
+polygon = PackedVector2Array(-100, -103, -95, -103, -95, -41, -100, -41)
 script = ExtResource("9_irb5a")
 metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall6" type="Polygon2D" parent="TestLevel/Carpark/ShelterBuilding2" unique_id=402812326]
+position = Vector2(31, 117)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-100, -103, -95, -103, -95, -21, -100, -21)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Door" type="Node2D" parent="TestLevel/Carpark/ShelterBuilding2" unique_id=1856628188]
+position = Vector2(150, 56)
+rotation = 1.5707964
+script = ExtResource("12_2h14b")
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Walls and doors" type="Node2D" parent="TestLevel/Carpark" unique_id=338594479]
 
 [node name="Wall3" type="Polygon2D" parent="TestLevel/Carpark/Walls and doors" unique_id=435954425]
 position = Vector2(-5307, 40)
@@ -211,53 +255,40 @@ metadata/_custom_type_script = "uid://cvde25j0ujcg"
 position = Vector2(-4283, 40)
 rotation = 1.5707964
 color = Color(0.4, 0.4, 0.4, 1)
-polygon = PackedVector2Array(-112.00003, -632, -104.00003, -632, -103.999985, 264, -111.999985, 264)
+polygon = PackedVector2Array(-112.00006, -1392, -104.00006, -1392, -103.999985, 264, -111.999985, 264)
 script = ExtResource("9_irb5a")
 metadata/_custom_type_script = "uid://cvde25j0ujcg"
 
 [node name="Wall5" type="Polygon2D" parent="TestLevel/Carpark/Walls and doors" unique_id=867773364]
-position = Vector2(-3539, 560)
+position = Vector2(-2779, 560)
 color = Color(0.4, 0.4, 0.4, 1)
 polygon = PackedVector2Array(-112.00003, -632, -104.00003, -632, -104, 128, -112, 128)
 script = ExtResource("9_irb5a")
 metadata/_custom_type_script = "uid://cvde25j0ujcg"
 
 [node name="Wall6" type="Polygon2D" parent="TestLevel/Carpark/Walls and doors" unique_id=2062958558]
-position = Vector2(-3539, 768)
+position = Vector2(-2779, 768)
 color = Color(0.4, 0.4, 0.4, 1)
 polygon = PackedVector2Array(-112, 64, -104, 64, -104, 128, -112, 128)
 script = ExtResource("9_irb5a")
 metadata/_custom_type_script = "uid://cvde25j0ujcg"
 
 [node name="Door3" type="Node2D" parent="TestLevel/Carpark/Walls and doors" unique_id=254768753]
-position = Vector2(-5390, 25)
+position = Vector2(-5390, 24)
 script = ExtResource("12_2h14b")
 integrity_override = 10.0
-thickness = 2.0
+thickness = 5.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Door4" type="Node2D" parent="TestLevel/Carpark/Walls and doors" unique_id=1760045969]
+position = Vector2(-5379, 782)
+rotation = 1.5707964
+script = ExtResource("12_2h14b")
+integrity_override = 30.0
+thickness = 5.0
 metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
 
 [node name="Cars" type="Node2D" parent="TestLevel/Carpark" unique_id=232423688]
-
-[node name="Car" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=430248199]
-position = Vector2(-5203, 848)
-color = Color(0.4, 0.4, 0.4, 1)
-polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
-script = ExtResource("9_irb5a")
-metadata/_custom_type_script = "uid://cvde25j0ujcg"
-
-[node name="Car2" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=1662347381]
-position = Vector2(-5123, 848)
-color = Color(0.4, 0.4, 0.4, 1)
-polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
-script = ExtResource("9_irb5a")
-metadata/_custom_type_script = "uid://cvde25j0ujcg"
-
-[node name="Car3" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=410684843]
-position = Vector2(-5043, 848)
-color = Color(0.4, 0.4, 0.4, 1)
-polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
-script = ExtResource("9_irb5a")
-metadata/_custom_type_script = "uid://cvde25j0ujcg"
 
 [node name="Car4" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=525089888]
 position = Vector2(-4963, 848)
@@ -679,6 +710,314 @@ polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
 script = ExtResource("9_irb5a")
 metadata/_custom_type_script = "uid://cvde25j0ujcg"
 
+[node name="Car12" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=1617054349]
+position = Vector2(-3787, 848)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car22" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=1621945297]
+position = Vector2(-3707, 848)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car32" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=285371157]
+position = Vector2(-3627, 848)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car46" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=751995899]
+position = Vector2(-3467, 848)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car47" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=915354688]
+position = Vector2(-3339, 848)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car111" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=1348585037]
+position = Vector2(-3259, 848)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car48" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=805146629]
+position = Vector2(-3179, 848)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car50" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=1259265591]
+position = Vector2(-3099, 848)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car58" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=2010596643]
+position = Vector2(-3019, 848)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car61" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=1130714339]
+position = Vector2(-3787, 600)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car76" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=1381228395]
+position = Vector2(-3467, 600)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car77" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=898103092]
+position = Vector2(-3339, 600)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car109" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=138450288]
+position = Vector2(-3339, 464)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car110" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=1430647598]
+position = Vector2(-3707, 600)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car78" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=1155847]
+position = Vector2(-3259, 600)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car79" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=846631855]
+position = Vector2(-3179, 600)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car80" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=1824396072]
+position = Vector2(-3099, 600)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car81" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=551481021]
+position = Vector2(-3019, 600)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car82" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=1101008039]
+position = Vector2(-3787, 464)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car83" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=41853871]
+position = Vector2(-3707, 464)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car85" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=1224097419]
+position = Vector2(-3547, 464)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car86" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=1643076283]
+position = Vector2(-3467, 464)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car87" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=972498789]
+position = Vector2(-3259, 464)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car88" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=1104989896]
+position = Vector2(-3179, 464)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car89" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=527056267]
+position = Vector2(-3099, 464)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car90" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=1958818881]
+position = Vector2(-3019, 464)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car91" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=136271019]
+position = Vector2(-3787, 216)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car92" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=1356984773]
+position = Vector2(-3707, 216)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car93" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=123413471]
+position = Vector2(-3627, 216)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car94" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=8301183]
+position = Vector2(-3547, 216)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car95" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=64820300]
+position = Vector2(-3467, 216)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car96" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=1906779709]
+position = Vector2(-3339, 216)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car97" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=149921235]
+position = Vector2(-3259, 216)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car98" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=1391514211]
+position = Vector2(-3099, 216)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car99" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=2132053742]
+position = Vector2(-3019, 216)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car100" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=2001054015]
+position = Vector2(-3787, 80)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car101" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=2020800675]
+position = Vector2(-3707, 80)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car102" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=2080938093]
+position = Vector2(-3627, 80)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car104" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=1219300874]
+position = Vector2(-3467, 80)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car105" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=1810440749]
+position = Vector2(-3339, 80)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car106" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=1840503913]
+position = Vector2(-3259, 80)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car107" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=1607614400]
+position = Vector2(-3099, 80)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car112" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=2044316954]
+position = Vector2(-3179, 216)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Car113" type="Polygon2D" parent="TestLevel/Carpark/Cars" unique_id=1063678870]
+position = Vector2(-3179, 80)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -80, -48, -80, -48, 40, -112, 40)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
 [node name="Units" type="Node2D" parent="TestLevel/Carpark" unique_id=1324478738]
 
 [node name="Human" parent="TestLevel/Carpark/Units" unique_id=1346925049 instance=ExtResource("7_davh7")]
@@ -694,62 +1033,1043 @@ position = Vector2(-5225, 469)
 position = Vector2(-4395, 192)
 
 [node name="Human14" parent="TestLevel/Carpark/Units" unique_id=319379838 instance=ExtResource("7_davh7")]
-position = Vector2(-3690, -21)
+position = Vector2(-2930, -21)
 
 [node name="Human15" parent="TestLevel/Carpark/Units" unique_id=941852200 instance=ExtResource("7_davh7")]
-position = Vector2(-3690, 36)
+position = Vector2(-2930, 36)
 
 [node name="Human16" parent="TestLevel/Carpark/Units" unique_id=527312474 instance=ExtResource("7_davh7")]
-position = Vector2(-3747, -24)
+position = Vector2(-2987, -24)
 
 [node name="Human6" parent="TestLevel/Carpark/Units" unique_id=1576156424 instance=ExtResource("7_davh7")]
 position = Vector2(-4315, 484)
 
+[node name="Human24" parent="TestLevel/Carpark/Units" unique_id=1532003380 instance=ExtResource("7_davh7")]
+position = Vector2(-4717, 567)
+
+[node name="Human19" parent="TestLevel/Carpark/Units" unique_id=437592305 instance=ExtResource("7_davh7")]
+position = Vector2(-3611, 540)
+
+[node name="Human20" parent="TestLevel/Carpark/Units" unique_id=1017790461 instance=ExtResource("7_davh7")]
+position = Vector2(-3379, 713)
+
+[node name="Human21" parent="TestLevel/Carpark/Units" unique_id=49671717 instance=ExtResource("7_davh7")]
+position = Vector2(-3419, 676)
+
+[node name="Human22" parent="TestLevel/Carpark/Units" unique_id=905764314 instance=ExtResource("7_davh7")]
+position = Vector2(-3443, 720)
+
+[node name="Human23" parent="TestLevel/Carpark/Units" unique_id=120414023 instance=ExtResource("7_davh7")]
+position = Vector2(-3611, 56)
+
 [node name="Human7" parent="TestLevel/Carpark/Units" unique_id=2052990905 instance=ExtResource("7_davh7")]
-position = Vector2(-4995, 680)
+position = Vector2(-4917, 673)
 
 [node name="Human12" parent="TestLevel/Carpark/Units" unique_id=3427804 instance=ExtResource("7_davh7")]
-position = Vector2(-3675, 663)
+position = Vector2(-2915, 665)
 defender_class = 2
 
 [node name="Human17" parent="TestLevel/Carpark/Units" unique_id=1414543909 instance=ExtResource("7_davh7")]
-position = Vector2(-4691, -36)
+position = Vector2(-4643, -48)
 defender_class = 2
 
 [node name="Human18" parent="TestLevel/Carpark/Units" unique_id=860514497 instance=ExtResource("7_davh7")]
-position = Vector2(-4531, -32)
+position = Vector2(-4571, -48)
 defender_class = 2
 
+[node name="Human25" parent="TestLevel/Carpark/Units" unique_id=1354518218 instance=ExtResource("7_davh7")]
+position = Vector2(-4427, -96)
+defender_class = 3
+
+[node name="Human26" parent="TestLevel/Carpark/Units" unique_id=127226378 instance=ExtResource("7_davh7")]
+position = Vector2(-4723, -96)
+defender_class = 3
+
 [node name="Human13" parent="TestLevel/Carpark/Units" unique_id=1699394413 instance=ExtResource("7_davh7")]
-position = Vector2(-3675, 848)
+position = Vector2(-2915, 848)
 defender_class = 2
 
 [node name="Human10" parent="TestLevel/Carpark/Units" unique_id=532706345 instance=ExtResource("7_davh7")]
-position = Vector2(-4971, 732)
+position = Vector2(-4893, 725)
 
 [node name="Human11" parent="TestLevel/Carpark/Units" unique_id=799045135 instance=ExtResource("7_davh7")]
-position = Vector2(-4720, 568)
+position = Vector2(-4371, 697)
 defender_class = 1
 
 [node name="Human8" parent="TestLevel/Carpark/Units" unique_id=1683586847 instance=ExtResource("7_davh7")]
 position = Vector2(-4899, 85)
 
 [node name="Human9" parent="TestLevel/Carpark/Units" unique_id=2118814345 instance=ExtResource("7_davh7")]
-position = Vector2(-5011, 728)
+position = Vector2(-4933, 721)
 
 [node name="Human3" parent="TestLevel/Carpark/Units" unique_id=2020236646 instance=ExtResource("7_davh7")]
 position = Vector2(-5379, 100)
 defender_class = 2
 
 [node name="Zombie" parent="TestLevel/Carpark/Units" unique_id=1394228517 instance=ExtResource("6_se283")]
-position = Vector2(-5418, 768)
+position = Vector2(-5249, 827)
+
+[node name="Label2" type="Label" parent="TestLevel/Carpark" unique_id=2022400224]
+offset_left = -5011.0005
+offset_top = 911.9999
+offset_right = -4928.0005
+offset_bottom = 934.9999
+scale = Vector2(9.925, 10)
+text = "Carpark"
+uppercase = true
+
+[node name="Shopping" type="Node2D" parent="TestLevel" unique_id=864237250]
+
+[node name="Walls and doors" type="Node2D" parent="TestLevel/Shopping" unique_id=1564966858]
+
+[node name="Wall7" type="Polygon2D" parent="TestLevel/Shopping/Walls and doors" unique_id=1778180833]
+position = Vector2(-3739, -200)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -1272, -104, -1272, -104, 128, -112, 128)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall8" type="Polygon2D" parent="TestLevel/Shopping/Walls and doors" unique_id=2038509145]
+position = Vector2(-3739, -384)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -1272, -104, -1272, -104, -1216, -112, -1216)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall" type="Polygon2D" parent="TestLevel/Shopping/Walls and doors" unique_id=1613615621]
+position = Vector2(-4763, -168)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(8, -24, 24, -24, 24, 104, 8, 104)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall2" type="Polygon2D" parent="TestLevel/Shopping/Walls and doors" unique_id=424723142]
+position = Vector2(-4571, -128)
+rotation = 1.5707964
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(8, -24, 16, -24, 16, 104, 8, 104)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Label" type="Label" parent="TestLevel/Shopping" unique_id=656263060]
+offset_left = -5067.0005
+offset_top = -1896.0001
+offset_right = -4984.0005
+offset_bottom = -1873.0001
+scale = Vector2(9.925, 10)
+text = "Shopping"
+uppercase = true
+
+[node name="Market stalls" type="Node2D" parent="TestLevel/Shopping" unique_id=36394682]
+
+[node name="ShelterBuilding2" type="Polygon2D" parent="TestLevel/Shopping/Market stalls" unique_id=602642652]
+position = Vector2(-3947, -1304)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(-152, -104, 40, -104, 40, 24, -152, 24)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/ShelterBuilding2" unique_id=2001080569]
+position = Vector2(-152, -40)
+rotation = -1.5707964
+script = ExtResource("12_2h14b")
+starts_open = true
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="ShelterBuilding3" type="Polygon2D" parent="TestLevel/Shopping/Market stalls" unique_id=1921819349]
+position = Vector2(-3947, -1112)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(-152, -104, 40, -104, 40, 24, -152, 24)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/ShelterBuilding3" unique_id=724364033]
+position = Vector2(-152, -40)
+rotation = -1.5707964
+script = ExtResource("12_2h14b")
+starts_open = true
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="ShelterBuilding4" type="Polygon2D" parent="TestLevel/Shopping/Market stalls" unique_id=957332426]
+position = Vector2(-3947, -920)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(-152, -104, 40, -104, 40, 24, -152, 24)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/ShelterBuilding4" unique_id=1161317633]
+position = Vector2(-152, -40)
+rotation = -1.5707964
+script = ExtResource("12_2h14b")
+starts_open = true
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="ShelterBuilding5" type="Polygon2D" parent="TestLevel/Shopping/Market stalls" unique_id=1682819758]
+position = Vector2(-3947, -728)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(-152, -104, 40, -104, 40, 24, -152, 24)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/ShelterBuilding5" unique_id=323894905]
+position = Vector2(-152, -40)
+rotation = -1.5707964
+script = ExtResource("12_2h14b")
+starts_open = true
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="ShelterBuilding6" type="Polygon2D" parent="TestLevel/Shopping/Market stalls" unique_id=2131921664]
+position = Vector2(-3939, -536)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(-152, -104, 40, -104, 40, 24, -152, 24)
+script = ExtResource("11_ss5kf")
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/ShelterBuilding6" unique_id=1877444696]
+position = Vector2(-152, -40)
+rotation = -1.5707964
+script = ExtResource("12_2h14b")
+integrity_override = 50.0
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="ShelterBuilding7" type="Polygon2D" parent="TestLevel/Shopping/Market stalls" unique_id=1266945023]
+position = Vector2(-3939, -344)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(-152, -104, 40, -104, 40, 24, -152, 24)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/ShelterBuilding7" unique_id=265984033]
+position = Vector2(-152, -40)
+rotation = -1.5707964
+script = ExtResource("12_2h14b")
+starts_open = true
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="ShelterBuilding8" type="Polygon2D" parent="TestLevel/Shopping/Market stalls" unique_id=838596688]
+position = Vector2(-4331, -1304)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(-152, -104, 40, -104, 40, 24, -152, 24)
+script = ExtResource("11_ss5kf")
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/ShelterBuilding8" unique_id=883119608]
+position = Vector2(40, -40)
+rotation = 1.5707964
+script = ExtResource("12_2h14b")
+integrity_override = 50.0
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="ShelterBuilding9" type="Polygon2D" parent="TestLevel/Shopping/Market stalls" unique_id=1277567280]
+position = Vector2(-4331, -1112)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(-152, -104, 40, -104, 40, 24, -152, 24)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/ShelterBuilding9" unique_id=1483104442]
+position = Vector2(40, -40)
+rotation = 1.5707964
+script = ExtResource("12_2h14b")
+starts_open = true
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="ShelterBuilding10" type="Polygon2D" parent="TestLevel/Shopping/Market stalls" unique_id=965049769]
+position = Vector2(-4331, -920)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(-152, -104, 40, -104, 40, 24, -152, 24)
+script = ExtResource("11_ss5kf")
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/ShelterBuilding10" unique_id=826254717]
+position = Vector2(40, -40)
+rotation = 1.5707964
+script = ExtResource("12_2h14b")
+integrity_override = 50.0
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="ShelterBuilding11" type="Polygon2D" parent="TestLevel/Shopping/Market stalls" unique_id=1302635006]
+position = Vector2(-4331, -728)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(-152, -104, 40, -104, 40, 24, -152, 24)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/ShelterBuilding11" unique_id=95789022]
+position = Vector2(40, -40)
+rotation = 1.5707964
+script = ExtResource("12_2h14b")
+starts_open = true
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="ShelterBuilding12" type="Polygon2D" parent="TestLevel/Shopping/Market stalls" unique_id=1822370322]
+position = Vector2(-4323, -536)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(-152, -104, 40, -104, 40, 24, -152, 24)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/ShelterBuilding12" unique_id=1750986060]
+position = Vector2(40, -40)
+rotation = 1.5707964
+script = ExtResource("12_2h14b")
+starts_open = true
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="ShelterBuilding13" type="Polygon2D" parent="TestLevel/Shopping/Market stalls" unique_id=1960263682]
+position = Vector2(-4323, -344)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(-152, -104, 40, -104, 40, 24, -152, 24)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/ShelterBuilding13" unique_id=63149818]
+position = Vector2(40, -40)
+rotation = 1.5707964
+script = ExtResource("12_2h14b")
+starts_open = true
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Market covered" type="Polygon2D" parent="TestLevel/Shopping" unique_id=1429394468]
+position = Vector2(-5307, -1552)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(-72, -48, 632, -48, 632, 1360, -72, 1360)
+script = ExtResource("11_ss5kf")
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+metadata/_edit_lock_ = true
+
+[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market covered" unique_id=217639190]
+position = Vector2(-72, 1104)
+rotation = -1.5707964
+script = ExtResource("12_2h14b")
+integrity_override = 10.0
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Door2" type="Node2D" parent="TestLevel/Shopping/Market covered" unique_id=1923562837]
+position = Vector2(632, 1167.9628)
+rotation = 1.5707964
+script = ExtResource("12_2h14b")
+door_width = 128.0
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Door4" type="Node2D" parent="TestLevel/Shopping/Market covered" unique_id=1861612217]
+position = Vector2(632, 208)
+rotation = 1.5707964
+script = ExtResource("12_2h14b")
+door_width = 128.0
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="ShelterSpot" type="Node2D" parent="TestLevel/Shopping/Market covered" unique_id=1560759164]
+position = Vector2(592, 672)
+script = ExtResource("13_0yd0l")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterBuilding" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=156911396]
+position = Vector2(272, 312)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(-152, -104, 168, -104, 168, 280, -152, 280)
+script = ExtResource("11_ss5kf")
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market covered/ShelterBuilding" unique_id=1762357982]
+position = Vector2(114.85005, 280)
+rotation = 3.1415927
+script = ExtResource("12_2h14b")
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="ShelterBuilding19" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=476348902]
+position = Vector2(272, 824)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(-152, -104, 168, -104, 168, 280, -152, 280)
+script = ExtResource("11_ss5kf")
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market covered/ShelterBuilding19" unique_id=1291799579]
+position = Vector2(114.85005, 280)
+rotation = 3.1415927
+script = ExtResource("12_2h14b")
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="ShelterBuilding2" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=468777355]
+position = Vector2(-112, 32)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding3" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=1687452280]
+position = Vector2(-112, 96)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding4" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=1502745275]
+position = Vector2(-112, 160)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding5" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=684086551]
+position = Vector2(-112, 224)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding6" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=918159562]
+position = Vector2(-112, 288)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding7" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=784811591]
+position = Vector2(-112, 352)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding8" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=131528921]
+position = Vector2(-112, 416)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding9" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=462263626]
+position = Vector2(-112, 480)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding10" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=1651150112]
+position = Vector2(-112, 544)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding11" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=1787195194]
+position = Vector2(-112, 608)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding12" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=923213413]
+position = Vector2(-112, 672)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding13" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=1512366656]
+position = Vector2(-112, 736)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding14" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=672876614]
+position = Vector2(-112, 800)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding15" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=360184518]
+position = Vector2(-112, 864)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding16" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=730571772]
+position = Vector2(-112, 928)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding17" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=16174284]
+position = Vector2(-112, 992)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding18" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=845317577]
+position = Vector2(-112, 1056)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding20" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=1493194715]
+position = Vector2(-112, 1312)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding22" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=780307619]
+position = Vector2(-112, 1376)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding21" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=2015664811]
+position = Vector2(-112, 1248)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding23" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=21505475]
+position = Vector2(104, 1208)
+rotation = 1.5707964
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding24" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=48772867]
+position = Vector2(168, 1208)
+rotation = 1.5707964
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding25" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=1576659997]
+position = Vector2(232, 1208)
+rotation = 1.5707964
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding26" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=1530330286]
+position = Vector2(296, 1208)
+rotation = 1.5707964
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding27" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=1793088172]
+position = Vector2(360, 1208)
+rotation = 1.5707964
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding28" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=545516586]
+position = Vector2(424, 1208)
+rotation = 1.5707964
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding30" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=957699068]
+position = Vector2(488, 1208)
+rotation = 1.5707964
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding31" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=423074383]
+position = Vector2(552, 1208)
+rotation = 1.5707964
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding29" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=1291352227]
+position = Vector2(104, -88)
+rotation = 1.5707964
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding32" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=2011336071]
+position = Vector2(168, -88)
+rotation = 1.5707964
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding33" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=1669725726]
+position = Vector2(232, -88)
+rotation = 1.5707964
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding34" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=167340352]
+position = Vector2(296, -88)
+rotation = 1.5707964
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding35" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=1157047936]
+position = Vector2(360, -88)
+rotation = 1.5707964
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding36" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=1248325969]
+position = Vector2(424, -88)
+rotation = 1.5707964
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding37" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=1489099289]
+position = Vector2(488, -88)
+rotation = 1.5707964
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding38" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=1865763148]
+position = Vector2(552, -88)
+rotation = 1.5707964
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="Door3" type="Node2D" parent="TestLevel/Shopping/Market covered" unique_id=531261613]
+position = Vector2(632, 656)
+rotation = 1.5707964
+script = ExtResource("12_2h14b")
+door_width = 128.0
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Units" type="Node2D" parent="TestLevel/Shopping" unique_id=1403319639]
+
+[node name="Zombie" parent="TestLevel/Shopping/Units" unique_id=2135780446 instance=ExtResource("6_se283")]
+position = Vector2(-5435, -304)
+
+[node name="Human" parent="TestLevel/Shopping/Units" unique_id=1322780828 instance=ExtResource("7_davh7")]
+position = Vector2(-4715, -888)
+
+[node name="Human2" parent="TestLevel/Shopping/Units" unique_id=1911483917 instance=ExtResource("7_davh7")]
+position = Vector2(-4379, -1152)
+
+[node name="Human3" parent="TestLevel/Shopping/Units" unique_id=237316430 instance=ExtResource("7_davh7")]
+position = Vector2(-3995, -768)
+
+[node name="Human4" parent="TestLevel/Shopping/Units" unique_id=702893533 instance=ExtResource("7_davh7")]
+position = Vector2(-4387, -376)
+
+[node name="Human5" parent="TestLevel/Shopping/Units" unique_id=1307853166 instance=ExtResource("7_davh7")]
+position = Vector2(-4347, -400)
+
+[node name="Human6" parent="TestLevel/Shopping/Units" unique_id=339479574 instance=ExtResource("7_davh7")]
+position = Vector2(-4411, -400)
+
+[node name="Human7" parent="TestLevel/Shopping/Units" unique_id=199356981 instance=ExtResource("7_davh7")]
+position = Vector2(-4035, -776)
+
+[node name="Human8" parent="TestLevel/Shopping/Units" unique_id=865695175 instance=ExtResource("7_davh7")]
+position = Vector2(-4195, -728)
+defender_class = 1
+
+[node name="Human13" parent="TestLevel/Shopping/Units" unique_id=1881957297 instance=ExtResource("7_davh7")]
+position = Vector2(-4019, -1152)
+
+[node name="Human14" parent="TestLevel/Shopping/Units" unique_id=1609800570 instance=ExtResource("7_davh7")]
+position = Vector2(-4219, -400)
+
+[node name="Human15" parent="TestLevel/Shopping/Units" unique_id=2002433690 instance=ExtResource("7_davh7")]
+position = Vector2(-4227, -608)
+
+[node name="Human36" parent="TestLevel/Shopping/Units" unique_id=1010496644 instance=ExtResource("7_davh7")]
+position = Vector2(-3883, -680)
+
+[node name="Human37" parent="TestLevel/Shopping/Units" unique_id=1794592556 instance=ExtResource("7_davh7")]
+position = Vector2(-4555, -376)
+defender_class = 1
+
+[node name="Human16" parent="TestLevel/Shopping/Units" unique_id=34583713 instance=ExtResource("7_davh7")]
+position = Vector2(-4163, -872)
+
+[node name="Human17" parent="TestLevel/Shopping/Units" unique_id=1681062969 instance=ExtResource("7_davh7")]
+position = Vector2(-4219, -984)
+
+[node name="Human18" parent="TestLevel/Shopping/Units" unique_id=490211045 instance=ExtResource("7_davh7")]
+position = Vector2(-4163, -1048)
+
+[node name="Human19" parent="TestLevel/Shopping/Units" unique_id=2008810067 instance=ExtResource("7_davh7")]
+position = Vector2(-4123, -952)
+defender_class = 1
+
+[node name="Human20" parent="TestLevel/Shopping/Units" unique_id=1146326336 instance=ExtResource("7_davh7")]
+position = Vector2(-4235, -1208)
+
+[node name="Human21" parent="TestLevel/Shopping/Units" unique_id=760486120 instance=ExtResource("7_davh7")]
+position = Vector2(-4147, -1344)
+
+[node name="Human22" parent="TestLevel/Shopping/Units" unique_id=1877495442 instance=ExtResource("7_davh7")]
+position = Vector2(-4235, -1368)
+defender_class = 1
+
+[node name="Human23" parent="TestLevel/Shopping/Units" unique_id=1218182741 instance=ExtResource("7_davh7")]
+position = Vector2(-4147, -1464)
+
+[node name="Human24" parent="TestLevel/Shopping/Units" unique_id=404776507 instance=ExtResource("7_davh7")]
+position = Vector2(-4243, -1560)
+
+[node name="Human25" parent="TestLevel/Shopping/Units" unique_id=242952591 instance=ExtResource("7_davh7")]
+position = Vector2(-4299, -1504)
+
+[node name="Human26" parent="TestLevel/Shopping/Units" unique_id=1040598219 instance=ExtResource("7_davh7")]
+position = Vector2(-4427, -1560)
+
+[node name="Human27" parent="TestLevel/Shopping/Units" unique_id=296423703 instance=ExtResource("7_davh7")]
+position = Vector2(-4147, -632)
+
+[node name="Human9" parent="TestLevel/Shopping/Units" unique_id=495848405 instance=ExtResource("7_davh7")]
+position = Vector2(-4571, -232)
+
+[node name="Human10" parent="TestLevel/Shopping/Units" unique_id=1461288972 instance=ExtResource("7_davh7")]
+position = Vector2(-4243, -1440)
+
+[node name="Human11" parent="TestLevel/Shopping/Units" unique_id=1960426312 instance=ExtResource("7_davh7")]
+position = Vector2(-4147, -264)
+
+[node name="Human12" parent="TestLevel/Shopping/Units" unique_id=1754300172 instance=ExtResource("7_davh7")]
+position = Vector2(-4179, -1144)
+
+[node name="Human28" parent="TestLevel/Shopping/Units" unique_id=1572296087 instance=ExtResource("7_davh7")]
+position = Vector2(-4203, -504)
+
+[node name="Human29" parent="TestLevel/Shopping/Units" unique_id=1402135000 instance=ExtResource("7_davh7")]
+position = Vector2(-4603, -456)
+
+[node name="Human30" parent="TestLevel/Shopping/Units" unique_id=1510260457 instance=ExtResource("7_davh7")]
+position = Vector2(-4179, -456)
+
+[node name="Human38" parent="TestLevel/Shopping/Units" unique_id=1950278608 instance=ExtResource("7_davh7")]
+position = Vector2(-3955, -200)
+
+[node name="Human39" parent="TestLevel/Shopping/Units" unique_id=424805334 instance=ExtResource("7_davh7")]
+position = Vector2(-4211, -248)
+
+[node name="Human40" parent="TestLevel/Shopping/Units" unique_id=1075298366 instance=ExtResource("7_davh7")]
+position = Vector2(-4051, -248)
+
+[node name="Human41" parent="TestLevel/Shopping/Units" unique_id=665513934 instance=ExtResource("7_davh7")]
+position = Vector2(-4315, -256)
+
+[node name="Human42" parent="TestLevel/Shopping/Units" unique_id=1804490174 instance=ExtResource("7_davh7")]
+position = Vector2(-4427, -232)
+
+[node name="Human31" parent="TestLevel/Shopping/Units" unique_id=126543896 instance=ExtResource("7_davh7")]
+position = Vector2(-4227, -880)
+
+[node name="Human32" parent="TestLevel/Shopping/Units" unique_id=963285644 instance=ExtResource("7_davh7")]
+position = Vector2(-4619, -600)
+
+[node name="Human33" parent="TestLevel/Shopping/Units" unique_id=238107858 instance=ExtResource("7_davh7")]
+position = Vector2(-4219, -1272)
+
+[node name="Human34" parent="TestLevel/Shopping/Units" unique_id=2053482506 instance=ExtResource("7_davh7")]
+position = Vector2(-4619, -1224)
+
+[node name="Human35" parent="TestLevel/Shopping/Units" unique_id=1955960107 instance=ExtResource("7_davh7")]
+position = Vector2(-4563, -1000)
+
+[node name="Offices" type="Node2D" parent="TestLevel" unique_id=616252881]
+
+[node name="Walls and Doors" type="Node2D" parent="TestLevel/Offices" unique_id=1066409889]
+
+[node name="Wall9" type="Polygon2D" parent="TestLevel/Offices/Walls and Doors" unique_id=1607503047]
+position = Vector2(-3715, -976)
+rotation = 1.5707964
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112.00006, -1728, -104.00006, -1728, -104, 128, -112, 128)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall10" type="Polygon2D" parent="TestLevel/Offices/Walls and Doors" unique_id=2015978978]
+position = Vector2(-1883, -1216)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -440, -104, -440, -104, 128, -112, 128)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Label2" type="Label" parent="TestLevel/Offices" unique_id=165018559]
+offset_left = -3267.0005
+offset_top = -1480.0001
+offset_right = -3184.0005
+offset_bottom = -1431.0001
+scale = Vector2(10.069238, 10.144005)
+text = "Offices
+"
+uppercase = true
+
+[node name="Container Yard" type="Node2D" parent="TestLevel" unique_id=598393402]
+
+[node name="Walls and Doors" type="Node2D" parent="TestLevel/Container Yard" unique_id=1225519310]
+
+[node name="Wall11" type="Polygon2D" parent="TestLevel/Container Yard/Walls and Doors" unique_id=1160497758]
+position = Vector2(-2755, 619)
+rotation = 1.5707964
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-115.00012, -2880, -107.00012, -2880, -107, 128, -115, 128)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall12" type="Polygon2D" parent="TestLevel/Container Yard/Walls and Doors" unique_id=1079944463]
+position = Vector2(229, 376)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -1456, -104, -1456, -104, 128, -112, 128)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall13" type="Polygon2D" parent="TestLevel/Container Yard/Walls and Doors" unique_id=599957694]
+position = Vector2(229, 768)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -256, -104, -256, -104, 128, -112, 128)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Label3" type="Label" parent="TestLevel/Container Yard" unique_id=1628843749]
+offset_left = -1985.0
+offset_top = -280.00006
+offset_right = -1847.0
+offset_bottom = -231.00006
+scale = Vector2(10.069238, 10.144005)
+text = "Container yard"
+uppercase = true
+
+[node name="Apron" type="Node2D" parent="TestLevel" unique_id=406428608]
+
+[node name="Walls and Doors" type="Node2D" parent="TestLevel/Apron" unique_id=743605316]
+
+[node name="Label4" type="Label" parent="TestLevel/Apron" unique_id=1462609873]
+offset_left = -1618.9999
+offset_top = 599.99994
+offset_right = -1480.9999
+offset_bottom = 648.99994
+scale = Vector2(10.069238, 10.144005)
+text = "Apron
+"
+uppercase = true
+
+[node name="Trainyard" type="Node2D" parent="TestLevel" unique_id=1023944432]
+
+[node name="Walls and Doors" type="Node2D" parent="TestLevel/Trainyard" unique_id=1957639651]
+
+[node name="Wall11" type="Polygon2D" parent="TestLevel/Trainyard/Walls and Doors" unique_id=1922957797]
+position = Vector2(-1859, -976)
+rotation = 1.5707964
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112.00018, -4928, -104.00018, -4928, -104, 128, -112, 128)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall12" type="Polygon2D" parent="TestLevel/Trainyard/Walls and Doors" unique_id=1704273647]
+position = Vector2(3173, -1216)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -440, -104, -440, -104, 0, -112, 0)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Label6" type="Label" parent="TestLevel/Trainyard" unique_id=265407023]
+offset_left = 127.000046
+offset_top = -1439.9998
+offset_right = 265.00006
+offset_bottom = -1390.9998
+scale = Vector2(10.069238, 10.144005)
+text = "Trainyard
+
+"
+uppercase = true
+
+[node name="Dry Dock" type="Node2D" parent="TestLevel" unique_id=1194775249]
+
+[node name="Walls and Doors" type="Node2D" parent="TestLevel/Dry Dock" unique_id=1687520257]
+
+[node name="Wall14" type="Polygon2D" parent="TestLevel/Dry Dock/Walls and Doors" unique_id=2144085018]
+position = Vector2(2085, 376)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -1456, -104, -1456, -104, 8, -112, 8)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall15" type="Polygon2D" parent="TestLevel/Dry Dock/Walls and Doors" unique_id=1541812919]
+position = Vector2(2085, 768)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -256, -104, -256, -104, 128, -112, 128)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Label5" type="Label" parent="TestLevel/Dry Dock" unique_id=1595439392]
+offset_left = 364.99988
+offset_top = -335.99994
+offset_right = 502.99988
+offset_bottom = -286.99994
+scale = Vector2(10.069238, 10.144005)
+text = "Dry dock
+"
+uppercase = true
+
+[node name="Military" type="Node2D" parent="TestLevel" unique_id=459375954]
+
+[node name="Walls and Doors" type="Node2D" parent="TestLevel/Military" unique_id=1530050933]
+
+[node name="Label7" type="Label" parent="TestLevel/Military" unique_id=1529964748]
+offset_left = 2228.9998
+offset_top = -808.00006
+offset_right = 2366.9998
+offset_bottom = -759.00006
+scale = Vector2(10.069238, 10.144005)
+text = "Military
+"
+uppercase = true
 
 [node name="SelectionManager" type="Node2D" parent="." unique_id=423906801 groups=["selection_manager"]]
 script = ExtResource("11_w841o")
 
 [node name="NavigationRegion" type="NavigationRegion2D" parent="." unique_id=257540646]
 visible = false
-navigation_polygon = SubResource("NavigationPolygon_yxdyl")
+navigation_polygon = SubResource("NavigationPolygon_0yd0l")
 script = ExtResource("12_hdyni")
 agent_radius = 15.0
 bake_cell_size = 6.0
