@@ -380,6 +380,14 @@ func is_armed() -> bool:
 	return defender_class != DefenderClass.CIVILIAN
 
 
+## Separation cadence override (perf, 2026-07-30): a standing crowd — idle,
+## sentry, sheltered — barely moves, so it runs separation 1-in-3 ticks (impulse
+## compensated in Unit; same net spread). FLEEING keeps every-tick separation:
+## a rout shoves through crowds and gets herded, and that's gameplay.
+func separation_cadence() -> int:
+	return 1 if current_state == State.FLEEING else 3
+
+
 ## Stamps a class letter on the unit so the roster reads at a glance: M/P/G for the
 ## armed classes; civilians stay blank (they're the bulk). Runtime only.
 func _add_class_label() -> void:
@@ -440,18 +448,6 @@ func get_exit_set() -> Array[Node2D]:
 	return exits
 
 
-## Nearest exit (escape zone or shelter door), or null. NO line-of-sight requirement
-## (spec §4.3: a routed human knows the exits) — used by the rout (FleeBehavior, 3.2).
-func get_nearest_escape_zone() -> Node2D:
-	var nearest_exit: Node2D = null
-	var nearest_distance := INF
-	for exit in get_exit_set():
-		# global_position — exits are nested scenes / building children.
-		var distance := global_position.distance_to(exit.global_position)
-		if distance < nearest_distance:
-			nearest_distance = distance
-			nearest_exit = exit
-	return nearest_exit
 
 
 ## Breaks this human into a permanent rout (spec §4.3) — called by the civilian
@@ -499,7 +495,8 @@ func start_cowering() -> void:
 		return
 	current_state = State.COWER
 	was_cowering = true
-	print("🔍 COWER: %s cornered at %s" % [name, global_position.round()])
+	if GameConfig.debug_logs:
+		print("🔍 COWER: %s cornered at %s" % [name, global_position.round()])
 	velocity = Vector2.ZERO
 	has_target = false
 	# Drop off the Humans collision layer so a cowerer no longer blocks armed defenders'
@@ -540,16 +537,23 @@ func enter_shelter(building: Node2D, door: Node2D) -> void:
 	var spot: Vector2 = building.claim_spot(self, door)
 	if _flee != null:
 		_flee.begin_sheltered(spot)
-	print("🔍 SHELTER: %s entered %s via %s → spot %s" % [name, building.name, door.name, spot])
+	if GameConfig.debug_logs:
+		print("🔍 SHELTER: %s entered %s via %s → spot %s" % [name, building.name, door.name, spot])
 	queue_redraw()   # drop any lingering line viz
 
 
 ## Level-start adoption (Ben's ruling 2026-07-26): a human PLACED inside an
-## intact shelter becomes SHELTERED at boot as if it had fled in — same spot
-## claims, same flush, same last stand. Called by GameManager after registration;
-## eligibility (intact + is_shelter building, not patrolling) is the caller's job.
-## `door` = the notional entry (nearest intact door), may be null.
-func adopt_into_shelter(building: Node2D, door: Node2D) -> void:
+## intact shelter becomes SHELTERED at boot as if it had fled in — same flush,
+## same last stand. Called by GameManager after registration; eligibility
+## (intact + is_shelter building, not patrolling) is the caller's job.
+##
+## HOLDS ITS PLACED POSITION (Ben's ruling 2026-07-30): unlike a runtime entrant,
+## an adoptee claims NO ShelterSpot — it stands exactly where the designer put
+## it. Authoring a spot per resident was busywork across dozens of hand-placed
+## humans who were already positioned deliberately. Consequences, all wanted:
+## the authored spots stay free for humans who actually flee in later, and a
+## shelter full of placed residents no longer warns about having no spots.
+func adopt_into_shelter(building: Node2D) -> void:
 	if current_state == State.DEAD or current_state == State.SHELTERED:
 		return
 	current_state = State.SHELTERED
@@ -557,10 +561,13 @@ func adopt_into_shelter(building: Node2D, door: Node2D) -> void:
 	has_target = false
 	velocity = Vector2.ZERO
 	_shelter_building = building
-	var spot: Vector2 = building.claim_spot(self, door)
+	building.add_occupant(self)
+	# Target where we already stand: the SHELTERED tick sees itself inside
+	# SPOT_ARRIVE immediately and simply holds, with no walk and no drift.
 	if _flee != null:
-		_flee.begin_sheltered(spot)
-	print("🔍 SHELTER: %s adopted by %s → spot %s" % [name, building.name, spot])
+		_flee.begin_sheltered(global_position)
+	if GameConfig.debug_logs:
+		print("🔍 SHELTER: %s adopted by %s (holds placed position)" % [name, building.name])
 	queue_redraw()
 
 

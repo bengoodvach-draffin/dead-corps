@@ -88,7 +88,20 @@ func _process(delta: float) -> void:
 		game_time += delta
 
 
+## Monotonic physics-tick counter since scene start. The deterministic time base
+## for per-unit cadence staggering ((sim_tick + unit_uid) % N) — NOT
+## Engine.get_physics_frames(), which counts from app launch and so would give
+## every R-restart a different phase (§10: a restart must reproduce the run).
+var sim_tick: int = 0
+
+
 func _physics_process(delta: float) -> void:
+	sim_tick += 1
+	# Roster compaction, once per tick — it used to run inside every registry
+	# query (see _compact_registry). Same tree-order guarantee as the nav sync
+	# below: this lands before any unit ticks, so queries see a clean roster.
+	_compact_registry()
+	_rebuild_grids()
 	# Nav-map sync per PHYSICS TICK. Godot syncs the NavigationServer once per
 	# RENDER frame by default, so under fast-forward (3 ticks/frame) agents path
 	# against maps up to 3 ticks stale — enough micro-divergence to flip a level's
@@ -237,7 +250,8 @@ func on_human_escaped(human: Human) -> void:
 	# A fleeing human can be mid-pursuit when it reaches the exit (3.2+) — drop its
 	# hunt-pool entry so the freed instance doesn't linger as a stale pursuit key.
 	_hunt.drop(human)
-	print("Human escaped! Total escaped: ", escaped_humans)
+	if GameConfig.debug_logs:
+		print("Human escaped! Total escaped: ", escaped_humans)
 	
 	# Check win condition (all humans either dead or escaped)
 	check_win_condition()
@@ -312,37 +326,104 @@ func auto_assign_starting_control_groups() -> void:
 	for i in range(min(6, zombies.size())):
 		var group_number := i + 1  # Groups are 1-indexed
 		selection_manager.set_control_group(group_number, [zombies[i]])
-		print("Auto-assigned zombie to control group ", group_number)
+		if GameConfig.debug_logs:
+			print("Auto-assigned zombie to control group ", group_number)
 
+## The registered rosters. Compaction is NOT done here (see _compact_registry):
+## these getters sat underneath every registry query, so the filter() ran — and
+## allocated a fresh array — hundreds of times per physics tick. Freed entries
+## are dropped once per tick instead, and every consumer validity-checks inline.
 func get_all_zombies() -> Array[Zombie]:
-	# Clean up invalid references
-	all_zombies = all_zombies.filter(func(z): return is_instance_valid(z))
 	return all_zombies
 
 func get_all_humans() -> Array[Human]:
-	# Clean up invalid references
-	all_humans = all_humans.filter(func(h): return is_instance_valid(h))
 	return all_humans
+
+
+## Drops freed references from both rosters. Called once per physics tick from
+## _physics_process, before any unit ticks (GameManager sits above the units in
+## tree order — the same ordering guarantee the nav sync relies on).
+func _compact_registry() -> void:
+	all_zombies = all_zombies.filter(func(z): return is_instance_valid(z))
+	all_humans = all_humans.filter(func(h): return is_instance_valid(h))
 
 
 ## === REGISTRY QUERIES (V2) ===
 ## Living-unit and neighbour lookups for v2 systems (contagion, fear count,
 ## local scan, awareness, seeding, mark/shamble radii — all radius queries).
 ##
-## ORDERING CONTRACT: results are in unit_uid order by construction. uid is
-## assigned in registration order, the tracking arrays only ever append, and
-## the validity filtering below preserves relative order. All v2 systems iterate
-## these results — NEVER re-sort them by anything non-deterministic (spec §10).
-## Internals are a naive O(n) scan: fine at PoC counts; a spatial hash can drop
-## in behind this API later (it must still return unit_uid order).
+## ORDERING CONTRACT: results are in unit_uid order. uid is assigned in
+## registration order, the tracking arrays only ever append, and the validity
+## filtering preserves relative order. All v2 systems iterate these results —
+## NEVER re-sort them by anything non-deterministic (spec §10).
+##
+## The spatial hash promised by the old note landed 2026-07-30 (see below); the
+## API and the ordering contract are unchanged.
+
+
+# === SPATIAL HASH (perf, 2026-07-30) ===
+##
+## Profiled on level_docks at 16 zombies / 134 humans: neighbours_within was
+## 10.13 ms of an 18.46 ms frame — 55% of frametime across 280 calls per tick,
+## every one of them a full linear scan of the roster. Most of those calls are
+## BOID separation and alignment with radii of 30–45px, i.e. scanning 134 humans
+## to find the two standing next to you.
+##
+## A uniform grid, rebuilt once per tick alongside the roster compaction, so a
+## query only visits the cells its circle overlaps. Sized for the DENSE-CROWD
+## case (2026-07-30's 447-human blob): the whole point of the grid is that a 30px
+## separation query in a packed crowd touches ~its own cell, not the crowd. At
+## 256px cells that blob sat in a handful of buckets and every query iterated
+## basically everyone — worse than the linear scan it replaced (measured: 1.6ms
+## per boid call). Small cells fix density; the HYBRID fallback below covers the
+## opposite end (wide queries fall back to a roster scan), so big cells are no
+## longer needed for anything.
+const GRID_CELL := 64.0
+
+## Snapshot slack: the grid is built at the top of the tick and units move during
+## it (~2–3px at current speeds). Queries widen their radius by this instead of
+## padding by whole cells — the old ±1-cell pad turned a 30px query's 2×2 cells
+## into 4×4, quadrupling the buckets visited for the game's most frequent query.
+const GRID_MOVE_SLOP := 8.0
+
+var _grid_zombies: Dictionary = {}
+var _grid_humans: Dictionary = {}
+
+## Built once, not per call: the sort below runs on every query, and allocating a
+## fresh lambda 280 times a tick was the exact kind of churn this change removes.
+var _uid_sorter: Callable = func(a: Unit, b: Unit) -> bool: return a.unit_uid < b.unit_uid
+
+
+func _cell_of(pos: Vector2) -> Vector2i:
+	return Vector2i(floori(pos.x / GRID_CELL), floori(pos.y / GRID_CELL))
+
+
+## Rebuilds both grids from the live rosters. Called once per physics tick, right
+## after compaction and before any unit ticks.
+func _rebuild_grids() -> void:
+	_grid_zombies.clear()
+	_grid_humans.clear()
+	for z in all_zombies:
+		if is_instance_valid(z) and z.is_alive:
+			_grid_insert(_grid_zombies, z)
+	for h in all_humans:
+		if is_instance_valid(h) and h.is_alive:
+			_grid_insert(_grid_humans, h)
+
+
+func _grid_insert(grid: Dictionary, u: Unit) -> void:
+	var cell := _cell_of(u.global_position)
+	if not grid.has(cell):
+		grid[cell] = []
+	grid[cell].append(u)
 
 ## Living zombies (valid + alive). Dead units are excluded — the corpse-linger
 ## invariant carried from v1. Liveness is the is_alive flag (HP was removed in
 ## demolition step 1.3); the "dead excluded" contract holds.
 func living_zombies() -> Array[Zombie]:
 	var result: Array[Zombie] = []
-	for z in get_all_zombies():
-		if z.is_alive:
+	for z in all_zombies:
+		if is_instance_valid(z) and z.is_alive:
 			result.append(z)
 	return result
 
@@ -350,8 +431,8 @@ func living_zombies() -> Array[Zombie]:
 ## Living humans (valid + alive). Same dead-exclusion contract as living_zombies().
 func living_humans() -> Array[Human]:
 	var result: Array[Human] = []
-	for h in get_all_humans():
-		if h.is_alive:
+	for h in all_humans:
+		if is_instance_valid(h) and h.is_alive:
 			result.append(h)
 	return result
 
@@ -360,18 +441,86 @@ func living_humans() -> Array[Human]:
 ## excluding `exclude` if given. Result is in unit_uid order (inherits the
 ## living_*() ordering). global_position for all distance math — nested scenes
 ## break local position (CLAUDE.md invariant).
-func neighbours_within(pos: Vector2, radius: float, team: StringName, exclude: Unit = null) -> Array[Unit]:
+## PERF (2026-07-30): this is THE hot path — every unit's BOID separation and
+## alignment, every human's fear and fill scan, and two per door, all per physics
+## tick, so it runs hundreds of times a frame. It used to build the living roster
+## first (`living_zombies()`), which itself called a getter that ran a filter():
+## THREE array allocations and three full passes per call. At ~170 units that was
+## well over a thousand allocations per tick, which is why adding humans fell off
+## a cliff rather than degrading gently.
+##
+## Now: iterate the roster in place, check validity and liveness inline, and
+## compare SQUARED distances (no sqrt per unit). One allocation — the result —
+## and one pass. Identical results and identical ordering.
+## `sorted = false` skips the uid re-sort (perf): results then follow GRID
+## CONSTRUCTION order — buckets are filled in uid order and cells walked in a
+## fixed order, so it is still fully deterministic run-to-run, just not globally
+## uid-ascending. ONLY order-insensitive aggregations (force sums, counts) may
+## pass false; anything that picks "first/nearest wins on tie" needs the sort.
+##
+## `max_results > 0` stops after that many hits — a deterministic SAMPLE in grid
+## order, for statistical consumers (e.g. alignment's average facing). This is
+## the answer to the packed-mega-horde case (2026-08-01): when 300 zombies stand
+## inside one radius, the query legitimately returns all of them and no spatial
+## structure can help — the only fix is not needing all of them. Sample callers
+## pass sorted = false; a "sorted sample" would be first-N-found sorted after
+## the fact, which no current caller wants.
+func neighbours_within(pos: Vector2, radius: float, team: StringName, exclude: Unit = null, sorted: bool = true, max_results: int = 0) -> Array[Unit]:
 	var result: Array[Unit] = []
+	var grid: Dictionary
+	if team == &"zombies":
+		grid = _grid_zombies
+	else:
+		grid = _grid_humans
+
+	var radius_sq := radius * radius
+	# Radius + slop covers snapshot staleness (see GRID_MOVE_SLOP) far cheaper
+	# than whole-cell padding did.
+	var pad := radius + GRID_MOVE_SLOP
+	var lo := _cell_of(pos - Vector2(pad, pad))
+	var hi := _cell_of(pos + Vector2(pad, pad))
+
+	# HYBRID: a wide query can span more cells than the roster has units, at which
+	# point walking the grid costs more than simply scanning everyone. Compare the
+	# two up front and take the cheaper — so this is never worse than the linear
+	# scan it replaced, whatever radius a caller asks for.
 	var pool: Array
 	if team == &"zombies":
-		pool = living_zombies()
+		pool = all_zombies
 	else:
-		pool = living_humans()
-	for u in pool:
-		if u == exclude:
-			continue
-		if u.global_position.distance_to(pos) <= radius:
-			result.append(u)
+		pool = all_humans
+	var cell_count := (hi.x - lo.x + 1) * (hi.y - lo.y + 1)
+
+	if cell_count > pool.size():
+		for u in pool:
+			if u == exclude or not is_instance_valid(u) or not u.is_alive:
+				continue
+			if u.global_position.distance_squared_to(pos) <= radius_sq:
+				result.append(u)
+				if max_results > 0 and result.size() >= max_results:
+					return result
+		return result   # roster order IS unit_uid order — no sort needed
+
+	for cx in range(lo.x, hi.x + 1):
+		for cy in range(lo.y, hi.y + 1):
+			# One lookup, not has() + [] — this is the innermost loop.
+			var bucket = grid.get(Vector2i(cx, cy))
+			if bucket == null:
+				continue
+			for u in bucket:
+				if u == exclude or not is_instance_valid(u) or not u.is_alive:
+					continue
+				if u.global_position.distance_squared_to(pos) <= radius_sq:
+					result.append(u)
+					if max_results > 0 and result.size() >= max_results:
+						return result
+
+	# THE ORDERING CONTRACT (§10): cells are walked in a fixed order, but that
+	# isn't unit_uid order, and consumers rely on uid ordering to break ties
+	# deterministically. Restore it — but only when there's something to reorder,
+	# since most separation queries return one or two units.
+	if sorted and result.size() > 1:
+		result.sort_custom(_uid_sorter)
 	return result
 
 
@@ -414,6 +563,9 @@ func get_total_zombie_count() -> int:
 ## read unoccupied). Eligibility: intact `is_shelter` buildings only (dumb boxes
 ## and ruins keep their bystanders); patrol-enabled humans keep their authored
 ## routes. Deterministic: buildings in tree order, humans in unit_uid order.
+##
+## Adoptees HOLD THEIR PLACED POSITION (2026-07-30) — no spot claim, so there's
+## no notional entry door to work out either. See Human.adopt_into_shelter.
 func _adopt_shelter_residents() -> void:
 	for b in get_tree().get_nodes_in_group("shelter_buildings"):
 		if not b.is_shelter or b.is_breached():
@@ -423,22 +575,7 @@ func _adopt_shelter_residents() -> void:
 				continue
 			if not b.contains_point(h.global_position):
 				continue
-			h.adopt_into_shelter(b, _nearest_intact_door(b, h.global_position))
-
-
-## The building's intact door nearest `pos` — the adoptee's notional entry for
-## the deepest-first spot sort. Null for a doorless building (claim falls back).
-func _nearest_intact_door(building: Node, pos: Vector2) -> Node2D:
-	var best: Node2D = null
-	var best_d := INF
-	for door in building.doors():
-		if not door.is_intact():
-			continue
-		var d: float = pos.distance_to(door.global_position)
-		if d < best_d:
-			best_d = d
-			best = door
-	return best
+			h.adopt_into_shelter(b)
 
 
 ## Registers manually placed units in the scene
@@ -452,12 +589,14 @@ func register_manually_placed_units() -> void:
 	for zombie in get_tree().get_nodes_in_group("zombies"):
 		if zombie is Zombie and not all_zombies.has(zombie):
 			_register_zombie(zombie)
-			print("  Registered manually placed zombie: ", zombie.name)
+			if GameConfig.debug_logs:
+				print("  Registered manually placed zombie: ", zombie.name)
 
 	# Find all humans in the scene
 	for human in get_tree().get_nodes_in_group("humans"):
 		if human is Human and not all_humans.has(human):
 			_register_human(human)
-			print("  Registered manually placed human: ", human.name)
+			if GameConfig.debug_logs:
+				print("  Registered manually placed human: ", human.name)
 	
 	print("Registration complete: %d zombies, %d humans" % [all_zombies.size(), all_humans.size()])

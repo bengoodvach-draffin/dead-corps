@@ -28,6 +28,10 @@ buses/default_bus_layout="uid://d20g6cbygis83"
 WorldBounds="*uid://q57huoqtmnim"
 GameConfig="*res://scripts/game_config.gd"
 
+[debug]
+
+file_logging/enable_file_logging=true
+
 [display]
 
 window/size/viewport_width=1920

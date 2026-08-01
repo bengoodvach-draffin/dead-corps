@@ -58,6 +58,10 @@ var _nav_path_ready: bool = false
 const CALM_TINT := Color(1, 1, 1, 1)
 const FERAL_TINT := Color(1.0, 0.5, 0.2)   # orange
 
+## How far (px) a nav target must move before the path re-solves (see
+## nav_move_toward — the pursuit re-path throttle).
+const NAV_REPATH_DIST := 24.0
+
 
 func _ready() -> void:
 	team = Team.ZOMBIES
@@ -149,8 +153,7 @@ func _physics_process(delta: float) -> void:
 		return
 
 	_apply_boid_tuning()
-	apply_separation_force()
-	apply_alignment_force()
+	apply_boid_forces()
 
 	match current_state:
 		State.CALM:
@@ -306,8 +309,19 @@ func nav_move_toward(point: Vector2, speed: float, arrive_dist: float = 5.0) -> 
 			return true
 		return step_toward(point, speed, arrive_dist)
 
-	# Only (re)set the target when it changes — resetting every frame churns the path solve.
-	if nav_agent.target_position != point:
+	# Re-path only when the target has moved MEANINGFULLY (perf, 2026-07-30) —
+	# exact-inequality still re-solved every tick during pursuit, because prey
+	# moves every tick. Setting target_position triggers a full NavigationServer
+	# path solve, and at horde scale that was hundreds of solves per second.
+	# 24px at flee speed (90px/s) ≈ 4 re-paths/s per chaser instead of 60.
+	# Precision is untouched: every arrival check below measures against the TRUE
+	# `point`, and the final stretch closes straight-line — only the mid-route
+	# path is up to 24px stale. Static targets (calm moves, doors) re-path once,
+	# exactly as before. Known worst case: prey jinking inside a 24px circle just
+	# outside pounce range can stall its chaser for a fraction of a second until
+	# it drifts past the threshold — accepted; pounce range (40px) covers the
+	# close-in game.
+	if nav_agent.target_position.distance_squared_to(point) > NAV_REPATH_DIST * NAV_REPATH_DIST:
 		nav_agent.target_position = point
 		_nav_path_ready = false
 

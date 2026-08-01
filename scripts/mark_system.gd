@@ -43,15 +43,18 @@ func place(pos: Vector2, human: Human, building: Node2D) -> void:
 	if human != null:
 		_mode = Mode.HUMAN
 		_human = human
-		print("🟣 MARK: on %s" % human.name)
+		if GameConfig.debug_logs:
+			print("🟣 MARK: on %s" % human.name)
 	elif building != null:
 		_mode = Mode.BUILDING
 		_building = building
-		print("🟣 MARK: aggro %s" % building.name)
+		if GameConfig.debug_logs:
+			print("🟣 MARK: aggro %s" % building.name)
 	else:
 		_mode = Mode.POINT
 		_point = pos
-		print("🟣 MARK: at %s" % pos.round())
+		if GameConfig.debug_logs:
+			print("🟣 MARK: at %s" % pos.round())
 	queue_redraw()
 
 
@@ -61,7 +64,8 @@ func clear() -> void:
 	_mode = Mode.NONE
 	_human = null
 	_building = null
-	print("🟣 MARK: cleared")
+	if GameConfig.debug_logs:
+		print("🟣 MARK: cleared")
 	queue_redraw()
 
 

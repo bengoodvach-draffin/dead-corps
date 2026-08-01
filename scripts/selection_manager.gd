@@ -258,7 +258,8 @@ func assign_control_group(group_number: int) -> void:
 	for unit in valid_units:
 		unit.set_control_group_number(group_number)
 
-	print("Assigned %d units to control group %d" % [valid_units.size(), group_number])
+	if GameConfig.debug_logs:
+		print("Assigned %d units to control group %d" % [valid_units.size(), group_number])
 
 ## Selects all units in a control group
 func recall_control_group(group_number: int) -> void:
@@ -282,7 +283,8 @@ func recall_control_group(group_number: int) -> void:
 		add_unit_to_selection(unit)
 		recalled += 1
 
-	print("Recalled control group %d: %d calm of %d" % [group_number, recalled, group_units.size()])
+	if GameConfig.debug_logs:
+		print("Recalled control group %d: %d calm of %d" % [group_number, recalled, group_units.size()])
 
 ## Clears control group assignment from currently selected units
 func clear_control_group_from_selection() -> void:
@@ -294,7 +296,8 @@ func clear_control_group_from_selection() -> void:
 			remove_unit_from_all_groups(unit)
 			unit.clear_control_group_number()
 
-	print("Cleared control group assignment from %d units" % selected_units.size())
+	if GameConfig.debug_logs:
+		print("Cleared control group assignment from %d units" % selected_units.size())
 
 ## Removes a unit from all control groups
 func remove_unit_from_all_groups(unit: Unit) -> void:
@@ -553,7 +556,8 @@ func _release(click_pos: Vector2, gm: Node) -> void:
 	var assignment := ReleaseSeeder.assign(ferals, candidates, click_pos)
 	for f in assignment:
 		(f as Zombie).ignite_feral(assignment[f])
-	print("🔥 RELEASE: ", ferals.size(), " zombies across ", candidates.size(), " human(s)")
+	if GameConfig.debug_logs:
+		print("🔥 RELEASE: ", ferals.size(), " zombies across ", candidates.size(), " human(s)")
 	clear_selection()
 
 
@@ -591,7 +595,8 @@ func _release_at_building(building: Node2D, calm_zombies: Array[Unit]) -> void:
 	for z in ferals:
 		z.ignite_feral_at_building(building)
 	if not ferals.is_empty():
-		print("🔥 RELEASE: %d zombies onto building %s" % [ferals.size(), building.name])
+		if GameConfig.debug_logs:
+			print("🔥 RELEASE: %d zombies onto building %s" % [ferals.size(), building.name])
 	clear_selection()
 
 
@@ -613,8 +618,6 @@ func _order_breach_at_door(door: Node2D, calm_zombies: Array[Unit]) -> void:
 	crew.sort_custom(func(a: Zombie, b: Zombie) -> bool: return a.unit_uid < b.unit_uid)
 	for z in crew:
 		z.order_breach(door)
-	if not crew.is_empty():
-		print("🔨 BREACH ORDER: %d zombies onto door %s" % [crew.size(), door.name])
 
 
 ## The intact door under/near `pos` (within its half-width + a small pad), or

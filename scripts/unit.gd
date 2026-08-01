@@ -101,8 +101,7 @@ func _ready() -> void:
 
 ## Per physics frame: BOID forces, then movement, then bounds.
 func _physics_process(delta: float) -> void:
-	apply_separation_force()
-	apply_alignment_force()
+	apply_boid_forces()
 
 	if has_target:
 		move_to_target(delta)
@@ -261,17 +260,48 @@ func find_nearby_allies(radius: float = -1.0) -> Array[Unit]:
 	return allies
 
 
-## BOID separation: push apart from living same-team neighbours so units don't
-## stack. Neighbours come from the registry (already living, self-excluded,
-## global-space); the dead-skip and is_melee_attacker special-case are gone.
-func apply_separation_force() -> void:
+## BOID separation + alignment from ONE registry query (perf, 2026-07-30).
+##
+## These were two methods, each with its own per-tick query; they were merged,
+## then re-split with the cadence/sample scheme below once the mega-horde profile
+## showed the combined 100px query degenerating. Humans never run alignment.
+##
+## ALIGNMENT CADENCE + SAMPLE (perf, 2026-07-30 → 08-01): alignment runs 1-in-3
+## ticks (staggered by uid off the GM's sim_tick — deterministic, restart-safe)
+## with the lerp weight scaled by the cadence, and reads a CAPPED sample rather
+## than everyone in radius. In a packed mega-horde the 100px query legitimately
+## returns the whole horde — no grid fixes "they really are all in range"
+## (measured ~1.1ms per boid call in the converted-blob spike) — but an average
+## facing over ~16 neighbours IS the horde's facing; iterating 300 buys
+## noise-level precision. So alignment now runs its own small sampled query on
+## its cadence tick, and separation queries its own small radius per tick,
+## uncapped — its genuinely-in-range set stays small even when packed, and
+## missing a pusher would let units stack.
+const ALIGN_CADENCE := 3
+const ALIGN_SAMPLE := 16
+
+## How often (in ticks) this unit runs separation; 1 = every tick. Overridden by
+## Human: an idle/sheltered crowd barely moves, so spending a grid query per
+## STANDING human per tick was the single biggest cost of the 447-human blob.
+## Skipped ticks scale the applied impulse up to match (same net push per second).
+func separation_cadence() -> int:
+	return 1
+
+
+func apply_boid_forces() -> void:
 	var gm := _get_game_manager()
 	if gm == null:
 		return
+	var sep_n := separation_cadence()
+	if sep_n > 1 and (int(gm.sim_tick) + unit_uid) % sep_n != 0:
+		return   # off-cadence tick: no query at all (only zombies align, and they run n=1)
 	var my_team: StringName = &"zombies" if is_zombie() else &"humans"
 	# gm is typed Node (avoiding a class cycle), so annotate the result explicitly.
-	var neighbours: Array[Unit] = gm.neighbours_within(global_position, separation_radius, my_team, self)
+	# Unsorted (see neighbours_within): both consumers here are order-insensitive
+	# force sums, and the uid re-sort was measurable at frenzy scale.
+	var neighbours: Array[Unit] = gm.neighbours_within(global_position, separation_radius, my_team, self, false)
 
+	# --- SEPARATION: push apart from neighbours inside separation_radius ---
 	var separation_vector := Vector2.ZERO
 	var neighbor_count := 0
 	for other in neighbours:
@@ -287,15 +317,16 @@ func apply_separation_force() -> void:
 		separation_vector /= neighbor_count
 		# move_and_collide (NOT raw position +=) so the push sweeps against walls;
 		# a direct write would teleport a corner pile-up straight through geometry.
-		move_and_collide(separation_vector * get_physics_process_delta_time())
+		# × sep_n: a 1-in-n cadence applies n ticks' worth per invocation — the
+		# same net push per second as per-tick had (the alignment compensation
+		# pattern; the per-application step stays sub-pixel-to-a-few-px).
+		move_and_collide(separation_vector * get_physics_process_delta_time() * sep_n)
 
-
-## BOID alignment: zombies smoothly match the group's average facing.
-func apply_alignment_force() -> void:
-	if not is_zombie():
+	# --- ALIGNMENT: zombies smoothly match the group's average facing (sampled) ---
+	if not is_zombie() or (int(gm.sim_tick) + unit_uid) % ALIGN_CADENCE != 0:
 		return
-
-	var allies := find_nearby_allies()
+	var allies: Array[Unit] = gm.neighbours_within(
+		global_position, formation_detection_radius, my_team, self, false, ALIGN_SAMPLE)
 	if allies.size() < min_formation_size:
 		return
 
@@ -312,7 +343,10 @@ func apply_alignment_force() -> void:
 		average_facing = (average_facing / valid_count).normalized()
 		var zombie := self as Zombie
 		if zombie and zombie.facing_direction.length() > 0.1:
-			var target_facing := zombie.facing_direction.lerp(average_facing, alignment_rate * get_physics_process_delta_time() * 10.0)
+			# × ALIGN_CADENCE: the lerp runs a third as often, so each application
+			# is three ticks' worth — the same smoothing rate as per-tick had.
+			var weight := alignment_rate * get_physics_process_delta_time() * 10.0 * ALIGN_CADENCE
+			var target_facing := zombie.facing_direction.lerp(average_facing, weight)
 			zombie.facing_direction = target_facing.normalized()
 
 

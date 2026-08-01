@@ -67,6 +67,25 @@ var _warned_no_spots: bool = false
 const OVERFLOW_SALT := 7301
 const OVERFLOW_SPREAD := 22.0
 
+## OVERFLOW FAN-OUT (Ben's ruling 2026-07-30). Entrants past the authored spots
+## used to all target the SAME deepest spot with only a ±22px jitter, so a dozen
+## arrivals read as one blob shoving at a single point. They now land on a
+## phyllotaxis spiral around that anchor: even spacing, nobody sharing a point,
+## and the pattern grows outward on its own as more arrive.
+##
+## Deterministic (§10): the index is claim order — humans tick in registry order,
+## so it's stable — and the organic wobble is DetHash, not RNG. Note this is a
+## POSITION spread, not physics: sheltered humans run no BOID separation (the
+## SHELTERED branch doesn't call super), so the spacing has to be authored into
+## the target itself rather than emerge from jostling.
+const OVERFLOW_SPACING := 26.0   ## ≈ a body's width between neighbours
+const GOLDEN_ANGLE := 2.39996323
+const OVERFLOW_WOBBLE := 4.0     ## small per-unit offset so the spiral isn't robotic
+
+## How many entrants have overflowed here. Monotonic; gaps from deaths are
+## harmless (the pattern just keeps growing outward).
+var _overflow_index: int = 0
+
 
 func _ready() -> void:
 	# Give a freshly-added building a default footprint so it's visible and reshapeable.
@@ -144,11 +163,7 @@ func set_hover_highlighted(value: bool) -> void:
 ## nav distances are fixed. `human` is dynamically typed — no Human class
 ## dependency in this script.
 func claim_spot(human: Node2D, entry_door: Node2D) -> Vector2:
-	if not _occupants.has(human):
-		_occupants.append(human)
-		# Signals up: free the claim + occupancy when the occupant dies.
-		if human.has_signal("human_died") and not human.human_died.is_connected(_on_occupant_died):
-			human.human_died.connect(_on_occupant_died)
+	add_occupant(human)
 
 	var door_pos: Vector2 = entry_door.global_position if entry_door != null else global_position
 
@@ -164,17 +179,47 @@ func claim_spot(human: Node2D, entry_door: Node2D) -> Vector2:
 			_spot_claims[spot] = human
 			return spot.global_position
 
-	# Overflow (§6.2): share the deepest spot, DetHash spread — the huddle.
+	# Overflow (§6.2): fan out around the deepest spot rather than piling on it.
 	var pool: Array = shelter_sorted if not shelter_sorted.is_empty() else _spots(true)
 	if not pool.is_empty():
-		return pool[0].global_position + DetHash.offset(human.unit_uid, OVERFLOW_SALT, OVERFLOW_SPREAD)
+		return _overflow_position(pool[0].global_position, human)
 
-	# No spots authored at all — huddle at the footprint centre so entrants still
-	# clear the doorway. Authored markers are the intended setup (§6.2).
+	# No spots authored at all — fan out from the footprint centre so entrants
+	# still clear the doorway. Authored markers remain the intended setup (§6.2)
+	# for controlling exactly where people stand.
 	if not _warned_no_spots:
 		_warned_no_spots = true
-		push_warning("ShelterBuilding '%s' has no ShelterSpot children — entrants huddle at the centre." % name)
-	return _footprint_centre() + DetHash.offset(human.unit_uid, OVERFLOW_SALT, OVERFLOW_SPREAD)
+		push_warning("ShelterBuilding '%s' has no ShelterSpot children — entrants fan out from the centre." % name)
+	return _overflow_position(_footprint_centre(), human)
+
+
+## The next fan-out position around `anchor`. See the OVERFLOW_* constants: a
+## phyllotaxis spiral (radius ∝ √n, golden-angle turns) gives even coverage with
+## no clumping, plus a small DetHash wobble so a packed room doesn't look like a
+## sunflower diagram. 1-based so the first overflow entrant clears the anchor
+## itself, which whoever claimed that spot is already standing on.
+func _overflow_position(anchor: Vector2, human: Node2D) -> Vector2:
+	_overflow_index += 1
+	var n := float(_overflow_index)
+	# NOT named `offset` — that shadows Polygon2D.offset on this node.
+	var spiral := Vector2(cos(n * GOLDEN_ANGLE), sin(n * GOLDEN_ANGLE)) * (OVERFLOW_SPACING * sqrt(n))
+	return anchor + spiral + DetHash.offset(human.unit_uid, OVERFLOW_SALT, OVERFLOW_WOBBLE)
+
+
+## Registers `human` as an occupant WITHOUT assigning it a position — the boot
+## adoption path (Ben's ruling 2026-07-30). A hand-placed resident holds exactly
+## where the designer put it: the level author has already decided where these
+## people stand, and making them all walk to authored ShelterSpots meant placing
+## a spot per human across dozens of them. Occupancy still matters (every siege /
+## flush / pour-in / win check keys off it) — only the spot claim is skipped, so
+## the authored spots stay free for humans who genuinely flee in later.
+func add_occupant(human: Node2D) -> void:
+	if _occupants.has(human):
+		return
+	_occupants.append(human)
+	# Signals up: free the claim + occupancy when the occupant dies.
+	if human.has_signal("human_died") and not human.human_died.is_connected(_on_occupant_died):
+		human.human_died.connect(_on_occupant_died)
 
 
 ## Living occupants, in arrival order (deterministic). Read by besiegers at

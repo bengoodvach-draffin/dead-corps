@@ -26,7 +26,7 @@ cell_size = 6.0
 agent_radius = 15.0
 
 [node name="Main" type="Node2D" unique_id=151308185]
-position = Vector2(3, 0)
+position = Vector2(4, 0)
 
 [node name="Camera" type="Camera2D" parent="." unique_id=585395039 groups=["camera"]]
 offset = Vector2(-4600, 550)
@@ -43,13 +43,6 @@ bounds_max = Vector2(10000, 5000)
 [node name="LevelConfig" type="Node2D" parent="." unique_id=1080841229]
 position = Vector2(-3, 3)
 script = ExtResource("3_jyqd8")
-zombie_speed = 140.0
-fire_cooldown = Array[float]([0.0, 1.0, 0.8, 0.6])
-chain_scan_radius = 150.0
-feral_offaxis_penalty = 1.5
-cower_window = 1.2
-release_aim_radius = 50.0
-mark_radius = 300.0
 metadata/_custom_type_script = "uid://dlqe4p8ushalq"
 
 [node name="Initializer" type="Node" parent="." unique_id=1515215272]
@@ -460,7 +453,7 @@ position = Vector2(-768, 362)
 position = Vector2(-2283, 544)
 
 [node name="EscapeZone" parent="TestLevel/Encounters/Choice" unique_id=1179168205 instance=ExtResource("14_nf0t1")]
-position = Vector2(8, 539)
+position = Vector2(471, 219)
 zone_size = Vector2(200, 500)
 
 [node name="Building5" parent="TestLevel/Encounters/Choice" unique_id=1908386343 instance=ExtResource("9_jw32b")]

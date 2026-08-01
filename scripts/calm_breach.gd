@@ -112,7 +112,6 @@ func tick(has_goal: bool, goal: Vector2, delta: float) -> bool:
 		return false
 	_door = door
 	_pound_timer = DoorBreach.first_pound_delay(_owner.unit_uid)
-	print("🔨 CALM BREACH: %s pounds %s (blocking its move)" % [_owner.name, door.name])
 	return _tick_pounding(delta)
 
 

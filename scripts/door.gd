@@ -190,7 +190,8 @@ func _zombie_inside_arc() -> bool:
 
 
 func _burst_from_inside() -> void:
-	print("💥 BURST: %s broken open from the inside!" % name)
+	if GameConfig.debug_logs:
+		print("💥 BURST: %s broken open from the inside!" % name)
 	_do_breach()
 
 
@@ -253,7 +254,8 @@ func apply_pound(damage: float) -> void:
 	if _bar_layer != null:
 		_bar_layer.queue_redraw()
 	if _integrity <= 0.0:
-		print("💥 BREACH: %s is down!" % name)
+		if GameConfig.debug_logs:
+			print("💥 BREACH: %s is down!" % name)
 		_do_breach()
 
 

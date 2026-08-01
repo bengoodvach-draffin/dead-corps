@@ -34,6 +34,20 @@ class_name EscapeZone
 @onready var visual: ColorRect = $Visual
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
 
+
+## The point on this zone's rectangle nearest `from` (or `from` itself when
+## already inside). Flee targeting measures AND paths to this, never the centre
+## (Ben's catch 2026-07-30): a zone is a big rectangle, so measuring from the
+## middle added up to half its size to every distance comparison — a 200×500 zone
+## read as 250px further away than it really was, and quietly lost to doors that
+## were genuinely further from the runner. Axis-aligned, matching the visual and
+## collision rects, which are centred on the node and unrotated.
+func nearest_point(from: Vector2) -> Vector2:
+	var half := zone_size * 0.5
+	return Vector2(
+		clampf(from.x, global_position.x - half.x, global_position.x + half.x),
+		clampf(from.y, global_position.y - half.y, global_position.y + half.y))
+
 var game_manager: GameManager
 
 
@@ -114,7 +128,8 @@ func _on_body_entered(body: Node2D) -> void:
 		return
 	var unit: Unit = body as Unit
 	if unit.is_human():
-		print("  -> Human reached escape zone!")
+		if GameConfig.debug_logs:
+			print("  -> Human reached escape zone!")
 		if game_manager:
 			game_manager.on_human_escaped(unit)
 		unit.queue_free()  # Remove the human

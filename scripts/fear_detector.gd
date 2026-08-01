@@ -22,6 +22,18 @@ var _gm: Node = null
 var _committed: bool = false
 var _beat: float = 0.0
 
+## Scan cadence (perf, 2026-07-30). The count below casts an LOS ray per zombie
+## in radius; running it every frame for every defending human made the physics
+## queries scale as humans × zombies. Now it runs every fear_scan_interval, with
+## the PHASE staggered per unit so the crowd doesn't all scan on the same tick.
+##
+## The stagger is primed on the first tick rather than in setup(): components are
+## built in _ready, but unit_uid isn't assigned until registration, so seeding it
+## early would hand every human the same offset. DetHash, not RNG (§10).
+const SCAN_SALT := 8117
+var _scan_timer: float = 0.0
+var _scan_primed: bool = false
+
 
 func setup(owner_human: Human) -> void:
 	_owner = owner_human
@@ -46,6 +58,16 @@ func tick(delta: float) -> void:
 			_owner.start_fleeing()
 		return
 
+	if not _scan_primed:
+		# Spread the crowd's first scan across one interval, then hold cadence.
+		_scan_primed = true
+		_scan_timer = DetHash.hash01(_owner.unit_uid, SCAN_SALT) * GameConfig.fear_scan_interval
+		return
+	_scan_timer -= delta
+	if _scan_timer > 0.0:
+		return
+	_scan_timer += GameConfig.fear_scan_interval
+
 	var gm := _game_manager()
 	if gm == null:
 		return
@@ -65,7 +87,8 @@ func tick(delta: float) -> void:
 	if _owner.is_sheltered() and not _owner.is_safely_sheltered():
 		pool = gm.living_zombies()
 	else:
-		pool = gm.neighbours_within(_owner.global_position, GameConfig.fear_radius, &"zombies")
+		# Unsorted: this is a count — order can't matter.
+		pool = gm.neighbours_within(_owner.global_position, GameConfig.fear_radius, &"zombies", null, false)
 	for u in pool:
 		if _has_los(u):
 			count += 1

@@ -253,7 +253,8 @@ func _begin_siege(building: Node2D) -> void:
 	_siege_door = door
 	# First pound lands after a DetHash-staggered fraction of the interval (§4.3).
 	_pound_timer = DoorBreach.first_pound_delay(_owner.unit_uid)
-	print("🔍 SIEGE: %s besieges %s at %s" % [_owner.name, building.name, door.name])
+	if GameConfig.debug_logs:
+		print("🔍 SIEGE: %s besieges %s at %s" % [_owner.name, building.name, door.name])
 
 
 func _end_siege() -> void:
@@ -274,7 +275,8 @@ func _begin_door_siege(door: Node2D) -> void:
 	_siege_door = door
 	_siege_building = door.building()
 	_pound_timer = DoorBreach.first_pound_delay(_owner.unit_uid)
-	print("🔍 SIEGE: %s pounds %s (prey beyond)" % [_owner.name, door.name])
+	if GameConfig.debug_logs:
+		print("🔍 SIEGE: %s pounds %s (prey beyond)" % [_owner.name, door.name])
 
 
 func is_breaching() -> bool:

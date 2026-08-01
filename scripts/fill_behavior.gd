@@ -67,6 +67,19 @@ var _civ_clock: float = 0.0
 var _watching: bool = false
 var _watch_pos: Vector2 = Vector2.ZERO
 
+## Target-scan cadence (perf, 2026-07-30) — the FearDetector pattern: the scan
+## (grid query + an LOS ray per candidate) runs every fill_scan_interval, phase
+## DetHash-staggered per unit; between scans the cached target holds. The FILL
+## MATH stays per-frame — growth, decay, rotation, cooldown, the civilian clock —
+## so only acquisition is coarser: a new nearest zombie is noticed up to one
+## interval late. A cached target that dies drops immediately (checked per frame,
+## cheap); the firing lane is re-verified with one ray at the shot itself, so a
+## stale target can never be fired on through a friendly who stepped into line.
+const SCAN_SALT := 9203
+var _scan_timer: float = 0.0
+var _scan_primed: bool = false
+var _cached_visible: Zombie = null
+
 
 func setup(owner_human: Human) -> void:
 	_owner = owner_human
@@ -79,7 +92,7 @@ func tick(delta: float) -> void:
 	if gm == null:
 		return
 
-	var nearest_visible := _nearest_visible_zombie(gm)
+	var nearest_visible := _scan(gm, delta)
 	if _owner.is_armed():
 		_tick_armed(delta, nearest_visible)
 	else:
@@ -113,7 +126,12 @@ func _tick_armed(delta: float, nearest_visible: Zombie) -> void:
 			# at point-blank the front refills near-instantly, so without it a
 			# lone defender machine-gunned whole waves.
 			_reached = true
-			if _rotate_toward(nearest_visible.global_position, delta) and _cooldown <= 0.0:
+			# The lane re-check is the cadence's safety: the target was clear at
+			# scan time, up to fill_scan_interval ago — a friendly may have stepped
+			# into the line since. One ray, only at the moment everything else says
+			# fire. Blocked → hold; the next scan retargets around the screen.
+			if _rotate_toward(nearest_visible.global_position, delta) and _cooldown <= 0.0 \
+					and _has_clear_lane(nearest_visible):
 				_fire(nearest_visible)
 	else:
 		_reached = false
@@ -152,6 +170,23 @@ func _tick_civilian(delta: float, nearest_visible: Zombie) -> void:
 		_reached = false
 
 
+## The cadence wrapper around _nearest_visible_zombie (see the SCAN constants).
+## First tick scans immediately (no blind boot window), then holds the stagger.
+func _scan(gm: Node, delta: float) -> Zombie:
+	if not _scan_primed:
+		_scan_primed = true
+		_scan_timer = DetHash.hash01(_owner.unit_uid, SCAN_SALT) * GameConfig.fill_scan_interval
+		_cached_visible = _nearest_visible_zombie(gm)
+		return _cached_visible
+	_scan_timer -= delta
+	if _scan_timer <= 0.0:
+		_scan_timer += GameConfig.fill_scan_interval
+		_cached_visible = _nearest_visible_zombie(gm)
+	elif _cached_visible != null and (not is_instance_valid(_cached_visible) or not _cached_visible.is_alive):
+		_cached_visible = null   # died between scans — never aim at a corpse
+	return _cached_visible
+
+
 ## Nearest zombie within awareness with a clear lane (environment + humans block), or
 ## null. Shared by the armed front and the civilian clock — both "perceive" the same way.
 func _nearest_visible_zombie(gm: Node) -> Zombie:
@@ -178,6 +213,7 @@ func cancel() -> void:
 	_reached = false
 	_civ_clock = 0.0
 	_watching = false
+	_cached_visible = null   # a cold front re-acquires fresh on its next scan
 	_owner.queue_redraw()
 
 

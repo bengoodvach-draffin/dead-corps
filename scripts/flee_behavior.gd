@@ -92,7 +92,9 @@ func _commit_exit() -> void:
 	_has_via = false
 	if exit != null:
 		_escape_exit = exit
-		_escape_target = exit.global_position
+		# Path to the nearest edge of a zone, not its middle — they're heading for
+		# safety, and every point inside counts as escaped.
+		_escape_target = _exit_point(exit, _owner.global_position)
 		_has_escape = true
 		_maybe_write_off_shelters(exit)
 		# The flush door-leg applies only when we're actually LEAVING the breached
@@ -106,7 +108,6 @@ func _commit_exit() -> void:
 				_via_point = via
 				_has_via = true
 		_agent.target_position = _via_point if _has_via else _escape_target
-		print("🔍 FLEE: %s → exit %s at %s" % [_owner.name, exit.name, _escape_target.round()])
 	else:
 		_escape_exit = null
 		_has_escape = false
@@ -166,6 +167,16 @@ func _pick_escape_zone() -> Node2D:
 	return _best_exit(open if not open.is_empty() else candidates)
 
 
+## The point of `exit` this runner would actually reach: a door's own position,
+## or the NEAREST point on an escape zone rather than its centre. Zones are large
+## rectangles, so centre-measuring inflated their distance by up to half the zone
+## and lost them comparisons against doors that were genuinely further away.
+func _exit_point(exit: Node2D, from: Vector2) -> Vector2:
+	if exit.has_method("nearest_point"):
+		return exit.nearest_point(from)
+	return exit.global_position
+
+
 ## Ranks a pool of exits and returns the best (lowest score), or null if empty.
 func _best_exit(pool: Array) -> Node2D:
 	var bias := GameConfig.flee_exit_threat_bias
@@ -174,7 +185,7 @@ func _best_exit(pool: Array) -> Node2D:
 	var best: Node2D = null
 	var best_score := INF
 	for exit in pool:
-		var to_exit: Vector2 = exit.global_position - origin
+		var to_exit: Vector2 = _exit_point(exit, origin) - origin
 		var dist := to_exit.length()
 		var align := 0.0
 		if threat_dir != Vector2.ZERO and dist > 0.01:
@@ -193,7 +204,9 @@ func _exit_blocked(exit: Node2D) -> bool:
 	var gm := _game_manager()
 	if gm == null:
 		return false
-	for z in gm.neighbours_within(exit.global_position, GameConfig.exit_block_radius, &"zombies"):
+	# Measured at the point the runner would actually head for, not a big zone's centre.
+	var point := _exit_point(exit, _owner.global_position)
+	for z in gm.neighbours_within(point, GameConfig.exit_block_radius, &"zombies"):
 		if z != null and z.is_alive:
 			return true
 	return false
@@ -493,17 +506,32 @@ func _shelter_doors() -> Array:
 ## Sum of "away from zombie" vectors for every living zombie within flee_repel_radius,
 ## each weighted stronger the closer it is (linear falloff to 0 at the radius). Both
 ## calm and feral zombies repel — that's what lets the player herd with the reserve.
+##
+## RECOMPUTED 1-IN-2 TICKS, cached between (perf, 2026-08-01): the mass-rout
+## spike was exactly this — every fleeing human iterating the whole pursuing
+## horde inside its 180px bend radius, every tick (169ms of a 500ms frame). The
+## bend is a steering *direction* blended into the nav heading, so a 30Hz
+## refresh is imperceptible at flee speeds; the cached vector is reused (NOT
+## rescaled — it's a blend weight, not an impulse). Stagger via uid keeps the
+## crowd's recomputes off the same tick (§10-safe: sim_tick, no RNG). Unsorted
+## query: a force sum has no tie to break.
+const REPEL_CADENCE := 2
+var _repel_cache: Vector2 = Vector2.ZERO
+
 func _zombie_repulsion(origin: Vector2) -> Vector2:
 	var gm := _game_manager()
 	if gm == null:
 		return Vector2.ZERO
+	if (int(gm.sim_tick) + _owner.unit_uid) % REPEL_CADENCE != 0:
+		return _repel_cache
 	var radius := GameConfig.flee_repel_radius
 	var repel := Vector2.ZERO
-	for u in gm.neighbours_within(origin, radius, &"zombies"):
+	for u in gm.neighbours_within(origin, radius, &"zombies", null, false):
 		var away: Vector2 = origin - u.global_position
 		var d := away.length()
 		if d > 0.01:
 			repel += away.normalized() * (1.0 - d / radius)
+	_repel_cache = repel
 	return repel
 
 

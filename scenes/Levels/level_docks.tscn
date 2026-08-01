@@ -25,7 +25,7 @@ cell_size = 6.0
 agent_radius = 15.0
 
 [node name="Main" type="Node2D" unique_id=151308185]
-position = Vector2(3, 0)
+metadata/_edit_lock_ = true
 
 [node name="Camera" type="Camera2D" parent="." unique_id=585395039 groups=["camera"]]
 position = Vector2(0, -96)
@@ -43,9 +43,6 @@ bounds_max = Vector2(10000, 5000)
 [node name="LevelConfig" type="Node2D" parent="." unique_id=1080841229]
 position = Vector2(-3, 3)
 script = ExtResource("3_2h14b")
-exit_block_radius = null
-door_wedge_window = null
-door_wedge_min_progress = null
 metadata/_custom_type_script = "uid://dlqe4p8ushalq"
 
 [node name="Initializer" type="Node" parent="." unique_id=1515215272]
@@ -164,19 +161,39 @@ script = ExtResource("9_irb5a")
 metadata/_custom_type_script = "uid://cvde25j0ujcg"
 
 [node name="ShelterSpot" type="Node2D" parent="TestLevel/Carpark/ShelterBuilding" unique_id=1382921227]
-position = Vector2(-64, 64)
-rotation = -0.22165681
+position = Vector2(-24, -84)
+rotation = -4.6565385
 script = ExtResource("13_0yd0l")
 is_guard = true
 metadata/_custom_type_script = "uid://c545o5pp1k361"
 
 [node name="ShelterSpot2" type="Node2D" parent="TestLevel/Carpark/ShelterBuilding" unique_id=1285160634]
-position = Vector2(-120, 64)
+position = Vector2(-64, -84)
+script = ExtResource("13_0yd0l")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot4" type="Node2D" parent="TestLevel/Carpark/ShelterBuilding" unique_id=1049722166]
+position = Vector2(-96, -60)
+script = ExtResource("13_0yd0l")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot5" type="Node2D" parent="TestLevel/Carpark/ShelterBuilding" unique_id=1296591477]
+position = Vector2(-72, -36)
+script = ExtResource("13_0yd0l")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot6" type="Node2D" parent="TestLevel/Carpark/ShelterBuilding" unique_id=150805511]
+position = Vector2(-128, 4)
+script = ExtResource("13_0yd0l")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot7" type="Node2D" parent="TestLevel/Carpark/ShelterBuilding" unique_id=1331789518]
+position = Vector2(-96, 28)
 script = ExtResource("13_0yd0l")
 metadata/_custom_type_script = "uid://c545o5pp1k361"
 
 [node name="ShelterSpot3" type="Node2D" parent="TestLevel/Carpark/ShelterBuilding" unique_id=440042747]
-position = Vector2(-128, -72)
+position = Vector2(-128, -28)
 script = ExtResource("13_0yd0l")
 metadata/_custom_type_script = "uid://c545o5pp1k361"
 
@@ -1021,10 +1038,10 @@ metadata/_custom_type_script = "uid://cvde25j0ujcg"
 [node name="Units" type="Node2D" parent="TestLevel/Carpark" unique_id=1324478738]
 
 [node name="Human" parent="TestLevel/Carpark/Units" unique_id=1346925049 instance=ExtResource("7_davh7")]
-position = Vector2(-5435, 100)
+position = Vector2(-5435, 104)
 
 [node name="Human2" parent="TestLevel/Carpark/Units" unique_id=1619039707 instance=ExtResource("7_davh7")]
-position = Vector2(-5441, -36)
+position = Vector2(-5443, -40)
 
 [node name="Human4" parent="TestLevel/Carpark/Units" unique_id=815498009 instance=ExtResource("7_davh7")]
 position = Vector2(-5225, 469)
@@ -1103,7 +1120,7 @@ position = Vector2(-4899, 85)
 position = Vector2(-4933, 721)
 
 [node name="Human3" parent="TestLevel/Carpark/Units" unique_id=2020236646 instance=ExtResource("7_davh7")]
-position = Vector2(-5379, 100)
+position = Vector2(-5371, 104)
 defender_class = 2
 
 [node name="Zombie" parent="TestLevel/Carpark/Units" unique_id=1394228517 instance=ExtResource("6_se283")]
@@ -1120,37 +1137,6 @@ uppercase = true
 
 [node name="Shopping" type="Node2D" parent="TestLevel" unique_id=864237250]
 
-[node name="Walls and doors" type="Node2D" parent="TestLevel/Shopping" unique_id=1564966858]
-
-[node name="Wall7" type="Polygon2D" parent="TestLevel/Shopping/Walls and doors" unique_id=1778180833]
-position = Vector2(-3739, -200)
-color = Color(0.4, 0.4, 0.4, 1)
-polygon = PackedVector2Array(-112, -1272, -104, -1272, -104, 128, -112, 128)
-script = ExtResource("9_irb5a")
-metadata/_custom_type_script = "uid://cvde25j0ujcg"
-
-[node name="Wall8" type="Polygon2D" parent="TestLevel/Shopping/Walls and doors" unique_id=2038509145]
-position = Vector2(-3739, -384)
-color = Color(0.4, 0.4, 0.4, 1)
-polygon = PackedVector2Array(-112, -1272, -104, -1272, -104, -1216, -112, -1216)
-script = ExtResource("9_irb5a")
-metadata/_custom_type_script = "uid://cvde25j0ujcg"
-
-[node name="Wall" type="Polygon2D" parent="TestLevel/Shopping/Walls and doors" unique_id=1613615621]
-position = Vector2(-4763, -168)
-color = Color(0.4, 0.4, 0.4, 1)
-polygon = PackedVector2Array(8, -24, 24, -24, 24, 104, 8, 104)
-script = ExtResource("9_irb5a")
-metadata/_custom_type_script = "uid://cvde25j0ujcg"
-
-[node name="Wall2" type="Polygon2D" parent="TestLevel/Shopping/Walls and doors" unique_id=424723142]
-position = Vector2(-4571, -128)
-rotation = 1.5707964
-color = Color(0.4, 0.4, 0.4, 1)
-polygon = PackedVector2Array(8, -24, 16, -24, 16, 104, 8, 104)
-script = ExtResource("9_irb5a")
-metadata/_custom_type_script = "uid://cvde25j0ujcg"
-
 [node name="Label" type="Label" parent="TestLevel/Shopping" unique_id=656263060]
 offset_left = -5067.0005
 offset_top = -1896.0001
@@ -1162,7 +1148,9 @@ uppercase = true
 
 [node name="Market stalls" type="Node2D" parent="TestLevel/Shopping" unique_id=36394682]
 
-[node name="ShelterBuilding2" type="Polygon2D" parent="TestLevel/Shopping/Market stalls" unique_id=602642652]
+[node name="Outside stalls" type="Node2D" parent="TestLevel/Shopping/Market stalls" unique_id=816877621]
+
+[node name="ShelterBuilding2" type="Polygon2D" parent="TestLevel/Shopping/Market stalls/Outside stalls" unique_id=602642652]
 position = Vector2(-3947, -1304)
 color = Color(0.16, 0.16, 0.2, 0.4)
 polygon = PackedVector2Array(-152, -104, 40, -104, 40, 24, -152, 24)
@@ -1171,7 +1159,7 @@ is_shelter = false
 wall_thickness = 8.0
 metadata/_custom_type_script = "uid://bgnbocmyabj1m"
 
-[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/ShelterBuilding2" unique_id=2001080569]
+[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/Outside stalls/ShelterBuilding2" unique_id=2001080569]
 position = Vector2(-152, -40)
 rotation = -1.5707964
 script = ExtResource("12_2h14b")
@@ -1179,7 +1167,7 @@ starts_open = true
 thickness = 8.0
 metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
 
-[node name="ShelterBuilding3" type="Polygon2D" parent="TestLevel/Shopping/Market stalls" unique_id=1921819349]
+[node name="ShelterBuilding3" type="Polygon2D" parent="TestLevel/Shopping/Market stalls/Outside stalls" unique_id=1921819349]
 position = Vector2(-3947, -1112)
 color = Color(0.16, 0.16, 0.2, 0.4)
 polygon = PackedVector2Array(-152, -104, 40, -104, 40, 24, -152, 24)
@@ -1188,7 +1176,7 @@ is_shelter = false
 wall_thickness = 8.0
 metadata/_custom_type_script = "uid://bgnbocmyabj1m"
 
-[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/ShelterBuilding3" unique_id=724364033]
+[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/Outside stalls/ShelterBuilding3" unique_id=724364033]
 position = Vector2(-152, -40)
 rotation = -1.5707964
 script = ExtResource("12_2h14b")
@@ -1196,7 +1184,7 @@ starts_open = true
 thickness = 8.0
 metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
 
-[node name="ShelterBuilding4" type="Polygon2D" parent="TestLevel/Shopping/Market stalls" unique_id=957332426]
+[node name="ShelterBuilding4" type="Polygon2D" parent="TestLevel/Shopping/Market stalls/Outside stalls" unique_id=957332426]
 position = Vector2(-3947, -920)
 color = Color(0.16, 0.16, 0.2, 0.4)
 polygon = PackedVector2Array(-152, -104, 40, -104, 40, 24, -152, 24)
@@ -1205,7 +1193,7 @@ is_shelter = false
 wall_thickness = 8.0
 metadata/_custom_type_script = "uid://bgnbocmyabj1m"
 
-[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/ShelterBuilding4" unique_id=1161317633]
+[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/Outside stalls/ShelterBuilding4" unique_id=1161317633]
 position = Vector2(-152, -40)
 rotation = -1.5707964
 script = ExtResource("12_2h14b")
@@ -1213,7 +1201,7 @@ starts_open = true
 thickness = 8.0
 metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
 
-[node name="ShelterBuilding5" type="Polygon2D" parent="TestLevel/Shopping/Market stalls" unique_id=1682819758]
+[node name="ShelterBuilding5" type="Polygon2D" parent="TestLevel/Shopping/Market stalls/Outside stalls" unique_id=1682819758]
 position = Vector2(-3947, -728)
 color = Color(0.16, 0.16, 0.2, 0.4)
 polygon = PackedVector2Array(-152, -104, 40, -104, 40, 24, -152, 24)
@@ -1222,7 +1210,7 @@ is_shelter = false
 wall_thickness = 8.0
 metadata/_custom_type_script = "uid://bgnbocmyabj1m"
 
-[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/ShelterBuilding5" unique_id=323894905]
+[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/Outside stalls/ShelterBuilding5" unique_id=323894905]
 position = Vector2(-152, -40)
 rotation = -1.5707964
 script = ExtResource("12_2h14b")
@@ -1230,7 +1218,7 @@ starts_open = true
 thickness = 8.0
 metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
 
-[node name="ShelterBuilding6" type="Polygon2D" parent="TestLevel/Shopping/Market stalls" unique_id=2131921664]
+[node name="ShelterBuilding6" type="Polygon2D" parent="TestLevel/Shopping/Market stalls/Outside stalls" unique_id=2131921664]
 position = Vector2(-3939, -536)
 color = Color(0.16, 0.16, 0.2, 0.4)
 polygon = PackedVector2Array(-152, -104, 40, -104, 40, 24, -152, 24)
@@ -1238,7 +1226,7 @@ script = ExtResource("11_ss5kf")
 wall_thickness = 8.0
 metadata/_custom_type_script = "uid://bgnbocmyabj1m"
 
-[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/ShelterBuilding6" unique_id=1877444696]
+[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/Outside stalls/ShelterBuilding6" unique_id=1877444696]
 position = Vector2(-152, -40)
 rotation = -1.5707964
 script = ExtResource("12_2h14b")
@@ -1246,7 +1234,7 @@ integrity_override = 50.0
 thickness = 8.0
 metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
 
-[node name="ShelterBuilding7" type="Polygon2D" parent="TestLevel/Shopping/Market stalls" unique_id=1266945023]
+[node name="ShelterBuilding7" type="Polygon2D" parent="TestLevel/Shopping/Market stalls/Outside stalls" unique_id=1266945023]
 position = Vector2(-3939, -344)
 color = Color(0.16, 0.16, 0.2, 0.4)
 polygon = PackedVector2Array(-152, -104, 40, -104, 40, 24, -152, 24)
@@ -1255,7 +1243,7 @@ is_shelter = false
 wall_thickness = 8.0
 metadata/_custom_type_script = "uid://bgnbocmyabj1m"
 
-[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/ShelterBuilding7" unique_id=265984033]
+[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/Outside stalls/ShelterBuilding7" unique_id=265984033]
 position = Vector2(-152, -40)
 rotation = -1.5707964
 script = ExtResource("12_2h14b")
@@ -1263,7 +1251,7 @@ starts_open = true
 thickness = 8.0
 metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
 
-[node name="ShelterBuilding8" type="Polygon2D" parent="TestLevel/Shopping/Market stalls" unique_id=838596688]
+[node name="ShelterBuilding8" type="Polygon2D" parent="TestLevel/Shopping/Market stalls/Outside stalls" unique_id=838596688]
 position = Vector2(-4331, -1304)
 color = Color(0.16, 0.16, 0.2, 0.4)
 polygon = PackedVector2Array(-152, -104, 40, -104, 40, 24, -152, 24)
@@ -1271,7 +1259,7 @@ script = ExtResource("11_ss5kf")
 wall_thickness = 8.0
 metadata/_custom_type_script = "uid://bgnbocmyabj1m"
 
-[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/ShelterBuilding8" unique_id=883119608]
+[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/Outside stalls/ShelterBuilding8" unique_id=883119608]
 position = Vector2(40, -40)
 rotation = 1.5707964
 script = ExtResource("12_2h14b")
@@ -1279,7 +1267,7 @@ integrity_override = 50.0
 thickness = 8.0
 metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
 
-[node name="ShelterBuilding9" type="Polygon2D" parent="TestLevel/Shopping/Market stalls" unique_id=1277567280]
+[node name="ShelterBuilding9" type="Polygon2D" parent="TestLevel/Shopping/Market stalls/Outside stalls" unique_id=1277567280]
 position = Vector2(-4331, -1112)
 color = Color(0.16, 0.16, 0.2, 0.4)
 polygon = PackedVector2Array(-152, -104, 40, -104, 40, 24, -152, 24)
@@ -1288,7 +1276,7 @@ is_shelter = false
 wall_thickness = 8.0
 metadata/_custom_type_script = "uid://bgnbocmyabj1m"
 
-[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/ShelterBuilding9" unique_id=1483104442]
+[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/Outside stalls/ShelterBuilding9" unique_id=1483104442]
 position = Vector2(40, -40)
 rotation = 1.5707964
 script = ExtResource("12_2h14b")
@@ -1296,7 +1284,7 @@ starts_open = true
 thickness = 8.0
 metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
 
-[node name="ShelterBuilding10" type="Polygon2D" parent="TestLevel/Shopping/Market stalls" unique_id=965049769]
+[node name="ShelterBuilding10" type="Polygon2D" parent="TestLevel/Shopping/Market stalls/Outside stalls" unique_id=965049769]
 position = Vector2(-4331, -920)
 color = Color(0.16, 0.16, 0.2, 0.4)
 polygon = PackedVector2Array(-152, -104, 40, -104, 40, 24, -152, 24)
@@ -1304,7 +1292,7 @@ script = ExtResource("11_ss5kf")
 wall_thickness = 8.0
 metadata/_custom_type_script = "uid://bgnbocmyabj1m"
 
-[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/ShelterBuilding10" unique_id=826254717]
+[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/Outside stalls/ShelterBuilding10" unique_id=826254717]
 position = Vector2(40, -40)
 rotation = 1.5707964
 script = ExtResource("12_2h14b")
@@ -1312,7 +1300,7 @@ integrity_override = 50.0
 thickness = 8.0
 metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
 
-[node name="ShelterBuilding11" type="Polygon2D" parent="TestLevel/Shopping/Market stalls" unique_id=1302635006]
+[node name="ShelterBuilding11" type="Polygon2D" parent="TestLevel/Shopping/Market stalls/Outside stalls" unique_id=1302635006]
 position = Vector2(-4331, -728)
 color = Color(0.16, 0.16, 0.2, 0.4)
 polygon = PackedVector2Array(-152, -104, 40, -104, 40, 24, -152, 24)
@@ -1321,7 +1309,7 @@ is_shelter = false
 wall_thickness = 8.0
 metadata/_custom_type_script = "uid://bgnbocmyabj1m"
 
-[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/ShelterBuilding11" unique_id=95789022]
+[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/Outside stalls/ShelterBuilding11" unique_id=95789022]
 position = Vector2(40, -40)
 rotation = 1.5707964
 script = ExtResource("12_2h14b")
@@ -1329,7 +1317,7 @@ starts_open = true
 thickness = 8.0
 metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
 
-[node name="ShelterBuilding12" type="Polygon2D" parent="TestLevel/Shopping/Market stalls" unique_id=1822370322]
+[node name="ShelterBuilding12" type="Polygon2D" parent="TestLevel/Shopping/Market stalls/Outside stalls" unique_id=1822370322]
 position = Vector2(-4323, -536)
 color = Color(0.16, 0.16, 0.2, 0.4)
 polygon = PackedVector2Array(-152, -104, 40, -104, 40, 24, -152, 24)
@@ -1338,7 +1326,7 @@ is_shelter = false
 wall_thickness = 8.0
 metadata/_custom_type_script = "uid://bgnbocmyabj1m"
 
-[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/ShelterBuilding12" unique_id=1750986060]
+[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/Outside stalls/ShelterBuilding12" unique_id=1750986060]
 position = Vector2(40, -40)
 rotation = 1.5707964
 script = ExtResource("12_2h14b")
@@ -1346,7 +1334,7 @@ starts_open = true
 thickness = 8.0
 metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
 
-[node name="ShelterBuilding13" type="Polygon2D" parent="TestLevel/Shopping/Market stalls" unique_id=1960263682]
+[node name="ShelterBuilding13" type="Polygon2D" parent="TestLevel/Shopping/Market stalls/Outside stalls" unique_id=1960263682]
 position = Vector2(-4323, -344)
 color = Color(0.16, 0.16, 0.2, 0.4)
 polygon = PackedVector2Array(-152, -104, 40, -104, 40, 24, -152, 24)
@@ -1355,427 +1343,11 @@ is_shelter = false
 wall_thickness = 8.0
 metadata/_custom_type_script = "uid://bgnbocmyabj1m"
 
-[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/ShelterBuilding13" unique_id=63149818]
+[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market stalls/Outside stalls/ShelterBuilding13" unique_id=63149818]
 position = Vector2(40, -40)
 rotation = 1.5707964
 script = ExtResource("12_2h14b")
 starts_open = true
-thickness = 8.0
-metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
-
-[node name="Market covered" type="Polygon2D" parent="TestLevel/Shopping" unique_id=1429394468]
-position = Vector2(-5307, -1552)
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(-72, -48, 632, -48, 632, 1360, -72, 1360)
-script = ExtResource("11_ss5kf")
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-metadata/_edit_lock_ = true
-
-[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market covered" unique_id=217639190]
-position = Vector2(-72, 1104)
-rotation = -1.5707964
-script = ExtResource("12_2h14b")
-integrity_override = 10.0
-thickness = 8.0
-metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
-
-[node name="Door2" type="Node2D" parent="TestLevel/Shopping/Market covered" unique_id=1923562837]
-position = Vector2(632, 1167.9628)
-rotation = 1.5707964
-script = ExtResource("12_2h14b")
-door_width = 128.0
-thickness = 8.0
-metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
-
-[node name="Door4" type="Node2D" parent="TestLevel/Shopping/Market covered" unique_id=1861612217]
-position = Vector2(632, 208)
-rotation = 1.5707964
-script = ExtResource("12_2h14b")
-door_width = 128.0
-thickness = 8.0
-metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
-
-[node name="ShelterSpot" type="Node2D" parent="TestLevel/Shopping/Market covered" unique_id=1560759164]
-position = Vector2(592, 672)
-script = ExtResource("13_0yd0l")
-metadata/_custom_type_script = "uid://c545o5pp1k361"
-
-[node name="ShelterBuilding" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=156911396]
-position = Vector2(272, 312)
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(-152, -104, 168, -104, 168, 280, -152, 280)
-script = ExtResource("11_ss5kf")
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market covered/ShelterBuilding" unique_id=1762357982]
-position = Vector2(114.85005, 280)
-rotation = 3.1415927
-script = ExtResource("12_2h14b")
-thickness = 8.0
-metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
-
-[node name="ShelterBuilding19" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=476348902]
-position = Vector2(272, 824)
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(-152, -104, 168, -104, 168, 280, -152, 280)
-script = ExtResource("11_ss5kf")
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market covered/ShelterBuilding19" unique_id=1291799579]
-position = Vector2(114.85005, 280)
-rotation = 3.1415927
-script = ExtResource("12_2h14b")
-thickness = 8.0
-metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
-
-[node name="ShelterBuilding2" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=468777355]
-position = Vector2(-112, 32)
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding3" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=1687452280]
-position = Vector2(-112, 96)
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding4" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=1502745275]
-position = Vector2(-112, 160)
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding5" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=684086551]
-position = Vector2(-112, 224)
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding6" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=918159562]
-position = Vector2(-112, 288)
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding7" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=784811591]
-position = Vector2(-112, 352)
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding8" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=131528921]
-position = Vector2(-112, 416)
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding9" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=462263626]
-position = Vector2(-112, 480)
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding10" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=1651150112]
-position = Vector2(-112, 544)
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding11" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=1787195194]
-position = Vector2(-112, 608)
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding12" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=923213413]
-position = Vector2(-112, 672)
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding13" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=1512366656]
-position = Vector2(-112, 736)
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding14" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=672876614]
-position = Vector2(-112, 800)
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding15" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=360184518]
-position = Vector2(-112, 864)
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding16" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=730571772]
-position = Vector2(-112, 928)
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding17" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=16174284]
-position = Vector2(-112, 992)
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding18" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=845317577]
-position = Vector2(-112, 1056)
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding20" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=1493194715]
-position = Vector2(-112, 1312)
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding22" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=780307619]
-position = Vector2(-112, 1376)
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding21" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=2015664811]
-position = Vector2(-112, 1248)
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding23" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=21505475]
-position = Vector2(104, 1208)
-rotation = 1.5707964
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding24" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=48772867]
-position = Vector2(168, 1208)
-rotation = 1.5707964
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding25" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=1576659997]
-position = Vector2(232, 1208)
-rotation = 1.5707964
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding26" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=1530330286]
-position = Vector2(296, 1208)
-rotation = 1.5707964
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding27" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=1793088172]
-position = Vector2(360, 1208)
-rotation = 1.5707964
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding28" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=545516586]
-position = Vector2(424, 1208)
-rotation = 1.5707964
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding30" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=957699068]
-position = Vector2(488, 1208)
-rotation = 1.5707964
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding31" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=423074383]
-position = Vector2(552, 1208)
-rotation = 1.5707964
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding29" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=1291352227]
-position = Vector2(104, -88)
-rotation = 1.5707964
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding32" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=2011336071]
-position = Vector2(168, -88)
-rotation = 1.5707964
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding33" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=1669725726]
-position = Vector2(232, -88)
-rotation = 1.5707964
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding34" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=167340352]
-position = Vector2(296, -88)
-rotation = 1.5707964
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding35" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=1157047936]
-position = Vector2(360, -88)
-rotation = 1.5707964
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding36" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=1248325969]
-position = Vector2(424, -88)
-rotation = 1.5707964
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding37" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=1489099289]
-position = Vector2(488, -88)
-rotation = 1.5707964
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="ShelterBuilding38" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=1865763148]
-position = Vector2(552, -88)
-rotation = 1.5707964
-color = Color(0.16, 0.16, 0.2, 0.4)
-polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
-script = ExtResource("11_ss5kf")
-is_shelter = false
-wall_thickness = 8.0
-metadata/_custom_type_script = "uid://bgnbocmyabj1m"
-
-[node name="Door3" type="Node2D" parent="TestLevel/Shopping/Market covered" unique_id=531261613]
-position = Vector2(632, 656)
-rotation = 1.5707964
-script = ExtResource("12_2h14b")
-door_width = 128.0
 thickness = 8.0
 metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
 
@@ -1785,7 +1357,100 @@ metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
 position = Vector2(-5435, -304)
 
 [node name="Human" parent="TestLevel/Shopping/Units" unique_id=1322780828 instance=ExtResource("7_davh7")]
-position = Vector2(-4715, -888)
+position = Vector2(-4707, -704)
+
+[node name="Human43" parent="TestLevel/Shopping/Units" unique_id=289267830 instance=ExtResource("7_davh7")]
+position = Vector2(-4747, -576)
+
+[node name="Human44" parent="TestLevel/Shopping/Units" unique_id=1584627525 instance=ExtResource("7_davh7")]
+position = Vector2(-4907, -360)
+
+[node name="Human45" parent="TestLevel/Shopping/Units" unique_id=524976510 instance=ExtResource("7_davh7")]
+position = Vector2(-4931, -888)
+
+[node name="Human46" parent="TestLevel/Shopping/Units" unique_id=1471123464 instance=ExtResource("7_davh7")]
+position = Vector2(-5227, -1032)
+
+[node name="Human47" parent="TestLevel/Shopping/Units" unique_id=891054161 instance=ExtResource("7_davh7")]
+position = Vector2(-5219, -1168)
+
+[node name="Human48" parent="TestLevel/Shopping/Units" unique_id=1458882296 instance=ExtResource("7_davh7")]
+position = Vector2(-5219, -1304)
+
+[node name="Human49" parent="TestLevel/Shopping/Units" unique_id=720191849 instance=ExtResource("7_davh7")]
+position = Vector2(-5219, -1384)
+
+[node name="Human50" parent="TestLevel/Shopping/Units" unique_id=1404723873 instance=ExtResource("7_davh7")]
+position = Vector2(-4747, -1240)
+
+[node name="Human51" parent="TestLevel/Shopping/Units" unique_id=1302777546 instance=ExtResource("7_davh7")]
+position = Vector2(-5179, -1248)
+
+[node name="Human52" parent="TestLevel/Shopping/Units" unique_id=1764280360 instance=ExtResource("7_davh7")]
+position = Vector2(-5179, -984)
+
+[node name="Human53" parent="TestLevel/Shopping/Units" unique_id=284356820 instance=ExtResource("7_davh7")]
+position = Vector2(-5227, -464)
+
+[node name="Human54" parent="TestLevel/Shopping/Units" unique_id=1980175850 instance=ExtResource("7_davh7")]
+position = Vector2(-5235, -272)
+
+[node name="Human55" parent="TestLevel/Shopping/Units" unique_id=1562203572 instance=ExtResource("7_davh7")]
+position = Vector2(-5219, -632)
+
+[node name="Human56" parent="TestLevel/Shopping/Units" unique_id=818983569 instance=ExtResource("7_davh7")]
+position = Vector2(-5171, -696)
+
+[node name="Human57" parent="TestLevel/Shopping/Units" unique_id=1868805605 instance=ExtResource("7_davh7")]
+position = Vector2(-5035, -416)
+
+[node name="Human58" parent="TestLevel/Shopping/Units" unique_id=891373484 instance=ExtResource("7_davh7")]
+position = Vector2(-5195, -792)
+
+[node name="Human59" parent="TestLevel/Shopping/Units" unique_id=543548035 instance=ExtResource("7_davh7")]
+position = Vector2(-5163, -392)
+
+[node name="Human60" parent="TestLevel/Shopping/Units" unique_id=474308635 instance=ExtResource("7_davh7")]
+position = Vector2(-4747, -1144)
+
+[node name="Human66" parent="TestLevel/Shopping/Units" unique_id=1130401744 instance=ExtResource("7_davh7")]
+position = Vector2(-4891, -1208)
+defender_class = 2
+
+[node name="Human67" parent="TestLevel/Shopping/Units" unique_id=68637983 instance=ExtResource("7_davh7")]
+position = Vector2(-4859, -1128)
+defender_class = 2
+
+[node name="Human68" parent="TestLevel/Shopping/Units" unique_id=972673356 instance=ExtResource("7_davh7")]
+position = Vector2(-4987, -1056)
+defender_class = 2
+
+[node name="Human69" parent="TestLevel/Shopping/Units" unique_id=387914383 instance=ExtResource("7_davh7")]
+position = Vector2(-5067, -1232)
+
+[node name="Human70" parent="TestLevel/Shopping/Units" unique_id=758748741 instance=ExtResource("7_davh7")]
+position = Vector2(-5083, -1272)
+
+[node name="Human71" parent="TestLevel/Shopping/Units" unique_id=1880583403 instance=ExtResource("7_davh7")]
+position = Vector2(-5107, -1152)
+defender_class = 2
+
+[node name="Human61" parent="TestLevel/Shopping/Units" unique_id=1882554665 instance=ExtResource("7_davh7")]
+position = Vector2(-5011, -1440)
+
+[node name="Human62" parent="TestLevel/Shopping/Units" unique_id=558548555 instance=ExtResource("7_davh7")]
+position = Vector2(-4739, -1304)
+
+[node name="Human63" parent="TestLevel/Shopping/Units" unique_id=2090034105 instance=ExtResource("7_davh7")]
+position = Vector2(-4779, -984)
+defender_class = 2
+
+[node name="Human64" parent="TestLevel/Shopping/Units" unique_id=834436245 instance=ExtResource("7_davh7")]
+position = Vector2(-4883, -1440)
+
+[node name="Human65" parent="TestLevel/Shopping/Units" unique_id=1956776888 instance=ExtResource("7_davh7")]
+position = Vector2(-4779, -808)
+defender_class = 2
 
 [node name="Human2" parent="TestLevel/Shopping/Units" unique_id=1911483917 instance=ExtResource("7_davh7")]
 position = Vector2(-4379, -1152)
@@ -1914,6 +1579,532 @@ position = Vector2(-4619, -1224)
 [node name="Human35" parent="TestLevel/Shopping/Units" unique_id=1955960107 instance=ExtResource("7_davh7")]
 position = Vector2(-4563, -1000)
 
+[node name="Market covered" type="Polygon2D" parent="TestLevel/Shopping" unique_id=1429394468]
+position = Vector2(-5307, -1552)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(-72, -48, 632, -48, 632, 1360, -72, 1360)
+script = ExtResource("11_ss5kf")
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+metadata/_edit_lock_ = true
+
+[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market covered" unique_id=217639190]
+position = Vector2(-72, 1104)
+rotation = -1.5707964
+script = ExtResource("12_2h14b")
+door_width = 64.0
+integrity_override = 30.0
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Door2" type="Node2D" parent="TestLevel/Shopping/Market covered" unique_id=1923562837]
+position = Vector2(632, 1167.9628)
+rotation = 1.5707964
+script = ExtResource("12_2h14b")
+door_width = 128.0
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Door3" type="Node2D" parent="TestLevel/Shopping/Market covered" unique_id=531261613]
+position = Vector2(632, 656)
+rotation = 1.5707964
+script = ExtResource("12_2h14b")
+door_width = 128.0
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Door4" type="Node2D" parent="TestLevel/Shopping/Market covered" unique_id=1861612217]
+position = Vector2(632, 208)
+rotation = 1.5707964
+script = ExtResource("12_2h14b")
+door_width = 128.0
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="ShelterBuilding" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=156911396]
+position = Vector2(332, 312)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(-152, -104, 168, -104, 168, 280, 65.00232, 279.99997, -152, 280)
+script = ExtResource("11_ss5kf")
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+metadata/_edit_lock_ = true
+
+[node name="Door" type="Node2D" parent="TestLevel/Shopping/Market covered/ShelterBuilding" unique_id=1762357982]
+position = Vector2(71.999954, 280)
+rotation = 3.1415927
+script = ExtResource("12_2h14b")
+door_width = 64.0
+integrity_override = 30.0
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Wall4" type="Polygon2D" parent="TestLevel/Shopping/Market covered/ShelterBuilding" unique_id=179344544]
+position = Vector2(138, 293)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-106, -181, -98, -181, -98, -13, -106, -13)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall5" type="Polygon2D" parent="TestLevel/Shopping/Market covered/ShelterBuilding" unique_id=529889248]
+position = Vector2(138, 105)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-106, -205, -98, -205, -98, -41, -106, -41)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall10" type="Polygon2D" parent="TestLevel/Shopping/Market covered/ShelterBuilding" unique_id=1119235279]
+position = Vector2(50, 104)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-106, -205, -98, -205, -98, -48, -106, -48)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall6" type="Polygon2D" parent="TestLevel/Shopping/Market covered/ShelterBuilding" unique_id=661887150]
+position = Vector2(-173, 162)
+rotation = 1.5707964
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-106, -205, -98, -205, -98, -181, -106, -181)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall8" type="Polygon2D" parent="TestLevel/Shopping/Market covered/ShelterBuilding" unique_id=974932740]
+position = Vector2(-244.99976, 162)
+rotation = 1.5707964
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-106, -205, -98, -205, -98, -181, -106, -181)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall9" type="Polygon2D" parent="TestLevel/Shopping/Market covered/ShelterBuilding" unique_id=762525580]
+position = Vector2(-328.99976, 162)
+rotation = 1.5707964
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-106, -221, -98, -221, -98, -181, -106, -181)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall11" type="Polygon2D" parent="TestLevel/Shopping/Market covered/ShelterBuilding" unique_id=2090314250]
+position = Vector2(50, 317)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-106, -197, -98, -197, -98, -41, -106, -41)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall12" type="Polygon2D" parent="TestLevel/Shopping/Market covered/ShelterBuilding" unique_id=547082853]
+position = Vector2(-244.99976, 218)
+rotation = 1.5707964
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-106, -205, -98, -205, -98, -181, -106, -181)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall13" type="Polygon2D" parent="TestLevel/Shopping/Market covered/ShelterBuilding" unique_id=1586539804]
+position = Vector2(-328.99976, 218)
+rotation = 1.5707964
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-106, -221, -98, -221, -98, -181, -106, -181)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall7" type="Polygon2D" parent="TestLevel/Shopping/Market covered/ShelterBuilding" unique_id=176299010]
+position = Vector2(-173, 218)
+rotation = 1.5707964
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-106, -205, -98, -205, -98, -181, -106, -181)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="ShelterBuilding19" type="Polygon2D" parent="TestLevel/Shopping/Market covered" unique_id=476348902]
+position = Vector2(336, 824)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(-152, -104, 168, -104, 168, 280, -152, 280)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="Covered market shops" type="Node2D" parent="TestLevel/Shopping/Market covered" unique_id=295341931]
+
+[node name="ShelterBuilding2" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=468777355]
+position = Vector2(-112, 32)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding3" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=1687452280]
+position = Vector2(-112, 96)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding4" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=1502745275]
+position = Vector2(-112, 160)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding5" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=684086551]
+position = Vector2(-112, 224)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding6" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=918159562]
+position = Vector2(-112, 288)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding7" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=784811591]
+position = Vector2(-112, 352)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding8" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=131528921]
+position = Vector2(-112, 416)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding9" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=462263626]
+position = Vector2(-112, 480)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding10" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=1651150112]
+position = Vector2(-112, 544)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding11" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=1787195194]
+position = Vector2(-112, 608)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding12" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=923213413]
+position = Vector2(-112, 672)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding13" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=1512366656]
+position = Vector2(-112, 736)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding14" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=672876614]
+position = Vector2(-112, 800)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding15" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=360184518]
+position = Vector2(-112, 864)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding16" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=730571772]
+position = Vector2(-112, 928)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding17" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=16174284]
+position = Vector2(-112, 992)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding18" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=845317577]
+position = Vector2(-112, 1056)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding20" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=1493194715]
+position = Vector2(-112, 1312)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding22" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=780307619]
+position = Vector2(-112, 1376)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding21" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=2015664811]
+position = Vector2(-112, 1248)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding23" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=21505475]
+position = Vector2(104, 1208)
+rotation = 1.5707964
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding24" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=48772867]
+position = Vector2(168, 1208)
+rotation = 1.5707964
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding25" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=1576659997]
+position = Vector2(232, 1208)
+rotation = 1.5707964
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding26" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=1530330286]
+position = Vector2(296, 1208)
+rotation = 1.5707964
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding27" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=1793088172]
+position = Vector2(360, 1208)
+rotation = 1.5707964
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding28" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=545516586]
+position = Vector2(424, 1208)
+rotation = 1.5707964
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding30" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=957699068]
+position = Vector2(488, 1208)
+rotation = 1.5707964
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding31" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=423074383]
+position = Vector2(552, 1208)
+rotation = 1.5707964
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding29" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=1291352227]
+position = Vector2(104, -88)
+rotation = 1.5707964
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding32" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=2011336071]
+position = Vector2(168, -88)
+rotation = 1.5707964
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding33" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=1669725726]
+position = Vector2(232, -88)
+rotation = 1.5707964
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding34" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=167340352]
+position = Vector2(296, -88)
+rotation = 1.5707964
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding35" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=1157047936]
+position = Vector2(360, -88)
+rotation = 1.5707964
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding36" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=1248325969]
+position = Vector2(424, -88)
+rotation = 1.5707964
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding37" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=1489099289]
+position = Vector2(488, -88)
+rotation = 1.5707964
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding38" type="Polygon2D" parent="TestLevel/Shopping/Market covered/Covered market shops" unique_id=1865763148]
+position = Vector2(552, -88)
+rotation = 1.5707964
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(40, -80, 152, -80, 152, -16, 40, -16)
+script = ExtResource("11_ss5kf")
+is_shelter = false
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="Walls and doors" type="Node2D" parent="TestLevel" unique_id=1564966858]
+
+[node name="Wall7" type="Polygon2D" parent="TestLevel/Walls and doors" unique_id=1778180833]
+position = Vector2(-3739, -200)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -1272, -104, -1272, -104, 128, -112, 128)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall8" type="Polygon2D" parent="TestLevel/Walls and doors" unique_id=2038509145]
+position = Vector2(-3739, -384)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-112, -1272, -104, -1272, -104, -1216, -112, -1216)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall" type="Polygon2D" parent="TestLevel/Walls and doors" unique_id=1613615621]
+position = Vector2(-4763, -168)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(8, -24, 24, -24, 24, 104, 8, 104)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall2" type="Polygon2D" parent="TestLevel/Walls and doors" unique_id=424723142]
+position = Vector2(-4571, -128)
+rotation = 1.5707964
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(8, -24, 16, -24, 16, 104, 8, 104)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Door" type="Node2D" parent="TestLevel/Walls and doors" unique_id=795780701]
+position = Vector2(-4939, -1152)
+rotation = 1.5707964
+script = ExtResource("12_2h14b")
+integrity_override = 30.0
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
 [node name="Offices" type="Node2D" parent="TestLevel" unique_id=616252881]
 
 [node name="Walls and Doors" type="Node2D" parent="TestLevel/Offices" unique_id=1066409889]
@@ -1934,13 +2125,12 @@ script = ExtResource("9_irb5a")
 metadata/_custom_type_script = "uid://cvde25j0ujcg"
 
 [node name="Label2" type="Label" parent="TestLevel/Offices" unique_id=165018559]
-offset_left = -3267.0005
-offset_top = -1480.0001
-offset_right = -3184.0005
-offset_bottom = -1431.0001
+offset_left = -3379.0002
+offset_top = -2200.0
+offset_right = -3296.0002
+offset_bottom = -2151.0
 scale = Vector2(10.069238, 10.144005)
-text = "Offices
-"
+text = "Offices"
 uppercase = true
 
 [node name="Container Yard" type="Node2D" parent="TestLevel" unique_id=598393402]
@@ -2078,3 +2268,1183 @@ bake_cell_size = 6.0
 
 [node name="EndGameOverlay" parent="." unique_id=2000451810 instance=ExtResource("14_lcafa")]
 visible = false
+
+[node name="performance test" type="Node2D" parent="." unique_id=513617585]
+position = Vector2(-3776, -1400)
+
+[node name="Human" parent="performance test" unique_id=1698070228 instance=ExtResource("7_davh7")]
+position = Vector2(824, 15)
+
+[node name="Human2" parent="performance test" unique_id=2080313339 instance=ExtResource("7_davh7")]
+position = Vector2(881, 32)
+
+[node name="Human3" parent="performance test" unique_id=564674795 instance=ExtResource("7_davh7")]
+position = Vector2(839, 84)
+
+[node name="Human4" parent="performance test" unique_id=1041064945 instance=ExtResource("7_davh7")]
+position = Vector2(906, 86)
+
+[node name="Human5" parent="performance test" unique_id=1024213102 instance=ExtResource("7_davh7")]
+position = Vector2(923, 7)
+
+[node name="Human6" parent="performance test" unique_id=791228867 instance=ExtResource("7_davh7")]
+position = Vector2(977, 64)
+
+[node name="Human7" parent="performance test" unique_id=1120265757 instance=ExtResource("7_davh7")]
+position = Vector2(914, 171)
+
+[node name="Human8" parent="performance test" unique_id=516559393 instance=ExtResource("7_davh7")]
+position = Vector2(1000, 148)
+
+[node name="Human9" parent="performance test" unique_id=24810673 instance=ExtResource("7_davh7")]
+position = Vector2(1041, 201)
+
+[node name="Human10" parent="performance test" unique_id=922436129 instance=ExtResource("7_davh7")]
+position = Vector2(1050, 59)
+
+[node name="Human11" parent="performance test" unique_id=470008012 instance=ExtResource("7_davh7")]
+position = Vector2(958, 216)
+
+[node name="Human13" parent="performance test" unique_id=1315571617 instance=ExtResource("7_davh7")]
+position = Vector2(891, -186)
+
+[node name="Human14" parent="performance test" unique_id=1404519167 instance=ExtResource("7_davh7")]
+position = Vector2(948, -169)
+
+[node name="Human15" parent="performance test" unique_id=1067309046 instance=ExtResource("7_davh7")]
+position = Vector2(906, -117)
+
+[node name="Human16" parent="performance test" unique_id=903591987 instance=ExtResource("7_davh7")]
+position = Vector2(973, -115)
+
+[node name="Human17" parent="performance test" unique_id=463976414 instance=ExtResource("7_davh7")]
+position = Vector2(990, -194)
+
+[node name="Human18" parent="performance test" unique_id=1042051130 instance=ExtResource("7_davh7")]
+position = Vector2(1044, -137)
+
+[node name="Human19" parent="performance test" unique_id=2048709171 instance=ExtResource("7_davh7")]
+position = Vector2(981, -30)
+
+[node name="Human20" parent="performance test" unique_id=202971886 instance=ExtResource("7_davh7")]
+position = Vector2(1067, -53)
+
+[node name="Human21" parent="performance test" unique_id=783319078 instance=ExtResource("7_davh7")]
+position = Vector2(1108, 0)
+
+[node name="Human23" parent="performance test" unique_id=31687746 instance=ExtResource("7_davh7")]
+position = Vector2(1025, 15)
+
+[node name="Human12" parent="performance test" unique_id=827924866 instance=ExtResource("7_davh7")]
+position = Vector2(808, 58)
+
+[node name="Human46" parent="performance test" unique_id=1139241133 instance=ExtResource("7_davh7")]
+position = Vector2(865, 75)
+
+[node name="Human47" parent="performance test" unique_id=446839587 instance=ExtResource("7_davh7")]
+position = Vector2(823, 127)
+
+[node name="Human50" parent="performance test" unique_id=173343357 instance=ExtResource("7_davh7")]
+position = Vector2(890, 129)
+
+[node name="Human51" parent="performance test" unique_id=2089621801 instance=ExtResource("7_davh7")]
+position = Vector2(907, 50)
+
+[node name="Human52" parent="performance test" unique_id=927096229 instance=ExtResource("7_davh7")]
+position = Vector2(961, 107)
+
+[node name="Human53" parent="performance test" unique_id=1402012407 instance=ExtResource("7_davh7")]
+position = Vector2(898, 214)
+
+[node name="Human54" parent="performance test" unique_id=1245362867 instance=ExtResource("7_davh7")]
+position = Vector2(984, 191)
+
+[node name="Human55" parent="performance test" unique_id=1799860427 instance=ExtResource("7_davh7")]
+position = Vector2(1025, 244)
+
+[node name="Human56" parent="performance test" unique_id=1242283202 instance=ExtResource("7_davh7")]
+position = Vector2(1034, 102)
+
+[node name="Human57" parent="performance test" unique_id=136513626 instance=ExtResource("7_davh7")]
+position = Vector2(942, 259)
+
+[node name="Human58" parent="performance test" unique_id=542509662 instance=ExtResource("7_davh7")]
+position = Vector2(875, -143)
+
+[node name="Human59" parent="performance test" unique_id=1585566210 instance=ExtResource("7_davh7")]
+position = Vector2(932, -126)
+
+[node name="Human60" parent="performance test" unique_id=437299459 instance=ExtResource("7_davh7")]
+position = Vector2(890, -74)
+
+[node name="Human61" parent="performance test" unique_id=4434647 instance=ExtResource("7_davh7")]
+position = Vector2(957, -72)
+
+[node name="Human62" parent="performance test" unique_id=1947688891 instance=ExtResource("7_davh7")]
+position = Vector2(974, -151)
+
+[node name="Human63" parent="performance test" unique_id=2007798564 instance=ExtResource("7_davh7")]
+position = Vector2(1028, -94)
+
+[node name="Human64" parent="performance test" unique_id=1098233139 instance=ExtResource("7_davh7")]
+position = Vector2(965, 13)
+
+[node name="Human65" parent="performance test" unique_id=2041790697 instance=ExtResource("7_davh7")]
+position = Vector2(1051, -10)
+
+[node name="Human66" parent="performance test" unique_id=245393986 instance=ExtResource("7_davh7")]
+position = Vector2(1092, 43)
+
+[node name="Human67" parent="performance test" unique_id=999777926 instance=ExtResource("7_davh7")]
+position = Vector2(1101, -99)
+
+[node name="Human68" parent="performance test" unique_id=996541329 instance=ExtResource("7_davh7")]
+position = Vector2(1009, 58)
+
+[node name="Human22" parent="performance test" unique_id=1389300622 instance=ExtResource("7_davh7")]
+position = Vector2(1139, 33)
+
+[node name="Human24" parent="performance test" unique_id=857522192 instance=ExtResource("7_davh7")]
+position = Vector2(1196, 50)
+
+[node name="Human25" parent="performance test" unique_id=495146706 instance=ExtResource("7_davh7")]
+position = Vector2(1154, 102)
+
+[node name="Human26" parent="performance test" unique_id=1579715983 instance=ExtResource("7_davh7")]
+position = Vector2(1221, 104)
+
+[node name="Human27" parent="performance test" unique_id=1114109513 instance=ExtResource("7_davh7")]
+position = Vector2(1238, 25)
+
+[node name="Human28" parent="performance test" unique_id=142134875 instance=ExtResource("7_davh7")]
+position = Vector2(1292, 82)
+
+[node name="Human29" parent="performance test" unique_id=2068916904 instance=ExtResource("7_davh7")]
+position = Vector2(1229, 189)
+
+[node name="Human30" parent="performance test" unique_id=1584728007 instance=ExtResource("7_davh7")]
+position = Vector2(1315, 166)
+
+[node name="Human31" parent="performance test" unique_id=1730471297 instance=ExtResource("7_davh7")]
+position = Vector2(1356, 219)
+
+[node name="Human32" parent="performance test" unique_id=1286355143 instance=ExtResource("7_davh7")]
+position = Vector2(1365, 77)
+
+[node name="Human33" parent="performance test" unique_id=803494049 instance=ExtResource("7_davh7")]
+position = Vector2(1273, 234)
+
+[node name="Human34" parent="performance test" unique_id=625664495 instance=ExtResource("7_davh7")]
+position = Vector2(1206, -168)
+
+[node name="Human35" parent="performance test" unique_id=1100173969 instance=ExtResource("7_davh7")]
+position = Vector2(1263, -151)
+
+[node name="Human36" parent="performance test" unique_id=82544544 instance=ExtResource("7_davh7")]
+position = Vector2(1221, -99)
+
+[node name="Human37" parent="performance test" unique_id=620180313 instance=ExtResource("7_davh7")]
+position = Vector2(1288, -97)
+
+[node name="Human38" parent="performance test" unique_id=823004155 instance=ExtResource("7_davh7")]
+position = Vector2(1305, -176)
+
+[node name="Human39" parent="performance test" unique_id=310038839 instance=ExtResource("7_davh7")]
+position = Vector2(1359, -119)
+
+[node name="Human40" parent="performance test" unique_id=1130122902 instance=ExtResource("7_davh7")]
+position = Vector2(1296, -12)
+
+[node name="Human41" parent="performance test" unique_id=1589906764 instance=ExtResource("7_davh7")]
+position = Vector2(1382, -35)
+
+[node name="Human42" parent="performance test" unique_id=1221037748 instance=ExtResource("7_davh7")]
+position = Vector2(1423, 18)
+
+[node name="Human43" parent="performance test" unique_id=1532783401 instance=ExtResource("7_davh7")]
+position = Vector2(1340, 33)
+
+[node name="Human44" parent="performance test" unique_id=846792594 instance=ExtResource("7_davh7")]
+position = Vector2(1123, 76)
+
+[node name="Human48" parent="performance test" unique_id=1107384034 instance=ExtResource("7_davh7")]
+position = Vector2(1180, 93)
+
+[node name="Human49" parent="performance test" unique_id=272128726 instance=ExtResource("7_davh7")]
+position = Vector2(1138, 145)
+
+[node name="Human130" parent="performance test" unique_id=1048260891 instance=ExtResource("7_davh7")]
+position = Vector2(448, 9)
+
+[node name="Human131" parent="performance test" unique_id=1236282225 instance=ExtResource("7_davh7")]
+position = Vector2(505, 26)
+
+[node name="Human132" parent="performance test" unique_id=2000846976 instance=ExtResource("7_davh7")]
+position = Vector2(463, 78)
+
+[node name="Human133" parent="performance test" unique_id=206527962 instance=ExtResource("7_davh7")]
+position = Vector2(530, 80)
+
+[node name="Human134" parent="performance test" unique_id=2144855787 instance=ExtResource("7_davh7")]
+position = Vector2(547, 1)
+
+[node name="Human135" parent="performance test" unique_id=160603313 instance=ExtResource("7_davh7")]
+position = Vector2(601, 58)
+
+[node name="Human136" parent="performance test" unique_id=517561461 instance=ExtResource("7_davh7")]
+position = Vector2(538, 165)
+
+[node name="Human137" parent="performance test" unique_id=600346495 instance=ExtResource("7_davh7")]
+position = Vector2(624, 142)
+
+[node name="Human138" parent="performance test" unique_id=925323184 instance=ExtResource("7_davh7")]
+position = Vector2(665, 195)
+
+[node name="Human139" parent="performance test" unique_id=1526864324 instance=ExtResource("7_davh7")]
+position = Vector2(674, 53)
+
+[node name="Human140" parent="performance test" unique_id=1003581164 instance=ExtResource("7_davh7")]
+position = Vector2(582, 210)
+
+[node name="Human141" parent="performance test" unique_id=848542492 instance=ExtResource("7_davh7")]
+position = Vector2(515, -192)
+
+[node name="Human142" parent="performance test" unique_id=818577760 instance=ExtResource("7_davh7")]
+position = Vector2(572, -175)
+
+[node name="Human143" parent="performance test" unique_id=1752778327 instance=ExtResource("7_davh7")]
+position = Vector2(530, -123)
+
+[node name="Human144" parent="performance test" unique_id=682381157 instance=ExtResource("7_davh7")]
+position = Vector2(597, -121)
+
+[node name="Human145" parent="performance test" unique_id=826274641 instance=ExtResource("7_davh7")]
+position = Vector2(614, -200)
+
+[node name="Human146" parent="performance test" unique_id=190055181 instance=ExtResource("7_davh7")]
+position = Vector2(668, -143)
+
+[node name="Human147" parent="performance test" unique_id=1904141615 instance=ExtResource("7_davh7")]
+position = Vector2(605, -36)
+
+[node name="Human148" parent="performance test" unique_id=195140407 instance=ExtResource("7_davh7")]
+position = Vector2(691, -59)
+
+[node name="Human149" parent="performance test" unique_id=605640028 instance=ExtResource("7_davh7")]
+position = Vector2(732, -6)
+
+[node name="Human150" parent="performance test" unique_id=1600536001 instance=ExtResource("7_davh7")]
+position = Vector2(649, 9)
+
+[node name="Human151" parent="performance test" unique_id=1066672254 instance=ExtResource("7_davh7")]
+position = Vector2(432, 52)
+
+[node name="Human152" parent="performance test" unique_id=1274062203 instance=ExtResource("7_davh7")]
+position = Vector2(489, 69)
+
+[node name="Human153" parent="performance test" unique_id=505460408 instance=ExtResource("7_davh7")]
+position = Vector2(447, 121)
+
+[node name="Human154" parent="performance test" unique_id=1984925534 instance=ExtResource("7_davh7")]
+position = Vector2(514, 123)
+
+[node name="Human155" parent="performance test" unique_id=1977683642 instance=ExtResource("7_davh7")]
+position = Vector2(531, 44)
+
+[node name="Human156" parent="performance test" unique_id=1182483141 instance=ExtResource("7_davh7")]
+position = Vector2(585, 101)
+
+[node name="Human157" parent="performance test" unique_id=1826092104 instance=ExtResource("7_davh7")]
+position = Vector2(522, 208)
+
+[node name="Human158" parent="performance test" unique_id=1046316337 instance=ExtResource("7_davh7")]
+position = Vector2(608, 185)
+
+[node name="Human159" parent="performance test" unique_id=1324985281 instance=ExtResource("7_davh7")]
+position = Vector2(649, 238)
+
+[node name="Human160" parent="performance test" unique_id=337389828 instance=ExtResource("7_davh7")]
+position = Vector2(658, 96)
+
+[node name="Human161" parent="performance test" unique_id=872967596 instance=ExtResource("7_davh7")]
+position = Vector2(566, 253)
+
+[node name="Human162" parent="performance test" unique_id=1091074332 instance=ExtResource("7_davh7")]
+position = Vector2(499, -149)
+
+[node name="Human163" parent="performance test" unique_id=2015756881 instance=ExtResource("7_davh7")]
+position = Vector2(556, -132)
+
+[node name="Human164" parent="performance test" unique_id=131452659 instance=ExtResource("7_davh7")]
+position = Vector2(514, -80)
+
+[node name="Human165" parent="performance test" unique_id=2117526840 instance=ExtResource("7_davh7")]
+position = Vector2(581, -78)
+
+[node name="Human166" parent="performance test" unique_id=1221598247 instance=ExtResource("7_davh7")]
+position = Vector2(598, -157)
+
+[node name="Human167" parent="performance test" unique_id=1429708556 instance=ExtResource("7_davh7")]
+position = Vector2(652, -100)
+
+[node name="Human168" parent="performance test" unique_id=1828751040 instance=ExtResource("7_davh7")]
+position = Vector2(589, 7)
+
+[node name="Human169" parent="performance test" unique_id=2133009282 instance=ExtResource("7_davh7")]
+position = Vector2(675, -16)
+
+[node name="Human170" parent="performance test" unique_id=289949356 instance=ExtResource("7_davh7")]
+position = Vector2(716, 37)
+
+[node name="Human171" parent="performance test" unique_id=1944371282 instance=ExtResource("7_davh7")]
+position = Vector2(725, -105)
+
+[node name="Human172" parent="performance test" unique_id=1207644621 instance=ExtResource("7_davh7")]
+position = Vector2(633, 52)
+
+[node name="Human173" parent="performance test" unique_id=969925780 instance=ExtResource("7_davh7")]
+position = Vector2(763, 27)
+
+[node name="Human174" parent="performance test" unique_id=1418884442 instance=ExtResource("7_davh7")]
+position = Vector2(747, 70)
+
+[node name="Human175" parent="performance test" unique_id=1592753824 instance=ExtResource("7_davh7")]
+position = Vector2(762, 139)
+
+[node name="Human69" parent="performance test" unique_id=246082883 instance=ExtResource("7_davh7")]
+position = Vector2(1205, 147)
+
+[node name="Human70" parent="performance test" unique_id=1203940847 instance=ExtResource("7_davh7")]
+position = Vector2(1222, 68)
+
+[node name="Human71" parent="performance test" unique_id=716725988 instance=ExtResource("7_davh7")]
+position = Vector2(1276, 125)
+
+[node name="Human72" parent="performance test" unique_id=1223397209 instance=ExtResource("7_davh7")]
+position = Vector2(1213, 232)
+
+[node name="Human73" parent="performance test" unique_id=1224834767 instance=ExtResource("7_davh7")]
+position = Vector2(1299, 209)
+
+[node name="Human74" parent="performance test" unique_id=1128273418 instance=ExtResource("7_davh7")]
+position = Vector2(1340, 262)
+
+[node name="Human75" parent="performance test" unique_id=1336181531 instance=ExtResource("7_davh7")]
+position = Vector2(1349, 120)
+
+[node name="Human76" parent="performance test" unique_id=1392633339 instance=ExtResource("7_davh7")]
+position = Vector2(1257, 277)
+
+[node name="Human77" parent="performance test" unique_id=493808790 instance=ExtResource("7_davh7")]
+position = Vector2(1190, -125)
+
+[node name="Human78" parent="performance test" unique_id=995929792 instance=ExtResource("7_davh7")]
+position = Vector2(1247, -108)
+
+[node name="Human79" parent="performance test" unique_id=1695386015 instance=ExtResource("7_davh7")]
+position = Vector2(1205, -56)
+
+[node name="Human80" parent="performance test" unique_id=1248180527 instance=ExtResource("7_davh7")]
+position = Vector2(1272, -54)
+
+[node name="Human81" parent="performance test" unique_id=2091215896 instance=ExtResource("7_davh7")]
+position = Vector2(1289, -133)
+
+[node name="Human82" parent="performance test" unique_id=680391091 instance=ExtResource("7_davh7")]
+position = Vector2(1343, -76)
+
+[node name="Human83" parent="performance test" unique_id=1337452427 instance=ExtResource("7_davh7")]
+position = Vector2(1280, 31)
+
+[node name="Human84" parent="performance test" unique_id=1523674875 instance=ExtResource("7_davh7")]
+position = Vector2(1366, 8)
+
+[node name="Human85" parent="performance test" unique_id=192128460 instance=ExtResource("7_davh7")]
+position = Vector2(1407, 61)
+
+[node name="Human86" parent="performance test" unique_id=321960010 instance=ExtResource("7_davh7")]
+position = Vector2(1416, -81)
+
+[node name="Human87" parent="performance test" unique_id=28612181 instance=ExtResource("7_davh7")]
+position = Vector2(1324, 76)
+
+[node name="Human45" parent="performance test" unique_id=1737620248 instance=ExtResource("7_davh7")]
+position = Vector2(1467, 9)
+
+[node name="Human88" parent="performance test" unique_id=569097264 instance=ExtResource("7_davh7")]
+position = Vector2(1524, 26)
+
+[node name="Human89" parent="performance test" unique_id=378780746 instance=ExtResource("7_davh7")]
+position = Vector2(1482, 78)
+
+[node name="Human90" parent="performance test" unique_id=1490997879 instance=ExtResource("7_davh7")]
+position = Vector2(1549, 80)
+
+[node name="Human91" parent="performance test" unique_id=286216028 instance=ExtResource("7_davh7")]
+position = Vector2(1566, 1)
+
+[node name="Human92" parent="performance test" unique_id=1559680493 instance=ExtResource("7_davh7")]
+position = Vector2(1620, 58)
+
+[node name="Human93" parent="performance test" unique_id=1968711996 instance=ExtResource("7_davh7")]
+position = Vector2(1557, 165)
+
+[node name="Human94" parent="performance test" unique_id=855107591 instance=ExtResource("7_davh7")]
+position = Vector2(1643, 142)
+
+[node name="Human95" parent="performance test" unique_id=1452017036 instance=ExtResource("7_davh7")]
+position = Vector2(1684, 195)
+
+[node name="Human96" parent="performance test" unique_id=409785340 instance=ExtResource("7_davh7")]
+position = Vector2(1693, 53)
+
+[node name="Human97" parent="performance test" unique_id=232775106 instance=ExtResource("7_davh7")]
+position = Vector2(1601, 210)
+
+[node name="Human98" parent="performance test" unique_id=1314235377 instance=ExtResource("7_davh7")]
+position = Vector2(1534, -192)
+
+[node name="Human99" parent="performance test" unique_id=1911193718 instance=ExtResource("7_davh7")]
+position = Vector2(1591, -175)
+
+[node name="Human100" parent="performance test" unique_id=86114829 instance=ExtResource("7_davh7")]
+position = Vector2(1549, -123)
+
+[node name="Human101" parent="performance test" unique_id=681055560 instance=ExtResource("7_davh7")]
+position = Vector2(1616, -121)
+
+[node name="Human102" parent="performance test" unique_id=751084329 instance=ExtResource("7_davh7")]
+position = Vector2(1633, -200)
+
+[node name="Human103" parent="performance test" unique_id=1345188867 instance=ExtResource("7_davh7")]
+position = Vector2(1687, -143)
+
+[node name="Human104" parent="performance test" unique_id=886698796 instance=ExtResource("7_davh7")]
+position = Vector2(1624, -36)
+
+[node name="Human105" parent="performance test" unique_id=2142724375 instance=ExtResource("7_davh7")]
+position = Vector2(1710, -59)
+
+[node name="Human106" parent="performance test" unique_id=1196068409 instance=ExtResource("7_davh7")]
+position = Vector2(1751, -6)
+
+[node name="Human107" parent="performance test" unique_id=1844412646 instance=ExtResource("7_davh7")]
+position = Vector2(1668, 9)
+
+[node name="Human108" parent="performance test" unique_id=412753403 instance=ExtResource("7_davh7")]
+position = Vector2(1451, 52)
+
+[node name="Human109" parent="performance test" unique_id=897167479 instance=ExtResource("7_davh7")]
+position = Vector2(1508, 69)
+
+[node name="Human110" parent="performance test" unique_id=1666925735 instance=ExtResource("7_davh7")]
+position = Vector2(1466, 121)
+
+[node name="Human111" parent="performance test" unique_id=2015885745 instance=ExtResource("7_davh7")]
+position = Vector2(1533, 123)
+
+[node name="Human112" parent="performance test" unique_id=447724775 instance=ExtResource("7_davh7")]
+position = Vector2(1550, 44)
+
+[node name="Human113" parent="performance test" unique_id=462197360 instance=ExtResource("7_davh7")]
+position = Vector2(1604, 101)
+
+[node name="Human114" parent="performance test" unique_id=488141993 instance=ExtResource("7_davh7")]
+position = Vector2(1541, 208)
+
+[node name="Human115" parent="performance test" unique_id=1700248604 instance=ExtResource("7_davh7")]
+position = Vector2(1627, 185)
+
+[node name="Human116" parent="performance test" unique_id=706379411 instance=ExtResource("7_davh7")]
+position = Vector2(1668, 238)
+
+[node name="Human117" parent="performance test" unique_id=1780134700 instance=ExtResource("7_davh7")]
+position = Vector2(1677, 96)
+
+[node name="Human118" parent="performance test" unique_id=2077599293 instance=ExtResource("7_davh7")]
+position = Vector2(1585, 253)
+
+[node name="Human119" parent="performance test" unique_id=327528444 instance=ExtResource("7_davh7")]
+position = Vector2(1518, -149)
+
+[node name="Human120" parent="performance test" unique_id=491454883 instance=ExtResource("7_davh7")]
+position = Vector2(1575, -132)
+
+[node name="Human121" parent="performance test" unique_id=1300413443 instance=ExtResource("7_davh7")]
+position = Vector2(1533, -80)
+
+[node name="Human122" parent="performance test" unique_id=1640696356 instance=ExtResource("7_davh7")]
+position = Vector2(1600, -78)
+
+[node name="Human123" parent="performance test" unique_id=1069631491 instance=ExtResource("7_davh7")]
+position = Vector2(1617, -157)
+
+[node name="Human124" parent="performance test" unique_id=1469834973 instance=ExtResource("7_davh7")]
+position = Vector2(1671, -100)
+
+[node name="Human125" parent="performance test" unique_id=1998200314 instance=ExtResource("7_davh7")]
+position = Vector2(1608, 7)
+
+[node name="Human126" parent="performance test" unique_id=524150735 instance=ExtResource("7_davh7")]
+position = Vector2(1694, -16)
+
+[node name="Human127" parent="performance test" unique_id=1938742927 instance=ExtResource("7_davh7")]
+position = Vector2(1735, 37)
+
+[node name="Human128" parent="performance test" unique_id=765932410 instance=ExtResource("7_davh7")]
+position = Vector2(1744, -105)
+
+[node name="Human129" parent="performance test" unique_id=1745205025 instance=ExtResource("7_davh7")]
+position = Vector2(1652, 52)
+
+[node name="Zombie" parent="performance test" unique_id=1777726791 instance=ExtResource("6_se283")]
+
+[node name="Zombie2" parent="performance test" unique_id=99511135 instance=ExtResource("6_se283")]
+position = Vector2(56, 40)
+
+[node name="Zombie3" parent="performance test" unique_id=1252909269 instance=ExtResource("6_se283")]
+position = Vector2(64, -48)
+
+[node name="Zombie4" parent="performance test" unique_id=1412682821 instance=ExtResource("6_se283")]
+position = Vector2(-24, -64)
+
+[node name="Zombie5" parent="performance test" unique_id=1586563078 instance=ExtResource("6_se283")]
+position = Vector2(32, -120)
+
+[node name="Zombie6" parent="performance test" unique_id=394390578 instance=ExtResource("6_se283")]
+position = Vector2(128, -96)
+
+[node name="Zombie7" parent="performance test" unique_id=519359009 instance=ExtResource("6_se283")]
+position = Vector2(112, -128)
+
+[node name="Zombie8" parent="performance test" unique_id=1122093544 instance=ExtResource("6_se283")]
+position = Vector2(80, 168)
+
+[node name="Zombie9" parent="performance test" unique_id=1398308849 instance=ExtResource("6_se283")]
+position = Vector2(136, 208)
+
+[node name="Zombie10" parent="performance test" unique_id=1198233238 instance=ExtResource("6_se283")]
+position = Vector2(144, 120)
+
+[node name="Zombie11" parent="performance test" unique_id=1033462404 instance=ExtResource("6_se283")]
+position = Vector2(56, 104)
+
+[node name="Zombie12" parent="performance test" unique_id=726426573 instance=ExtResource("6_se283")]
+position = Vector2(112, 48)
+
+[node name="Zombie13" parent="performance test" unique_id=191593800 instance=ExtResource("6_se283")]
+position = Vector2(208, 72)
+
+[node name="Zombie14" parent="performance test" unique_id=1353274173 instance=ExtResource("6_se283")]
+position = Vector2(192, 40)
+
+[node name="performance test2" type="Node2D" parent="." unique_id=55588621]
+position = Vector2(-3776, -1400)
+
+[node name="Human" parent="performance test2" unique_id=882481520 instance=ExtResource("7_davh7")]
+position = Vector2(824, 15)
+
+[node name="Human2" parent="performance test2" unique_id=1250051911 instance=ExtResource("7_davh7")]
+position = Vector2(881, 32)
+
+[node name="Human3" parent="performance test2" unique_id=953813097 instance=ExtResource("7_davh7")]
+position = Vector2(839, 84)
+
+[node name="Human4" parent="performance test2" unique_id=427130430 instance=ExtResource("7_davh7")]
+position = Vector2(906, 86)
+
+[node name="Human5" parent="performance test2" unique_id=1927240466 instance=ExtResource("7_davh7")]
+position = Vector2(923, 7)
+
+[node name="Human6" parent="performance test2" unique_id=1910580860 instance=ExtResource("7_davh7")]
+position = Vector2(977, 64)
+
+[node name="Human7" parent="performance test2" unique_id=1525085963 instance=ExtResource("7_davh7")]
+position = Vector2(914, 171)
+
+[node name="Human8" parent="performance test2" unique_id=675680738 instance=ExtResource("7_davh7")]
+position = Vector2(1000, 148)
+
+[node name="Human9" parent="performance test2" unique_id=345212100 instance=ExtResource("7_davh7")]
+position = Vector2(1041, 201)
+
+[node name="Human10" parent="performance test2" unique_id=1103947251 instance=ExtResource("7_davh7")]
+position = Vector2(1050, 59)
+
+[node name="Human11" parent="performance test2" unique_id=897087022 instance=ExtResource("7_davh7")]
+position = Vector2(958, 216)
+
+[node name="Human13" parent="performance test2" unique_id=413017992 instance=ExtResource("7_davh7")]
+position = Vector2(891, -186)
+
+[node name="Human14" parent="performance test2" unique_id=1414533913 instance=ExtResource("7_davh7")]
+position = Vector2(948, -169)
+
+[node name="Human15" parent="performance test2" unique_id=1570880243 instance=ExtResource("7_davh7")]
+position = Vector2(906, -117)
+
+[node name="Human16" parent="performance test2" unique_id=2051310363 instance=ExtResource("7_davh7")]
+position = Vector2(973, -115)
+
+[node name="Human17" parent="performance test2" unique_id=210494707 instance=ExtResource("7_davh7")]
+position = Vector2(990, -194)
+
+[node name="Human18" parent="performance test2" unique_id=2103117477 instance=ExtResource("7_davh7")]
+position = Vector2(1044, -137)
+
+[node name="Human19" parent="performance test2" unique_id=582677742 instance=ExtResource("7_davh7")]
+position = Vector2(981, -30)
+
+[node name="Human20" parent="performance test2" unique_id=2008431464 instance=ExtResource("7_davh7")]
+position = Vector2(1067, -53)
+
+[node name="Human21" parent="performance test2" unique_id=1568922354 instance=ExtResource("7_davh7")]
+position = Vector2(1108, 0)
+
+[node name="Human23" parent="performance test2" unique_id=1214631270 instance=ExtResource("7_davh7")]
+position = Vector2(1025, 15)
+
+[node name="Human12" parent="performance test2" unique_id=1602900188 instance=ExtResource("7_davh7")]
+position = Vector2(808, 58)
+
+[node name="Human46" parent="performance test2" unique_id=814146694 instance=ExtResource("7_davh7")]
+position = Vector2(865, 75)
+
+[node name="Human47" parent="performance test2" unique_id=267138393 instance=ExtResource("7_davh7")]
+position = Vector2(823, 127)
+
+[node name="Human50" parent="performance test2" unique_id=1939183123 instance=ExtResource("7_davh7")]
+position = Vector2(890, 129)
+
+[node name="Human51" parent="performance test2" unique_id=630114617 instance=ExtResource("7_davh7")]
+position = Vector2(907, 50)
+
+[node name="Human52" parent="performance test2" unique_id=566337455 instance=ExtResource("7_davh7")]
+position = Vector2(961, 107)
+
+[node name="Human53" parent="performance test2" unique_id=1963578924 instance=ExtResource("7_davh7")]
+position = Vector2(898, 214)
+
+[node name="Human54" parent="performance test2" unique_id=1668759961 instance=ExtResource("7_davh7")]
+position = Vector2(984, 191)
+
+[node name="Human55" parent="performance test2" unique_id=1410255616 instance=ExtResource("7_davh7")]
+position = Vector2(1025, 244)
+
+[node name="Human56" parent="performance test2" unique_id=1300328173 instance=ExtResource("7_davh7")]
+position = Vector2(1034, 102)
+
+[node name="Human57" parent="performance test2" unique_id=1873618790 instance=ExtResource("7_davh7")]
+position = Vector2(942, 259)
+
+[node name="Human58" parent="performance test2" unique_id=1536710396 instance=ExtResource("7_davh7")]
+position = Vector2(875, -143)
+
+[node name="Human59" parent="performance test2" unique_id=682455445 instance=ExtResource("7_davh7")]
+position = Vector2(932, -126)
+
+[node name="Human60" parent="performance test2" unique_id=1548663586 instance=ExtResource("7_davh7")]
+position = Vector2(890, -74)
+
+[node name="Human61" parent="performance test2" unique_id=108257619 instance=ExtResource("7_davh7")]
+position = Vector2(957, -72)
+
+[node name="Human62" parent="performance test2" unique_id=1655096614 instance=ExtResource("7_davh7")]
+position = Vector2(974, -151)
+
+[node name="Human63" parent="performance test2" unique_id=947028161 instance=ExtResource("7_davh7")]
+position = Vector2(1028, -94)
+
+[node name="Human64" parent="performance test2" unique_id=2099573680 instance=ExtResource("7_davh7")]
+position = Vector2(965, 13)
+
+[node name="Human65" parent="performance test2" unique_id=1354645009 instance=ExtResource("7_davh7")]
+position = Vector2(1051, -10)
+
+[node name="Human66" parent="performance test2" unique_id=1269903309 instance=ExtResource("7_davh7")]
+position = Vector2(1092, 43)
+
+[node name="Human67" parent="performance test2" unique_id=796110344 instance=ExtResource("7_davh7")]
+position = Vector2(1101, -99)
+
+[node name="Human68" parent="performance test2" unique_id=1340310541 instance=ExtResource("7_davh7")]
+position = Vector2(1009, 58)
+
+[node name="Human22" parent="performance test2" unique_id=651776149 instance=ExtResource("7_davh7")]
+position = Vector2(1139, 33)
+
+[node name="Human24" parent="performance test2" unique_id=2067128506 instance=ExtResource("7_davh7")]
+position = Vector2(1196, 50)
+
+[node name="Human25" parent="performance test2" unique_id=860309878 instance=ExtResource("7_davh7")]
+position = Vector2(1154, 102)
+
+[node name="Human26" parent="performance test2" unique_id=1096200968 instance=ExtResource("7_davh7")]
+position = Vector2(1221, 104)
+
+[node name="Human27" parent="performance test2" unique_id=1346187823 instance=ExtResource("7_davh7")]
+position = Vector2(1238, 25)
+
+[node name="Human28" parent="performance test2" unique_id=1104651490 instance=ExtResource("7_davh7")]
+position = Vector2(1292, 82)
+
+[node name="Human29" parent="performance test2" unique_id=1914277875 instance=ExtResource("7_davh7")]
+position = Vector2(1229, 189)
+
+[node name="Human30" parent="performance test2" unique_id=1232529702 instance=ExtResource("7_davh7")]
+position = Vector2(1315, 166)
+
+[node name="Human31" parent="performance test2" unique_id=2040334093 instance=ExtResource("7_davh7")]
+position = Vector2(1356, 219)
+
+[node name="Human32" parent="performance test2" unique_id=1393469377 instance=ExtResource("7_davh7")]
+position = Vector2(1365, 77)
+
+[node name="Human33" parent="performance test2" unique_id=2139391201 instance=ExtResource("7_davh7")]
+position = Vector2(1273, 234)
+
+[node name="Human34" parent="performance test2" unique_id=1168417064 instance=ExtResource("7_davh7")]
+position = Vector2(1206, -168)
+
+[node name="Human35" parent="performance test2" unique_id=459076661 instance=ExtResource("7_davh7")]
+position = Vector2(1263, -151)
+
+[node name="Human36" parent="performance test2" unique_id=2065849541 instance=ExtResource("7_davh7")]
+position = Vector2(1221, -99)
+
+[node name="Human37" parent="performance test2" unique_id=1602771502 instance=ExtResource("7_davh7")]
+position = Vector2(1288, -97)
+
+[node name="Human38" parent="performance test2" unique_id=705484281 instance=ExtResource("7_davh7")]
+position = Vector2(1305, -176)
+
+[node name="Human39" parent="performance test2" unique_id=1204895588 instance=ExtResource("7_davh7")]
+position = Vector2(1359, -119)
+
+[node name="Human40" parent="performance test2" unique_id=155748294 instance=ExtResource("7_davh7")]
+position = Vector2(1296, -12)
+
+[node name="Human41" parent="performance test2" unique_id=1644801115 instance=ExtResource("7_davh7")]
+position = Vector2(1382, -35)
+
+[node name="Human42" parent="performance test2" unique_id=1606487077 instance=ExtResource("7_davh7")]
+position = Vector2(1423, 18)
+
+[node name="Human43" parent="performance test2" unique_id=1084926373 instance=ExtResource("7_davh7")]
+position = Vector2(1340, 33)
+
+[node name="Human44" parent="performance test2" unique_id=204575791 instance=ExtResource("7_davh7")]
+position = Vector2(1123, 76)
+
+[node name="Human48" parent="performance test2" unique_id=453839327 instance=ExtResource("7_davh7")]
+position = Vector2(1180, 93)
+
+[node name="Human49" parent="performance test2" unique_id=554056359 instance=ExtResource("7_davh7")]
+position = Vector2(1138, 145)
+
+[node name="Human130" parent="performance test2" unique_id=1008265289 instance=ExtResource("7_davh7")]
+position = Vector2(448, 9)
+
+[node name="Human131" parent="performance test2" unique_id=899505329 instance=ExtResource("7_davh7")]
+position = Vector2(505, 26)
+
+[node name="Human132" parent="performance test2" unique_id=296691544 instance=ExtResource("7_davh7")]
+position = Vector2(463, 78)
+
+[node name="Human133" parent="performance test2" unique_id=397846901 instance=ExtResource("7_davh7")]
+position = Vector2(530, 80)
+
+[node name="Human134" parent="performance test2" unique_id=2098092946 instance=ExtResource("7_davh7")]
+position = Vector2(547, 1)
+
+[node name="Human135" parent="performance test2" unique_id=268202438 instance=ExtResource("7_davh7")]
+position = Vector2(601, 58)
+
+[node name="Human136" parent="performance test2" unique_id=234345914 instance=ExtResource("7_davh7")]
+position = Vector2(538, 165)
+
+[node name="Human137" parent="performance test2" unique_id=178114418 instance=ExtResource("7_davh7")]
+position = Vector2(624, 142)
+
+[node name="Human138" parent="performance test2" unique_id=1119660166 instance=ExtResource("7_davh7")]
+position = Vector2(665, 195)
+
+[node name="Human139" parent="performance test2" unique_id=481287394 instance=ExtResource("7_davh7")]
+position = Vector2(674, 53)
+
+[node name="Human140" parent="performance test2" unique_id=21123602 instance=ExtResource("7_davh7")]
+position = Vector2(582, 210)
+
+[node name="Human141" parent="performance test2" unique_id=1745429871 instance=ExtResource("7_davh7")]
+position = Vector2(515, -192)
+
+[node name="Human142" parent="performance test2" unique_id=1493281594 instance=ExtResource("7_davh7")]
+position = Vector2(572, -175)
+
+[node name="Human143" parent="performance test2" unique_id=272259310 instance=ExtResource("7_davh7")]
+position = Vector2(530, -123)
+
+[node name="Human144" parent="performance test2" unique_id=1428279651 instance=ExtResource("7_davh7")]
+position = Vector2(597, -121)
+
+[node name="Human145" parent="performance test2" unique_id=1301292279 instance=ExtResource("7_davh7")]
+position = Vector2(614, -200)
+
+[node name="Human146" parent="performance test2" unique_id=1778536232 instance=ExtResource("7_davh7")]
+position = Vector2(668, -143)
+
+[node name="Human147" parent="performance test2" unique_id=743551204 instance=ExtResource("7_davh7")]
+position = Vector2(605, -36)
+
+[node name="Human148" parent="performance test2" unique_id=595702874 instance=ExtResource("7_davh7")]
+position = Vector2(691, -59)
+
+[node name="Human149" parent="performance test2" unique_id=803153356 instance=ExtResource("7_davh7")]
+position = Vector2(732, -6)
+
+[node name="Human150" parent="performance test2" unique_id=135786325 instance=ExtResource("7_davh7")]
+position = Vector2(649, 9)
+
+[node name="Human151" parent="performance test2" unique_id=2124954561 instance=ExtResource("7_davh7")]
+position = Vector2(432, 52)
+
+[node name="Human152" parent="performance test2" unique_id=614525421 instance=ExtResource("7_davh7")]
+position = Vector2(489, 69)
+
+[node name="Human153" parent="performance test2" unique_id=1219433472 instance=ExtResource("7_davh7")]
+position = Vector2(447, 121)
+
+[node name="Human154" parent="performance test2" unique_id=1553900295 instance=ExtResource("7_davh7")]
+position = Vector2(514, 123)
+
+[node name="Human155" parent="performance test2" unique_id=139630112 instance=ExtResource("7_davh7")]
+position = Vector2(531, 44)
+
+[node name="Human156" parent="performance test2" unique_id=429637125 instance=ExtResource("7_davh7")]
+position = Vector2(585, 101)
+
+[node name="Human157" parent="performance test2" unique_id=1226652923 instance=ExtResource("7_davh7")]
+position = Vector2(522, 208)
+
+[node name="Human158" parent="performance test2" unique_id=1283980034 instance=ExtResource("7_davh7")]
+position = Vector2(608, 185)
+
+[node name="Human159" parent="performance test2" unique_id=1375427524 instance=ExtResource("7_davh7")]
+position = Vector2(649, 238)
+
+[node name="Human160" parent="performance test2" unique_id=2131290640 instance=ExtResource("7_davh7")]
+position = Vector2(658, 96)
+
+[node name="Human161" parent="performance test2" unique_id=1743983385 instance=ExtResource("7_davh7")]
+position = Vector2(566, 253)
+
+[node name="Human162" parent="performance test2" unique_id=80750586 instance=ExtResource("7_davh7")]
+position = Vector2(499, -149)
+
+[node name="Human163" parent="performance test2" unique_id=1339338706 instance=ExtResource("7_davh7")]
+position = Vector2(556, -132)
+
+[node name="Human164" parent="performance test2" unique_id=2113594402 instance=ExtResource("7_davh7")]
+position = Vector2(514, -80)
+
+[node name="Human165" parent="performance test2" unique_id=348106506 instance=ExtResource("7_davh7")]
+position = Vector2(581, -78)
+
+[node name="Human166" parent="performance test2" unique_id=2146637287 instance=ExtResource("7_davh7")]
+position = Vector2(598, -157)
+
+[node name="Human167" parent="performance test2" unique_id=1993616855 instance=ExtResource("7_davh7")]
+position = Vector2(652, -100)
+
+[node name="Human168" parent="performance test2" unique_id=2093290641 instance=ExtResource("7_davh7")]
+position = Vector2(589, 7)
+
+[node name="Human169" parent="performance test2" unique_id=76386107 instance=ExtResource("7_davh7")]
+position = Vector2(675, -16)
+
+[node name="Human170" parent="performance test2" unique_id=1795599396 instance=ExtResource("7_davh7")]
+position = Vector2(716, 37)
+
+[node name="Human171" parent="performance test2" unique_id=1970837673 instance=ExtResource("7_davh7")]
+position = Vector2(725, -105)
+
+[node name="Human172" parent="performance test2" unique_id=1075610660 instance=ExtResource("7_davh7")]
+position = Vector2(633, 52)
+
+[node name="Human173" parent="performance test2" unique_id=1607653045 instance=ExtResource("7_davh7")]
+position = Vector2(763, 27)
+
+[node name="Human174" parent="performance test2" unique_id=1355928645 instance=ExtResource("7_davh7")]
+position = Vector2(747, 70)
+
+[node name="Human175" parent="performance test2" unique_id=767512808 instance=ExtResource("7_davh7")]
+position = Vector2(762, 139)
+
+[node name="Human69" parent="performance test2" unique_id=2042486423 instance=ExtResource("7_davh7")]
+position = Vector2(1205, 147)
+
+[node name="Human70" parent="performance test2" unique_id=2034347667 instance=ExtResource("7_davh7")]
+position = Vector2(1222, 68)
+
+[node name="Human71" parent="performance test2" unique_id=2013850065 instance=ExtResource("7_davh7")]
+position = Vector2(1276, 125)
+
+[node name="Human72" parent="performance test2" unique_id=1351056142 instance=ExtResource("7_davh7")]
+position = Vector2(1213, 232)
+
+[node name="Human73" parent="performance test2" unique_id=760689810 instance=ExtResource("7_davh7")]
+position = Vector2(1299, 209)
+
+[node name="Human74" parent="performance test2" unique_id=200274296 instance=ExtResource("7_davh7")]
+position = Vector2(1340, 262)
+
+[node name="Human75" parent="performance test2" unique_id=1190417110 instance=ExtResource("7_davh7")]
+position = Vector2(1349, 120)
+
+[node name="Human76" parent="performance test2" unique_id=74859160 instance=ExtResource("7_davh7")]
+position = Vector2(1257, 277)
+
+[node name="Human77" parent="performance test2" unique_id=2112929569 instance=ExtResource("7_davh7")]
+position = Vector2(1190, -125)
+
+[node name="Human78" parent="performance test2" unique_id=1373153674 instance=ExtResource("7_davh7")]
+position = Vector2(1247, -108)
+
+[node name="Human79" parent="performance test2" unique_id=954707080 instance=ExtResource("7_davh7")]
+position = Vector2(1205, -56)
+
+[node name="Human80" parent="performance test2" unique_id=1770528370 instance=ExtResource("7_davh7")]
+position = Vector2(1272, -54)
+
+[node name="Human81" parent="performance test2" unique_id=1650553641 instance=ExtResource("7_davh7")]
+position = Vector2(1289, -133)
+
+[node name="Human82" parent="performance test2" unique_id=928959948 instance=ExtResource("7_davh7")]
+position = Vector2(1343, -76)
+
+[node name="Human83" parent="performance test2" unique_id=2085253736 instance=ExtResource("7_davh7")]
+position = Vector2(1280, 31)
+
+[node name="Human84" parent="performance test2" unique_id=1207472100 instance=ExtResource("7_davh7")]
+position = Vector2(1366, 8)
+
+[node name="Human85" parent="performance test2" unique_id=820836451 instance=ExtResource("7_davh7")]
+position = Vector2(1407, 61)
+
+[node name="Human86" parent="performance test2" unique_id=1894630926 instance=ExtResource("7_davh7")]
+position = Vector2(1416, -81)
+
+[node name="Human87" parent="performance test2" unique_id=273736380 instance=ExtResource("7_davh7")]
+position = Vector2(1324, 76)
+
+[node name="Human45" parent="performance test2" unique_id=1084263267 instance=ExtResource("7_davh7")]
+position = Vector2(1467, 9)
+
+[node name="Human88" parent="performance test2" unique_id=1123871271 instance=ExtResource("7_davh7")]
+position = Vector2(1524, 26)
+
+[node name="Human89" parent="performance test2" unique_id=1296538089 instance=ExtResource("7_davh7")]
+position = Vector2(1482, 78)
+
+[node name="Human90" parent="performance test2" unique_id=1542912997 instance=ExtResource("7_davh7")]
+position = Vector2(1549, 80)
+
+[node name="Human91" parent="performance test2" unique_id=728776053 instance=ExtResource("7_davh7")]
+position = Vector2(1566, 1)
+
+[node name="Human92" parent="performance test2" unique_id=366848065 instance=ExtResource("7_davh7")]
+position = Vector2(1620, 58)
+
+[node name="Human93" parent="performance test2" unique_id=564595722 instance=ExtResource("7_davh7")]
+position = Vector2(1557, 165)
+
+[node name="Human94" parent="performance test2" unique_id=1604526967 instance=ExtResource("7_davh7")]
+position = Vector2(1643, 142)
+
+[node name="Human95" parent="performance test2" unique_id=1948236874 instance=ExtResource("7_davh7")]
+position = Vector2(1684, 195)
+
+[node name="Human96" parent="performance test2" unique_id=1534061781 instance=ExtResource("7_davh7")]
+position = Vector2(1693, 53)
+
+[node name="Human97" parent="performance test2" unique_id=2053808877 instance=ExtResource("7_davh7")]
+position = Vector2(1601, 210)
+
+[node name="Human98" parent="performance test2" unique_id=211077903 instance=ExtResource("7_davh7")]
+position = Vector2(1534, -192)
+
+[node name="Human99" parent="performance test2" unique_id=888628426 instance=ExtResource("7_davh7")]
+position = Vector2(1591, -175)
+
+[node name="Human100" parent="performance test2" unique_id=1501982246 instance=ExtResource("7_davh7")]
+position = Vector2(1549, -123)
+
+[node name="Human101" parent="performance test2" unique_id=1119775725 instance=ExtResource("7_davh7")]
+position = Vector2(1616, -121)
+
+[node name="Human102" parent="performance test2" unique_id=1996229319 instance=ExtResource("7_davh7")]
+position = Vector2(1633, -200)
+
+[node name="Human103" parent="performance test2" unique_id=781271099 instance=ExtResource("7_davh7")]
+position = Vector2(1687, -143)
+
+[node name="Human104" parent="performance test2" unique_id=992573858 instance=ExtResource("7_davh7")]
+position = Vector2(1624, -36)
+
+[node name="Human105" parent="performance test2" unique_id=1631692333 instance=ExtResource("7_davh7")]
+position = Vector2(1710, -59)
+
+[node name="Human106" parent="performance test2" unique_id=1160371315 instance=ExtResource("7_davh7")]
+position = Vector2(1751, -6)
+
+[node name="Human107" parent="performance test2" unique_id=135833941 instance=ExtResource("7_davh7")]
+position = Vector2(1668, 9)
+
+[node name="Human108" parent="performance test2" unique_id=1384041098 instance=ExtResource("7_davh7")]
+position = Vector2(1451, 52)
+
+[node name="Human109" parent="performance test2" unique_id=2012984409 instance=ExtResource("7_davh7")]
+position = Vector2(1508, 69)
+
+[node name="Human110" parent="performance test2" unique_id=578242851 instance=ExtResource("7_davh7")]
+position = Vector2(1466, 121)
+
+[node name="Human111" parent="performance test2" unique_id=557609811 instance=ExtResource("7_davh7")]
+position = Vector2(1533, 123)
+
+[node name="Human112" parent="performance test2" unique_id=998981001 instance=ExtResource("7_davh7")]
+position = Vector2(1550, 44)
+
+[node name="Human113" parent="performance test2" unique_id=1489345159 instance=ExtResource("7_davh7")]
+position = Vector2(1604, 101)
+
+[node name="Human114" parent="performance test2" unique_id=1099595920 instance=ExtResource("7_davh7")]
+position = Vector2(1541, 208)
+
+[node name="Human115" parent="performance test2" unique_id=1798129205 instance=ExtResource("7_davh7")]
+position = Vector2(1627, 185)
+
+[node name="Human116" parent="performance test2" unique_id=420736909 instance=ExtResource("7_davh7")]
+position = Vector2(1668, 238)
+
+[node name="Human117" parent="performance test2" unique_id=1774791089 instance=ExtResource("7_davh7")]
+position = Vector2(1677, 96)
+
+[node name="Human118" parent="performance test2" unique_id=1815242705 instance=ExtResource("7_davh7")]
+position = Vector2(1585, 253)
+
+[node name="Human119" parent="performance test2" unique_id=1876215681 instance=ExtResource("7_davh7")]
+position = Vector2(1518, -149)
+
+[node name="Human120" parent="performance test2" unique_id=604993883 instance=ExtResource("7_davh7")]
+position = Vector2(1575, -132)
+
+[node name="Human121" parent="performance test2" unique_id=1425113995 instance=ExtResource("7_davh7")]
+position = Vector2(1533, -80)
+
+[node name="Human122" parent="performance test2" unique_id=1842463792 instance=ExtResource("7_davh7")]
+position = Vector2(1600, -78)
+
+[node name="Human123" parent="performance test2" unique_id=1991562237 instance=ExtResource("7_davh7")]
+position = Vector2(1617, -157)
+
+[node name="Human124" parent="performance test2" unique_id=4425386 instance=ExtResource("7_davh7")]
+position = Vector2(1671, -100)
+
+[node name="Human125" parent="performance test2" unique_id=1750809521 instance=ExtResource("7_davh7")]
+position = Vector2(1608, 7)
+
+[node name="Human126" parent="performance test2" unique_id=233963268 instance=ExtResource("7_davh7")]
+position = Vector2(1694, -16)
+
+[node name="Human127" parent="performance test2" unique_id=626438715 instance=ExtResource("7_davh7")]
+position = Vector2(1735, 37)
+
+[node name="Human128" parent="performance test2" unique_id=573952853 instance=ExtResource("7_davh7")]
+position = Vector2(1744, -105)
+
+[node name="Human129" parent="performance test2" unique_id=1596905902 instance=ExtResource("7_davh7")]
+position = Vector2(1652, 52)
+
+[node name="Zombie" parent="performance test2" unique_id=1874956684 instance=ExtResource("6_se283")]
+
+[node name="Zombie2" parent="performance test2" unique_id=1763296565 instance=ExtResource("6_se283")]
+position = Vector2(56, 40)
+
+[node name="Zombie3" parent="performance test2" unique_id=1053074952 instance=ExtResource("6_se283")]
+position = Vector2(64, -48)
+
+[node name="Zombie4" parent="performance test2" unique_id=2074559545 instance=ExtResource("6_se283")]
+position = Vector2(-24, -64)
+
+[node name="Zombie5" parent="performance test2" unique_id=320595822 instance=ExtResource("6_se283")]
+position = Vector2(32, -120)
+
+[node name="Zombie6" parent="performance test2" unique_id=1489385016 instance=ExtResource("6_se283")]
+position = Vector2(128, -96)
+
+[node name="Zombie7" parent="performance test2" unique_id=577187403 instance=ExtResource("6_se283")]
+position = Vector2(112, -128)
+
+[node name="Zombie8" parent="performance test2" unique_id=1036817716 instance=ExtResource("6_se283")]
+position = Vector2(80, 168)
+
+[node name="Zombie9" parent="performance test2" unique_id=771609044 instance=ExtResource("6_se283")]
+position = Vector2(136, 208)
+
+[node name="Zombie10" parent="performance test2" unique_id=1036165309 instance=ExtResource("6_se283")]
+position = Vector2(144, 120)
+
+[node name="Zombie11" parent="performance test2" unique_id=1667949310 instance=ExtResource("6_se283")]
+position = Vector2(56, 104)
+
+[node name="Zombie12" parent="performance test2" unique_id=15405583 instance=ExtResource("6_se283")]
+position = Vector2(112, 48)
+
+[node name="Zombie13" parent="performance test2" unique_id=728925772 instance=ExtResource("6_se283")]
+position = Vector2(208, 72)
+
+[node name="Zombie14" parent="performance test2" unique_id=1493298708 instance=ExtResource("6_se283")]
+position = Vector2(192, 40)
+
+[node name="Zombie15" parent="performance test2" unique_id=2099358774 instance=ExtResource("6_se283")]
+position = Vector2(163, 72)
+
+[node name="Zombie16" parent="performance test2" unique_id=159739511 instance=ExtResource("6_se283")]
+position = Vector2(219, 112)
+
+[node name="Zombie17" parent="performance test2" unique_id=1339520525 instance=ExtResource("6_se283")]
+position = Vector2(227, 24)
+
+[node name="Zombie18" parent="performance test2" unique_id=14437613 instance=ExtResource("6_se283")]
+position = Vector2(139, 8)
+
+[node name="Zombie19" parent="performance test2" unique_id=1805637140 instance=ExtResource("6_se283")]
+position = Vector2(195, -48)
+
+[node name="Zombie20" parent="performance test2" unique_id=67898481 instance=ExtResource("6_se283")]
+position = Vector2(291, -24)
+
+[node name="Zombie21" parent="performance test2" unique_id=340679489 instance=ExtResource("6_se283")]
+position = Vector2(275, -56)
+
+[node name="Zombie22" parent="performance test2" unique_id=1518784817 instance=ExtResource("6_se283")]
+position = Vector2(243, 240)
+
+[node name="Zombie23" parent="performance test2" unique_id=1744027891 instance=ExtResource("6_se283")]
+position = Vector2(171, -96)
+
+[node name="Zombie24" parent="performance test2" unique_id=1679192929 instance=ExtResource("6_se283")]
+position = Vector2(307, 192)
+
+[node name="Zombie25" parent="performance test2" unique_id=1718754792 instance=ExtResource("6_se283")]
+position = Vector2(219, 176)
+
+[node name="Zombie26" parent="performance test2" unique_id=1174930487 instance=ExtResource("6_se283")]
+position = Vector2(275, 120)
+
+[node name="Zombie27" parent="performance test2" unique_id=1127879997 instance=ExtResource("6_se283")]
+position = Vector2(371, 144)
+
+[node name="Zombie28" parent="performance test2" unique_id=1795312101 instance=ExtResource("6_se283")]
+position = Vector2(355, 112)

@@ -24,6 +24,18 @@ extends Node
 ## new level starts from playtested ground instead of from paper — see the
 ## "docks baseline" notes below. level_config.gd's @export defaults mirror them.
 
+# === DEBUG ===
+## Master switch for the per-unit / per-event debug prints — sieges, shelter
+## entries and adoptions, cowers, breaches, releases, escapes, per-unit
+## registration. OFF by default (2026-07-30): at level scale they're both console
+## noise and a genuine per-event cost, since each one formats a string. The guard
+## sits BEFORE the format, so a disabled line costs one bool check.
+##
+## One-shot system lines ignore this and always print: boot confirmations, the
+## registration summary, and the win/lose verdict. Not mirrored in LevelConfig —
+## this is a developer switch, not a per-level gameplay tunable.
+var debug_logs: bool = false
+
 # === MOVEMENT ===
 ## Docks baseline (was the spec's 200) — the pace the chase actually reads at.
 var zombie_speed: float = 140.0
@@ -49,6 +61,23 @@ var fire_cooldown: Array[float] = [0.0, 1.0, 0.8, 0.6]
 # === FEAR ===
 var fear_radius: float = 250.0
 var fear_reaction: float = 0.3
+## How often (s) a defending human re-counts the zombies in its fear radius.
+## PERF (2026-07-30): that count casts an LOS ray per zombie found, per human —
+## running it every frame made the raycast load scale as humans × zombies, a few
+## thousand physics queries per tick at level scale. Fear already absorbs a
+## fear_reaction beat before the rout, so sub-frame precision buys nothing; the
+## worst case is a break landing one interval late. Each human's phase is
+## DetHash-staggered so the crowd never scans on the same tick. Not mirrored in
+## LevelConfig — a perf knob, not a level-design one.
+var fear_scan_interval: float = 0.2
+
+## How often (s) an armed defender re-scans for its fill target (same perf story:
+## the scan is a grid query + an LOS ray per candidate, per human). The fill
+## LENGTH still grows every frame — only target acquisition is on the cadence, so
+## the worst case is noticing a new nearest zombie one interval late. The lane is
+## re-verified at the moment of firing (one ray), so a stale target can never be
+## shot through a friendly. DetHash-staggered per unit; not in LevelConfig.
+var fill_scan_interval: float = 0.2
 
 # === FLEE / HERDING (build-plan 3.4) ===
 ## A fleeing human nav-paths to the nearest exit; its route bends away from zombies
