@@ -10,8 +10,8 @@
 [ext_resource type="Script" uid="uid://c7bww3rdcm8pt" path="res://scripts/game_manager.gd" id="7_w7nid"]
 [ext_resource type="PackedScene" uid="uid://c8yqh3jvpxn3w" path="res://scenes/zombie.tscn" id="8_6m5u5"]
 [ext_resource type="PackedScene" uid="uid://brqxu82wy6h2r" path="res://scenes/human.tscn" id="9_xkd54"]
-[ext_resource type="PackedScene" uid="uid://di2wxa5t7dmxv" path="res://scenes/debug_overlay.tscn" id="10_7i356"]
-[ext_resource type="PackedScene" uid="uid://cpxw4y8m7n5pk" path="res://scenes/end_game_overlay.tscn" id="11_o0lgx"]
+[ext_resource type="PackedScene" uid="uid://di2wxa5t7dmxv" path="res://scenes/UI/debug_overlay.tscn" id="10_7i356"]
+[ext_resource type="PackedScene" uid="uid://cpxw4y8m7n5pk" path="res://scenes/UI/end_game_overlay.tscn" id="11_o0lgx"]
 
 [sub_resource type="NavigationPolygon" id="NavigationPolygon_vdb5j"]
 vertices = PackedVector2Array(1249.8516, 477, 429.96875, 477, 429.02344, -471.04688, 1244.1406, -472.9375, 232, -222, 323, -206, -404.84375, -206, 32, -222, -324, -225, -124, -225, -431.09375, -206.09375, 149, -52, 149, 126, 117, 54, 117, -46, 321, -103.1875, 321, 263, 299, 228, 299, -52, 223.5, 263, 149, 228, -433, 54, 4, 126, -37, 124, -28.703125, -106, -433, -46, -427, -106, 323, -420.10938, 232, -402, -478.96094, -421, 134.88281, -421, 32, -402, -124, -405, 4, 226, -37, 224, -437, 124, 323.17188, 366, 323.85156, 473.65625, 226, 472.3203, 226, 425, 222, 366, 219.92969, 425, 219.60938, 421.79688, -324, -405, 149, 226, 131.88281, 265, -478.03125, 265, -152.21094, 425, -476, 425, -476, 370.95313, 124.24219, 369.96094, 129, 367, 223.4375, 266, 222, 266, 124.46094, 367, 129, 304.59375, -437, 224, -427, -109.9375)

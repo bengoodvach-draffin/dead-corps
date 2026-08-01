@@ -1,0 +1,35 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" uid="uid://0abcm55rf54k" path="res://scenes/Levels/shelter_test_siege.tscn" id="1_siege"]
+
+[sub_resource type="GDScript" id="GDScript_ff"]
+script/source = "extends Node
+
+## Determinism harness: runs the whole scripted siege at 3x time_scale from the
+## first frame. Its console chain must be IDENTICAL to the normal-speed run.
+
+func _ready() -> void:
+	Engine.physics_ticks_per_second = 180
+	Engine.time_scale = 3.0
+	print(\"FFTEST: 3x fast-forward (tps 180 + time_scale 3 = 1/60 ticks) for the entire run\")
+
+var _printed := false
+var _ticks := 0
+var _elapsed := 0.0
+
+func _physics_process(delta: float) -> void:
+	if not _printed:
+		_printed = true
+		print(\"FFTEST: physics delta per tick = \", delta)
+	_ticks += 1
+	_elapsed += delta
+	if _ticks == 180:
+		print(\"FFTEST: 180 ticks accumulated %.2f sim-seconds\" % _elapsed)
+"
+
+[node name="FFRoot" type="Node2D"]
+
+[node name="Siege" parent="." instance=ExtResource("1_siege")]
+
+[node name="FF" type="Node" parent="."]
+script = SubResource("GDScript_ff")

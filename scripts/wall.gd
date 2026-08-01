@@ -17,16 +17,18 @@ class_name Wall
 ## with no extra wiring.
 ##
 ## TWO MODES (toggle `solid`):
-## - solid = false → PERIMETER. Collision only on the outline edges
-##   (build_mode = Segments); interior stays walkable. Use ONE Wall to enclose a
-##   whole level. Drawn as a thick closed outline (width = wall_thickness).
-## - solid = true  → BLOCK. The whole polygon blocks and is drawn filled. Use
-##   these to carve rooms / drop obstacles of any shape.
+## - solid = true (DEFAULT) → BLOCK. The whole polygon blocks and is drawn
+##   filled. The standard Wall: obstacles, interior partitions, thin gate-runs.
+## - solid = false → PERIMETER (LEGACY). Collision only on the outline edges;
+##   interior stays walkable. Soft-deprecated (2026-07-26): for enclosures,
+##   prefer a ShelterBuilding with `is_shelter = false` (door carving, snapping,
+##   floor tint come free). Kept for the walk-inside level-boundary use and for
+##   existing scenes — those serialize `solid = false` explicitly.
 
 # === EXPORTED PROPERTIES ===
 
-## false = perimeter (hollow, edges-only collision), true = filled solid block.
-@export var solid: bool = false:
+## true = filled solid block (default); false = legacy perimeter (hollow, edges-only).
+@export var solid: bool = true:
 	set(value):
 		solid = value
 		_sync()

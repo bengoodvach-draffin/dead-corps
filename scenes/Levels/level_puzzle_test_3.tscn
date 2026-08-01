@@ -1,0 +1,1278 @@
+[gd_scene format=3 uid="uid://dy37op6ldiutw"]
+
+[ext_resource type="Script" uid="uid://3sf8250t3l5r" path="res://scripts/camera_controller.gd" id="1_al7p5"]
+[ext_resource type="Script" uid="uid://b112ultiv3ox0" path="res://scripts/level_bounds.gd" id="2_c7vnq"]
+[ext_resource type="Script" uid="uid://dlqe4p8ushalq" path="res://scripts/level_config.gd" id="3_jyqd8"]
+[ext_resource type="Script" uid="uid://crornii8mcmn3" path="res://scripts/initializer.gd" id="4_njf6h"]
+[ext_resource type="Script" uid="uid://c7bww3rdcm8pt" path="res://scripts/game_manager.gd" id="5_7edwk"]
+[ext_resource type="PackedScene" uid="uid://c8yqh3jvpxn3w" path="res://scenes/zombie.tscn" id="6_pryu5"]
+[ext_resource type="PackedScene" uid="uid://brqxu82wy6h2r" path="res://scenes/human.tscn" id="7_gspim"]
+[ext_resource type="Script" uid="uid://c5fmdp1r7ticb" path="res://scripts/vision_renderer.gd" id="8_m5gy6"]
+[ext_resource type="PackedScene" uid="uid://bmw8qx5r2n8pk" path="res://scenes/building.tscn" id="9_jw32b"]
+[ext_resource type="Script" uid="uid://bgnbocmyabj1m" path="res://scripts/shelter_building.gd" id="10_rgf7u"]
+[ext_resource type="Script" uid="uid://b5tktwtpd5hg5" path="res://scripts/door.gd" id="11_ros3m"]
+[ext_resource type="Script" uid="uid://cvde25j0ujcg" path="res://scripts/wall.gd" id="12_xnr4k"]
+[ext_resource type="Script" uid="uid://c545o5pp1k361" path="res://scripts/shelter_spot.gd" id="13_cfd3t"]
+[ext_resource type="PackedScene" uid="uid://bvx8qw2m7n5pk" path="res://scenes/escape_zone.tscn" id="14_nf0t1"]
+[ext_resource type="Script" uid="uid://cax0dih7wnxe0" path="res://scripts/selection_manager.gd" id="15_sk7bb"]
+[ext_resource type="Script" uid="uid://yd0ofoh8ih30" path="res://scripts/nav_baker.gd" id="16_ggltr"]
+[ext_resource type="PackedScene" uid="uid://di2wxa5t7dmxv" path="res://scenes/UI/debug_overlay.tscn" id="17_gb7bd"]
+[ext_resource type="PackedScene" uid="uid://cpxw4y8m7n5pk" path="res://scenes/UI/end_game_overlay.tscn" id="18_5sngf"]
+
+[sub_resource type="NavigationPolygon" id="NavigationPolygon_yxdyl"]
+vertices = PackedVector2Array(-4202, 729, -4252, 729, -5119, 725, -4959, 725, -4589, 341, -4409, 339, -4299, 339, -4300, 401, -4410, 401, -4445, 400, -4590, 533, -4410, 531, -4300, 531, -4300, 593, -4410, 593, -4445, 592, -4590, 725, -4410, 723, -4300, 723, -5119, 533, -5102, 532, -4992, 532, -4959, 533, -4992, 594, -5102, 594, -4444, 338, -4554, 338, -4445, 530, -4555, 530, -4445, 722, -4555, 722, -1509, 615, 4629, 881, -3500, 881, -1989, 615, -4700, 403, -4719, 402, -4848, 341, -4828, 340, -4718, 340, -4699, 341, -4590, 403, -4700, 595, -4719, 594, -4849, 533, -4829, 532, -4719, 532, -4700, 533, -4590, 595, -4719, 724, -4700, 725, -4849, 725, -4829, 724, -3572, -289, -3572, -335, -3571.5234, -369, -3450, -588, -3450, 172, -3499.0234, 171.92188, -4299, 209, -4252, 216, -4252, 646, -3688, 340, -3688, 300, -3670, 300, -3670, 340, -3573, -416, -3573, -655, 4636, -1640, 4636, -1690, 9985, -4982, 9985, 4988, -9985, -4982, -3794, -1690, -3538, 340, -3538, 881, -4202, 646, -3830, 340, -4589, 211, -4554, 208, -4555, 400, -4555, 592, -5119, 403, -5102, 402, -4699, 211, -4718, 210, -5248, 339, -5229, 210, -5229, 340, -5248, 402, -5248, 209, -5229, 403, -5229, 533, -5248, 532, -5229, 595, -5229, 725, -5248, 724, -5248, 594, -4848, 211, -4828, 210, -4829, 402, -4849, 403, -4849, 595, -4829, 594, -4958, 211, -4958, 341, -4991, 340, -4991, 210, -4959, 403, -4992, 402, -4959, 595, -4992, 724, -4409, 209, -4444, 208, -5119, 340, -5101, 340, -3730, -369, -3730.4766, -335, -3498.8984, 211.97656, -3498.9063, 210, -3412, 210, -1564.9766, 404.07813, -1560, 404.0625, -1560, 565, -1989, 565, -2094.8594, 404, -2017.8594, 404, -2109, 565, -1566.2188, -100, -1565.0625, 364, -2017.8594, 364, -1682.0781, -100, -1716.0781, -100, -1682.0781, -140, -2245, -100, -2094.8594, 364, -3539, 172, -3539, 172.04688, -3627, 172.25781, -3627, -20, -3627, 212.25781, -3539, 212.04688, -3539, 300, -3627, 212.3125, -3633, 300, -3633, 265.5, -3794, -1687, -3814, -1687, -3814, 94, -5478, 94, -9985, 4988, -5478, 931, 4629, 931, -1509, 565, -1510, 565, -1510, -324, -1509, -324, -1509, -374, -1510, -374, -1510, -376, -1560, -376, -1560, -374, -1989, -374, -3764, -1640, -1989, -324, -1560, -324, -1560, -140, -1716.0781, -140, -2250, -140, -2034, -324, -2250, -324, -2034, -374, -2514, -324, -2300, -324, -2300, -140, -2530.289, -140, -2530.289, -100, -2310, -100, -2310, 252, -2466, 252, -2466, 292, -2532, 292, -2532, 252, -2780, 252, -2780, 51, -2818, 51, -2818, 252, -2982, 252, -2982, 23, -2780, 23, -2780, -15, -2561.289, -100, -2982, -15, -2982, -100, -2561.289, -140, -2560, -324, -2990, -140, -2990, -324, -2514, -374, -2560, -374, -3040, 613, -3039, 613, -3039, 615, -2597, 501, -2597, 565, -2990, 565, -2990, 292, -2597, 292, -2597, 492, -2559, 501, -2559, 492, -2559, 292, -2439, 565, -2300, 292, -2300, 565, -2250, 565, -2250, 404, -2211.1406, 404, -2211.1406, 364, -2245, 364, -1564.9766, 404, -2147.1406, 364, -2147.1406, 404, -2109, 615, -2439, 615, -3500, 340, -3499, 340, -3499, 211.97656, -3618, -655, -3618, -415, -3730, -415, -3684, -49, -3684, -289, -3499.0234, 172, -3519.0703, 172, -3734, -20, -3729, -49, -3734, 20, -3667, 20, -3667, 114, -3711, 114, -3711, 148, -3667, 148, -3667, 172.32031, -3667.0781, 172.32031, -3633, 252.59375, -3633, 212.3125, -3667, 252.59375, -3667, 265.5, -3667, 300, -5358, 339, -5358, 402, -4202, 881, -4252, 881, -5428, 881, -5281, 833, -5428, 833, -5281, 783, -5358, 724, -5428, 783, -5428, 144, -5358, 594, -3848, 300, -3931, 300, -3931, 148, -3720, 148, -3720, 114, -3755, 114, -3755, 20, -3752, 20, -3752, -20, -3764, -20, -2559, 615, -3040, -374, -3412, -588, -3667, 192.38281, -3830, 300, -3729, -288, -3848, 340, -3971, 340, -4202, 216, -3971, 144, -5358, 532, -5119, 595, -5101, 210, -5119, 210, -5358, 209, -5102, 724)
+polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3), PackedInt32Array(4, 5, 6, 7, 8, 9), PackedInt32Array(10, 11, 12, 13, 14, 15), PackedInt32Array(16, 17, 18, 0), PackedInt32Array(19, 20, 21, 22, 23, 24), PackedInt32Array(25, 5, 4, 26), PackedInt32Array(27, 11, 10, 28), PackedInt32Array(29, 17, 16, 30), PackedInt32Array(31, 32, 33, 34), PackedInt32Array(35, 36, 37, 38, 39, 40, 41), PackedInt32Array(42, 43, 44, 45, 46, 47, 48), PackedInt32Array(49, 50, 51, 52), PackedInt32Array(53, 54, 55, 56, 57, 58), PackedInt32Array(6, 59, 60, 61), PackedInt32Array(12, 6, 61, 13), PackedInt32Array(6, 12, 7), PackedInt32Array(62, 63, 64, 65), PackedInt32Array(56, 55, 66, 67), PackedInt32Array(68, 69, 70, 71), PackedInt32Array(72, 70, 69, 73), PackedInt32Array(74, 75, 0, 76, 65), PackedInt32Array(62, 65, 76), PackedInt32Array(77, 62, 76), PackedInt32Array(26, 4, 78, 79), PackedInt32Array(80, 28, 10, 41, 4), PackedInt32Array(30, 16, 48, 81), PackedInt32Array(20, 19, 82, 83), PackedInt32Array(84, 40, 39, 85), PackedInt32Array(86, 87, 88, 89), PackedInt32Array(87, 86, 90), PackedInt32Array(35, 47, 46, 36), PackedInt32Array(91, 92, 93, 89), PackedInt32Array(42, 50, 49, 43), PackedInt32Array(94, 95, 96, 97), PackedInt32Array(38, 37, 98, 99), PackedInt32Array(100, 45, 44, 101, 37), PackedInt32Array(52, 51, 102, 103), PackedInt32Array(104, 105, 106, 107), PackedInt32Array(108, 22, 21, 109), PackedInt32Array(110, 3, 111, 23), PackedInt32Array(112, 5, 25, 113), PackedInt32Array(8, 11, 27, 9), PackedInt32Array(14, 17, 29, 15), PackedInt32Array(4, 9, 80), PackedInt32Array(40, 4, 41), PackedInt32Array(37, 36, 100), PackedInt32Array(105, 37, 101, 108, 109), PackedInt32Array(114, 115, 105, 109, 83), PackedInt32Array(88, 114, 83, 82, 91, 89), PackedInt32Array(116, 55, 54, 117), PackedInt32Array(118, 119, 120), PackedInt32Array(121, 122, 123, 124), PackedInt32Array(125, 126, 121, 124, 127), PackedInt32Array(128, 129, 130, 131), PackedInt32Array(131, 130, 132, 133), PackedInt32Array(134, 132, 130, 135), PackedInt32Array(136, 137, 138, 139, 53), PackedInt32Array(140, 141, 142, 143), PackedInt32Array(143, 142, 144, 145), PackedInt32Array(73, 146, 147, 72), PackedInt32Array(147, 148, 149, 72), PackedInt32Array(150, 72, 149, 151), PackedInt32Array(71, 150, 151, 152), PackedInt32Array(68, 71, 152, 32), PackedInt32Array(68, 32, 31, 153), PackedInt32Array(153, 154, 155, 156), PackedInt32Array(68, 153, 156), PackedInt32Array(68, 156, 157), PackedInt32Array(157, 158, 159, 68), PackedInt32Array(160, 161, 162, 163), PackedInt32Array(164, 165, 166, 133), PackedInt32Array(133, 132, 167), PackedInt32Array(164, 133, 167), PackedInt32Array(164, 167, 168, 169), PackedInt32Array(168, 170, 169), PackedInt32Array(162, 164, 169, 171), PackedInt32Array(172, 173, 174, 175), PackedInt32Array(176, 177, 178, 179), PackedInt32Array(179, 180, 181, 182, 176), PackedInt32Array(182, 183, 184, 176), PackedInt32Array(185, 186, 187, 188), PackedInt32Array(185, 188, 189, 184), PackedInt32Array(176, 184, 189), PackedInt32Array(176, 189, 190, 191), PackedInt32Array(190, 192, 193, 191), PackedInt32Array(175, 176, 191, 194, 195), PackedInt32Array(194, 196, 197, 195), PackedInt32Array(198, 172, 175, 195, 199), PackedInt32Array(200, 201, 202), PackedInt32Array(203, 204, 205, 206), PackedInt32Array(206, 207, 208), PackedInt32Array(203, 206, 208), PackedInt32Array(209, 203, 208, 210), PackedInt32Array(210, 211, 181, 212), PackedInt32Array(180, 213, 214, 212), PackedInt32Array(127, 215, 216, 217), PackedInt32Array(218, 219, 134), PackedInt32Array(126, 220, 121), PackedInt32Array(130, 126, 125, 135), PackedInt32Array(134, 135, 221), PackedInt32Array(218, 134, 221), PackedInt32Array(217, 218, 221, 222), PackedInt32Array(127, 217, 222), PackedInt32Array(127, 222, 125), PackedInt32Array(223, 127, 124, 34), PackedInt32Array(223, 34, 33), PackedInt32Array(224, 223, 33), PackedInt32Array(202, 33, 225, 226, 200), PackedInt32Array(226, 227, 118), PackedInt32Array(228, 229, 230, 163), PackedInt32Array(231, 232, 53, 139), PackedInt32Array(57, 233, 58), PackedInt32Array(53, 58, 234, 136), PackedInt32Array(231, 139, 235, 236), PackedInt32Array(237, 238, 239, 240), PackedInt32Array(241, 242, 243, 244), PackedInt32Array(245, 246, 143), PackedInt32Array(245, 143, 145), PackedInt32Array(247, 245, 145, 248), PackedInt32Array(248, 249, 64), PackedInt32Array(250, 86, 89, 251), PackedInt32Array(75, 252, 0), PackedInt32Array(76, 0, 18, 61), PackedInt32Array(61, 18, 13), PackedInt32Array(10, 15, 81), PackedInt32Array(10, 81, 48, 47), PackedInt32Array(44, 43, 103), PackedInt32Array(22, 44, 103, 102, 110, 23), PackedInt32Array(1, 253, 254, 255), PackedInt32Array(254, 256, 255), PackedInt32Array(95, 2, 1, 255, 257), PackedInt32Array(258, 96, 95, 257, 259), PackedInt32Array(258, 259, 260, 261), PackedInt32Array(262, 263, 264, 265), PackedInt32Array(266, 267, 268, 269), PackedInt32Array(270, 271, 163, 230, 116, 117), PackedInt32Array(226, 118, 120, 200), PackedInt32Array(248, 64, 63), PackedInt32Array(181, 180, 212), PackedInt32Array(209, 210, 212), PackedInt32Array(272, 209, 212, 224), PackedInt32Array(272, 224, 33), PackedInt32Array(202, 272, 33), PackedInt32Array(273, 200, 120, 274), PackedInt32Array(163, 68, 159, 160), PackedInt32Array(163, 162, 171), PackedInt32Array(163, 171, 198), PackedInt32Array(163, 198, 199), PackedInt32Array(163, 199, 273, 274), PackedInt32Array(163, 274, 56, 67), PackedInt32Array(163, 67, 228), PackedInt32Array(92, 19, 24), PackedInt32Array(265, 241, 244, 275, 247, 276, 262), PackedInt32Array(248, 63, 276, 247), PackedInt32Array(270, 117, 277, 236, 235), PackedInt32Array(270, 235, 237, 269), PackedInt32Array(266, 269, 237, 240), PackedInt32Array(266, 240, 241, 265), PackedInt32Array(262, 276, 77, 278), PackedInt32Array(278, 77, 76), PackedInt32Array(279, 278, 76), PackedInt32Array(279, 76, 280, 281), PackedInt32Array(97, 282, 93, 92, 24, 283, 94), PackedInt32Array(281, 280, 60, 59), PackedInt32Array(260, 281, 59, 112, 113), PackedInt32Array(260, 113, 79), PackedInt32Array(260, 79, 78, 84, 85), PackedInt32Array(260, 85, 99), PackedInt32Array(260, 99, 98, 104, 107), PackedInt32Array(260, 107, 284), PackedInt32Array(285, 87, 90, 260), PackedInt32Array(115, 106, 105), PackedInt32Array(284, 115, 114, 285), PackedInt32Array(260, 284, 285), PackedInt32Array(260, 90, 286), PackedInt32Array(260, 286, 250), PackedInt32Array(260, 250, 251), PackedInt32Array(260, 251, 282), PackedInt32Array(261, 260, 282), PackedInt32Array(97, 261, 282), PackedInt32Array(283, 24, 287, 2), PackedInt32Array(2, 287, 111, 3), PackedInt32Array(0, 3, 51), PackedInt32Array(0, 51, 50), PackedInt32Array(0, 50, 16)])
+cell_size = 6.0
+agent_radius = 15.0
+
+[node name="Main" type="Node2D" unique_id=151308185]
+position = Vector2(3, 0)
+
+[node name="Camera" type="Camera2D" parent="." unique_id=585395039 groups=["camera"]]
+offset = Vector2(-4600, 550)
+script = ExtResource("1_al7p5")
+bounds_min = Vector2(-10000, -5000)
+bounds_max = Vector2(10000, 5000)
+
+[node name="LevelBounds" type="Node2D" parent="." unique_id=904357471]
+position = Vector2(0, 3)
+script = ExtResource("2_c7vnq")
+bounds_min = Vector2(-10000, -5000)
+bounds_max = Vector2(10000, 5000)
+
+[node name="LevelConfig" type="Node2D" parent="." unique_id=1080841229]
+position = Vector2(-3, 3)
+script = ExtResource("3_jyqd8")
+zombie_speed = 140.0
+fire_cooldown = Array[float]([0.0, 1.0, 0.8, 0.6])
+chain_scan_radius = 150.0
+feral_offaxis_penalty = 1.5
+cower_window = 1.2
+release_aim_radius = 50.0
+mark_radius = 300.0
+metadata/_custom_type_script = "uid://dlqe4p8ushalq"
+
+[node name="Initializer" type="Node" parent="." unique_id=1515215272]
+script = ExtResource("4_njf6h")
+enabled = false
+
+[node name="GameManager" type="Node" parent="." unique_id=1045185710 groups=["game_manager"]]
+script = ExtResource("5_7edwk")
+zombie_scene = ExtResource("6_pryu5")
+human_scene = ExtResource("7_gspim")
+
+[node name="VisionRenderer" type="Node2D" parent="." unique_id=1618763304]
+z_index = 1
+script = ExtResource("8_m5gy6")
+
+[node name="TestLevel" type="Node2D" parent="." unique_id=2129652431]
+
+[node name="Perimeter" type="Node2D" parent="TestLevel" unique_id=2013940577]
+metadata/_edit_lock_ = true
+
+[node name="Building" parent="TestLevel/Perimeter" unique_id=1238611686 instance=ExtResource("9_jw32b")]
+position = Vector2(-5453, 506)
+building_width = 20.0
+building_height = 780.0
+metadata/_edit_lock_ = true
+
+[node name="Building3" parent="TestLevel/Perimeter" unique_id=1313281490 instance=ExtResource("9_jw32b")]
+position = Vector2(-3789, -772)
+building_width = 20.0
+building_height = 1800.0
+metadata/_edit_lock_ = true
+
+[node name="Building2" parent="TestLevel/Perimeter" unique_id=266569287 instance=ExtResource("9_jw32b")]
+position = Vector2(-4623, 119)
+building_width = 1680.0
+building_height = 20.0
+metadata/_edit_lock_ = true
+
+[node name="Building18" parent="TestLevel/Perimeter" unique_id=657341129 instance=ExtResource("9_jw32b")]
+position = Vector2(-1279, -1665)
+rotation = 1.5707964
+building_width = 20.0
+building_height = 5000.0
+metadata/_edit_lock_ = true
+
+[node name="Building19" parent="TestLevel/Perimeter" unique_id=775770529 instance=ExtResource("9_jw32b")]
+position = Vector2(2921, -1665)
+rotation = 1.5707964
+building_width = 20.0
+building_height = 3400.0
+metadata/_edit_lock_ = true
+
+[node name="water barrier 1" parent="TestLevel/Perimeter" unique_id=1043966297 instance=ExtResource("9_jw32b")]
+position = Vector2(-2963, 906)
+rotation = 1.5707964
+building_color = Color(0.14901961, 0.32941177, 0.4627451, 1)
+building_width = 20.0
+building_height = 5000.0
+
+[node name="water barrier 2" parent="TestLevel/Perimeter" unique_id=2104407117 instance=ExtResource("9_jw32b")]
+position = Vector2(2037, 906)
+rotation = 1.5707964
+building_color = Color(0.14901961, 0.32941177, 0.4627451, 1)
+building_width = 20.0
+building_height = 5000.0
+
+[node name="water barrier 3" parent="TestLevel/Perimeter" unique_id=1312585228 instance=ExtResource("9_jw32b")]
+position = Vector2(4574, 906)
+rotation = 1.5707964
+building_color = Color(0.14901961, 0.32941177, 0.4627451, 1)
+building_width = 20.0
+building_height = 80.0
+
+[node name="Grounds" type="Node" parent="TestLevel" unique_id=1919347183]
+
+[node name="Ground 1" type="Polygon2D" parent="TestLevel/Grounds" unique_id=922269539]
+z_index = -1
+position = Vector2(725.00006, 1170)
+scale = Vector2(0.9801489, 0.6009627)
+color = Color(0.20392157, 0.30588236, 0.20392157, 1)
+polygon = PackedVector2Array(-6289.86, -1733.8845, -4592.159, -1733.8845, -4592.159, -455.93506, -6289.86, -455.93506)
+metadata/_edit_lock_ = true
+
+[node name="Ground 6" type="Polygon2D" parent="TestLevel/Grounds" unique_id=356460888]
+z_index = -1
+position = Vector2(24767, 2728)
+scale = Vector2(4.554263, 2.5189264)
+color = Color(0.20392157, 0.30588236, 0.20392157, 1)
+polygon = PackedVector2Array(-6267.217, -1740.2446, -5352.3164, -1740.2448, -4424.548, -1740.2446, -4424.548, -726.32056, -6267.217, -726.32056)
+metadata/_edit_lock_ = true
+
+[node name="Water" type="Polygon2D" parent="TestLevel/Grounds" unique_id=1423909727]
+z_index = -1
+position = Vector2(6275.319, 3288.0002)
+scale = Vector2(1.7649405, 1.2810732)
+color = Color(0.11532649, 0.3324995, 0.48461342, 1)
+polygon = PackedVector2Array(-6649.13, -1867.1844, -940.07324, -1867.1844, -940.07324, -1467.5195, -6649.13, -1467.5195)
+metadata/_edit_lock_ = true
+
+[node name="Shelters" type="Node2D" parent="TestLevel" unique_id=1039592102]
+
+[node name="ShelterBuilding" type="Polygon2D" parent="TestLevel/Shelters" unique_id=1228247797]
+position = Vector2(-3799, 208)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(-152, -80, 24, -80, 24, -208, 152, -208, 152, -15.689026, 280, -16, 280, 112, 152, 112, -152, 112)
+script = ExtResource("10_rgf7u")
+wall_color = Color(0.19917181, 0.2016859, 0.20671391, 1)
+wall_thickness = 10.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="Door" type="Node2D" parent="TestLevel/Shelters/ShelterBuilding" unique_id=928742559]
+position = Vector2(-40, 112)
+rotation = 3.1415927
+script = ExtResource("11_ros3m")
+door_color = Color(0.48690546, 0.3083103, 0.16153252, 1)
+thickness = 10.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Door2" type="Node2D" parent="TestLevel/Shelters/ShelterBuilding" unique_id=928531327]
+position = Vector2(120, 112)
+rotation = 3.1415927
+script = ExtResource("11_ros3m")
+door_color = Color(0.48690546, 0.3083103, 0.16153252, 1)
+thickness = 10.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Door3" type="Node2D" parent="TestLevel/Shelters/ShelterBuilding" unique_id=903017513]
+position = Vector2(56, -208)
+script = ExtResource("11_ros3m")
+door_color = Color(0.48690546, 0.3083103, 0.16153252, 1)
+thickness = 10.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Wall" type="Polygon2D" parent="TestLevel/Shelters/ShelterBuilding" unique_id=1010749527]
+position = Vector2(125.00001, -77)
+scale = Vector2(0.21999899, 0.019999804)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-100, -100, 28.419434, -100, 100, -100, 100, 100, -100, 100)
+script = ExtResource("12_xnr4k")
+wall_thickness = 50.0
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall2" type="Polygon2D" parent="TestLevel/Shelters/ShelterBuilding" unique_id=1939939518]
+position = Vector2(46.5, -77)
+scale = Vector2(0.17499757, 0.019999804)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-100, -100, 28.419434, -100, 100, -100, 100, 100, -100, 100)
+script = ExtResource("12_xnr4k")
+wall_thickness = 50.0
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall3" type="Polygon2D" parent="TestLevel/Shelters/ShelterBuilding" unique_id=62499192]
+position = Vector2(149, 9.541557)
+rotation = 1.5707964
+scale = Vector2(0.20041461, 0.019999804)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-100, -100, 100, -100, 100, 100, -100, 100)
+script = ExtResource("12_xnr4k")
+wall_thickness = 50.0
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall4" type="Polygon2D" parent="TestLevel/Shelters/ShelterBuilding" unique_id=262739550]
+position = Vector2(149, 90)
+rotation = 1.5707964
+scale = Vector2(0.17499757, 0.019999804)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-100, -100, 28.419434, -100, 100, -100, 100, 100, -100, 100)
+script = ExtResource("12_xnr4k")
+wall_thickness = 50.0
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="ShelterSpot" type="Node2D" parent="TestLevel/Shelters/ShelterBuilding" unique_id=1616049570]
+position = Vector2(130, -99)
+script = ExtResource("13_cfd3t")
+
+[node name="ShelterSpot3" type="Node2D" parent="TestLevel/Shelters/ShelterBuilding" unique_id=2027815951]
+position = Vector2(164, 88)
+script = ExtResource("13_cfd3t")
+
+[node name="ShelterSpot4" type="Node2D" parent="TestLevel/Shelters/ShelterBuilding" unique_id=490529197]
+position = Vector2(164, 9)
+script = ExtResource("13_cfd3t")
+
+[node name="ShelterSpot5" type="Node2D" parent="TestLevel/Shelters/ShelterBuilding" unique_id=814329648]
+position = Vector2(44, -96)
+script = ExtResource("13_cfd3t")
+
+[node name="ShelterSpot6" type="Node2D" parent="TestLevel/Shelters/ShelterBuilding" unique_id=1546466609]
+position = Vector2(-132, 88)
+script = ExtResource("13_cfd3t")
+
+[node name="ShelterSpot2" type="Node2D" parent="TestLevel/Shelters/ShelterBuilding" unique_id=189482154]
+position = Vector2(-132, -62)
+rotation = 1.1833333
+script = ExtResource("13_cfd3t")
+is_guard = true
+
+[node name="Encounters" type="Node2D" parent="TestLevel" unique_id=985347166]
+
+[node name="Marketplace" type="Node2D" parent="TestLevel/Encounters" unique_id=703232030]
+auto_translate_mode = 2
+position = Vector2(-4635, 496)
+
+[node name="Building" parent="TestLevel/Encounters/Marketplace" unique_id=431539980 instance=ExtResource("9_jw32b")]
+position = Vector2(-668, -222)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building2" parent="TestLevel/Encounters/Marketplace" unique_id=2048175953 instance=ExtResource("9_jw32b")]
+position = Vector2(-411, -221)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building3" parent="TestLevel/Encounters/Marketplace" unique_id=1714535122 instance=ExtResource("9_jw32b")]
+position = Vector2(-138, -221)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building4" parent="TestLevel/Encounters/Marketplace" unique_id=1782532239 instance=ExtResource("9_jw32b")]
+position = Vector2(136, -223)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building5" parent="TestLevel/Encounters/Marketplace" unique_id=2052112061 instance=ExtResource("9_jw32b")]
+position = Vector2(-668, -29)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building6" parent="TestLevel/Encounters/Marketplace" unique_id=437772750 instance=ExtResource("9_jw32b")]
+position = Vector2(-412, -29)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building7" parent="TestLevel/Encounters/Marketplace" unique_id=633687173 instance=ExtResource("9_jw32b")]
+position = Vector2(-139, -29)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building8" parent="TestLevel/Encounters/Marketplace" unique_id=109327762 instance=ExtResource("9_jw32b")]
+position = Vector2(135, -31)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building9" parent="TestLevel/Encounters/Marketplace" unique_id=187650118 instance=ExtResource("9_jw32b")]
+position = Vector2(-668, 163)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building13" parent="TestLevel/Encounters/Marketplace" unique_id=964717275 instance=ExtResource("9_jw32b")]
+position = Vector2(-736, 312)
+rotation = 1.5707964
+building_width = 20.0
+
+[node name="Building14" parent="TestLevel/Encounters/Marketplace" unique_id=418616066 instance=ExtResource("9_jw32b")]
+position = Vector2(408, -65)
+rotation = 1.5707964
+building_width = 400.0
+building_height = 20.0
+
+[node name="Building15" parent="TestLevel/Encounters/Marketplace" unique_id=1519452758 instance=ExtResource("9_jw32b")]
+position = Vector2(408, 323)
+rotation = 1.5707964
+building_width = 150.0
+building_height = 20.0
+
+[node name="Building10" parent="TestLevel/Encounters/Marketplace" unique_id=245562942 instance=ExtResource("9_jw32b")]
+position = Vector2(-412, 163)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building11" parent="TestLevel/Encounters/Marketplace" unique_id=2117522383 instance=ExtResource("9_jw32b")]
+position = Vector2(-139, 163)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building12" parent="TestLevel/Encounters/Marketplace" unique_id=1438688304 instance=ExtResource("9_jw32b")]
+position = Vector2(135, 161)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building16" parent="TestLevel/Encounters/Marketplace" unique_id=1893476948 instance=ExtResource("9_jw32b")]
+position = Vector2(-539, -221)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building17" parent="TestLevel/Encounters/Marketplace" unique_id=1246999174 instance=ExtResource("9_jw32b")]
+position = Vector2(-268, -220)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building18" parent="TestLevel/Encounters/Marketplace" unique_id=181510328 instance=ExtResource("9_jw32b")]
+position = Vector2(-9, -220)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building19" parent="TestLevel/Encounters/Marketplace" unique_id=310004511 instance=ExtResource("9_jw32b")]
+position = Vector2(281, -222)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building20" parent="TestLevel/Encounters/Marketplace" unique_id=2027857053 instance=ExtResource("9_jw32b")]
+position = Vector2(-539, -28)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building21" parent="TestLevel/Encounters/Marketplace" unique_id=258233555 instance=ExtResource("9_jw32b")]
+position = Vector2(-269, -28)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building22" parent="TestLevel/Encounters/Marketplace" unique_id=1857852127 instance=ExtResource("9_jw32b")]
+position = Vector2(-10, -28)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building23" parent="TestLevel/Encounters/Marketplace" unique_id=367841871 instance=ExtResource("9_jw32b")]
+position = Vector2(280, -30)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building24" parent="TestLevel/Encounters/Marketplace" unique_id=2127807904 instance=ExtResource("9_jw32b")]
+position = Vector2(-539, 164)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building25" parent="TestLevel/Encounters/Marketplace" unique_id=73139490 instance=ExtResource("9_jw32b")]
+position = Vector2(-269, 164)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building26" parent="TestLevel/Encounters/Marketplace" unique_id=1606651292 instance=ExtResource("9_jw32b")]
+position = Vector2(-10, 164)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Building27" parent="TestLevel/Encounters/Marketplace" unique_id=922034351 instance=ExtResource("9_jw32b")]
+position = Vector2(280, 162)
+rotation = 1.5707964
+building_height = 80.0
+
+[node name="Human" parent="TestLevel/Encounters/Marketplace" unique_id=1346925049 instance=ExtResource("7_gspim")]
+position = Vector2(-681, -303)
+
+[node name="Human7" parent="TestLevel/Encounters/Marketplace" unique_id=891522994 instance=ExtResource("7_gspim")]
+position = Vector2(-679, 86)
+
+[node name="Human2" parent="TestLevel/Encounters/Marketplace" unique_id=492860750 instance=ExtResource("7_gspim")]
+position = Vector2(-633, -303)
+
+[node name="Human3" parent="TestLevel/Encounters/Marketplace" unique_id=1332870171 instance=ExtResource("7_gspim")]
+position = Vector2(184, -144)
+
+[node name="Human6" parent="TestLevel/Encounters/Marketplace" unique_id=109390815 instance=ExtResource("7_gspim")]
+position = Vector2(224, -112)
+
+[node name="Human9" parent="TestLevel/Encounters/Marketplace" unique_id=657601774 instance=ExtResource("7_gspim")]
+position = Vector2(467, -232)
+
+[node name="Human10" parent="TestLevel/Encounters/Marketplace" unique_id=10282110 instance=ExtResource("7_gspim")]
+position = Vector2(499, -174)
+
+[node name="Human11" parent="TestLevel/Encounters/Marketplace" unique_id=670300872 instance=ExtResource("7_gspim")]
+position = Vector2(603, -240)
+
+[node name="Human12" parent="TestLevel/Encounters/Marketplace" unique_id=1760901091 instance=ExtResource("7_gspim")]
+position = Vector2(538, -216)
+
+[node name="Human21" parent="TestLevel/Encounters/Marketplace" unique_id=508260461 instance=ExtResource("7_gspim")]
+position = Vector2(904, -86)
+
+[node name="Human23" parent="TestLevel/Encounters/Marketplace" unique_id=776979720 instance=ExtResource("7_gspim")]
+position = Vector2(816, -138)
+
+[node name="Human17" parent="TestLevel/Encounters/Marketplace" unique_id=619426548 instance=ExtResource("7_gspim")]
+position = Vector2(957, -81)
+
+[node name="Human19" parent="TestLevel/Encounters/Marketplace" unique_id=145459137 instance=ExtResource("7_gspim")]
+position = Vector2(940, -138)
+
+[node name="Human13" parent="TestLevel/Encounters/Marketplace" unique_id=993595331 instance=ExtResource("7_gspim")]
+position = Vector2(880, 320)
+
+[node name="Human14" parent="TestLevel/Encounters/Marketplace" unique_id=2047789656 instance=ExtResource("7_gspim")]
+position = Vector2(824, 320)
+
+[node name="Human4" parent="TestLevel/Encounters/Marketplace" unique_id=781958277 instance=ExtResource("7_gspim")]
+position = Vector2(-160, 86)
+
+[node name="Human5" parent="TestLevel/Encounters/Marketplace" unique_id=990453821 instance=ExtResource("7_gspim")]
+position = Vector2(373, -45)
+
+[node name="Human8" parent="TestLevel/Encounters/Marketplace" unique_id=267130342 instance=ExtResource("7_gspim")]
+position = Vector2(744, -144)
+defender_class = 1
+
+[node name="Human16" parent="TestLevel/Encounters/Marketplace" unique_id=235301917 instance=ExtResource("7_gspim")]
+position = Vector2(445, 287)
+defender_class = 1
+
+[node name="Human15" parent="TestLevel/Encounters/Marketplace" unique_id=1450355823 instance=ExtResource("7_gspim")]
+position = Vector2(444, 98)
+defender_class = 1
+
+[node name="Zombie" parent="TestLevel/Encounters/Marketplace" unique_id=818075516 instance=ExtResource("6_pryu5")]
+position = Vector2(-768, 362)
+
+[node name="Choice" type="Node2D" parent="TestLevel/Encounters" unique_id=28036015]
+position = Vector2(-2283, 544)
+
+[node name="EscapeZone" parent="TestLevel/Encounters/Choice" unique_id=1179168205 instance=ExtResource("14_nf0t1")]
+position = Vector2(8, 539)
+zone_size = Vector2(200, 500)
+
+[node name="Building5" parent="TestLevel/Encounters/Choice" unique_id=1908386343 instance=ExtResource("9_jw32b")]
+position = Vector2(8, -424)
+building_width = 20.0
+building_height = 950.0
+
+[node name="Building6" parent="TestLevel/Encounters/Choice" unique_id=1605010739 instance=ExtResource("9_jw32b")]
+position = Vector2(748, -430)
+building_width = 20.0
+building_height = 950.0
+
+[node name="Building7" parent="TestLevel/Encounters/Choice" unique_id=1237971496 instance=ExtResource("9_jw32b")]
+position = Vector2(-732, -421)
+building_width = 20.0
+building_height = 950.0
+
+[node name="Building2" parent="TestLevel/Encounters/Choice" unique_id=1591507050 instance=ExtResource("9_jw32b")]
+position = Vector2(-516, 46)
+building_width = 450.0
+building_height = 20.0
+
+[node name="Building3" parent="TestLevel/Encounters/Choice" unique_id=408778102 instance=ExtResource("9_jw32b")]
+position = Vector2(9, 46)
+building_width = 300.0
+building_height = 20.0
+
+[node name="Building4" parent="TestLevel/Encounters/Choice" unique_id=1598344411 instance=ExtResource("9_jw32b")]
+position = Vector2(534, 46)
+building_width = 450.0
+building_height = 20.0
+
+[node name="Building8" parent="TestLevel/Encounters/Choice" unique_id=1459409108 instance=ExtResource("9_jw32b")]
+position = Vector2(-517, -893)
+building_width = 450.0
+building_height = 20.0
+
+[node name="Building9" parent="TestLevel/Encounters/Choice" unique_id=633534549 instance=ExtResource("9_jw32b")]
+position = Vector2(9, -893)
+building_width = 450.0
+building_height = 20.0
+
+[node name="Building10" parent="TestLevel/Encounters/Choice" unique_id=1831716181 instance=ExtResource("9_jw32b")]
+position = Vector2(534, -893)
+building_width = 450.0
+building_height = 20.0
+
+[node name="Human12" parent="TestLevel/Encounters/Choice" unique_id=835387299 instance=ExtResource("7_gspim")]
+position = Vector2(-208, -704)
+defender_class = 3
+
+[node name="Human46" parent="TestLevel/Encounters/Choice" unique_id=89278023 instance=ExtResource("7_gspim")]
+position = Vector2(-320, -704)
+defender_class = 3
+
+[node name="Human47" parent="TestLevel/Encounters/Choice" unique_id=1226702578 instance=ExtResource("7_gspim")]
+position = Vector2(-191, -848)
+defender_class = 3
+
+[node name="ShelterBuilding2" type="Polygon2D" parent="TestLevel/Encounters/Choice" unique_id=1172187198]
+position = Vector2(-183, -374)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(-536, -290, 176, -290, 176, 102, -536, 102)
+script = ExtResource("10_rgf7u")
+wall_thickness = 10.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+metadata/_edit_lock_ = true
+
+[node name="Door" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding2" unique_id=21889896]
+position = Vector2(-79.78708, -290)
+script = ExtResource("11_ros3m")
+door_width = 61.0
+thickness = 10.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="ShelterSpot" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding2" unique_id=1064766384]
+position = Vector2(151, 78)
+rotation = -2.2148228
+script = ExtResource("13_cfd3t")
+is_guard = true
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot5" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding2" unique_id=1854590520]
+position = Vector2(23, -266)
+rotation = -3.10145
+script = ExtResource("13_cfd3t")
+is_guard = true
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot6" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding2" unique_id=140641626]
+position = Vector2(-385, -226)
+rotation = -0.34382987
+script = ExtResource("13_cfd3t")
+is_guard = true
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot2" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding2" unique_id=1779936054]
+position = Vector2(-505, -202.00002)
+rotation = -2.2148228
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot3" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding2" unique_id=768460888]
+position = Vector2(-497, -250.00003)
+rotation = -2.2148228
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot4" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding2" unique_id=1473944284]
+position = Vector2(-449, -234)
+rotation = -2.2148228
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot7" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding2" unique_id=418711073]
+position = Vector2(-435, -114)
+rotation = -2.2148228
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot8" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding2" unique_id=1144116310]
+position = Vector2(-487, -112)
+rotation = -2.2148228
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot9" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding2" unique_id=802688555]
+position = Vector2(-385, 35)
+rotation = -2.2148228
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot10" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding2" unique_id=423073663]
+position = Vector2(-435, 36)
+rotation = -2.2148228
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot11" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding2" unique_id=442393907]
+position = Vector2(-390, -114)
+rotation = -2.2148228
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot12" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding2" unique_id=732571096]
+position = Vector2(-487, 35.999985)
+rotation = -2.2148228
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="Wall" type="Polygon2D" parent="TestLevel/Encounters/Choice/ShelterBuilding2" unique_id=51124043]
+position = Vector2(-435, -258)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-96, 88, 106, 88, 106, 96, -96, 96)
+script = ExtResource("12_xnr4k")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall2" type="Polygon2D" parent="TestLevel/Encounters/Choice/ShelterBuilding2" unique_id=1563492066]
+position = Vector2(-241, -8)
+rotation = 1.5707964
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-96, 88, 23.122849, 88, 104, 88, 104, 96, -96, 96)
+script = ExtResource("12_xnr4k")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Human48" parent="TestLevel/Encounters/Choice/ShelterBuilding2" unique_id=227848771 instance=ExtResource("7_gspim")]
+position = Vector2(-497, -250)
+
+[node name="Human49" parent="TestLevel/Encounters/Choice/ShelterBuilding2" unique_id=1460046363 instance=ExtResource("7_gspim")]
+position = Vector2(-505, -202)
+
+[node name="Human50" parent="TestLevel/Encounters/Choice/ShelterBuilding2" unique_id=610461203 instance=ExtResource("7_gspim")]
+position = Vector2(-449, -234)
+
+[node name="Human51" parent="TestLevel/Encounters/Choice/ShelterBuilding2" unique_id=279136137 instance=ExtResource("7_gspim")]
+position = Vector2(-487, 36)
+
+[node name="Human52" parent="TestLevel/Encounters/Choice/ShelterBuilding2" unique_id=444000911 instance=ExtResource("7_gspim")]
+position = Vector2(-435, 35)
+
+[node name="Human53" parent="TestLevel/Encounters/Choice/ShelterBuilding2" unique_id=509140269 instance=ExtResource("7_gspim")]
+position = Vector2(-385, 35)
+
+[node name="Human54" parent="TestLevel/Encounters/Choice/ShelterBuilding2" unique_id=1777562945 instance=ExtResource("7_gspim")]
+position = Vector2(-487, -114)
+
+[node name="Human55" parent="TestLevel/Encounters/Choice/ShelterBuilding2" unique_id=2132533178 instance=ExtResource("7_gspim")]
+position = Vector2(-390, -113)
+
+[node name="Human56" parent="TestLevel/Encounters/Choice/ShelterBuilding2" unique_id=1121222946 instance=ExtResource("7_gspim")]
+position = Vector2(-441, -114)
+
+[node name="Door2" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding2" unique_id=544528106]
+position = Vector2(-33, 102)
+rotation = 3.1415927
+script = ExtResource("11_ros3m")
+door_width = 96.0
+thickness = 10.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="ShelterBuilding3" type="Polygon2D" parent="TestLevel/Encounters/Choice" unique_id=1037993946]
+position = Vector2(584, -568)
+scale = Vector2(0.999997, 1)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(-566.0023, -96, 152.72688, -96, 153.99988, 408, -90.57692, 408, -566.0023, 408)
+script = ExtResource("10_rgf7u")
+wall_thickness = 10.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="Door" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=536755241]
+position = Vector2(-0.07944777, -96)
+script = ExtResource("11_ros3m")
+door_width = 64.0
+thickness = 10.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Door2" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1964799750]
+position = Vector2(-480.14142, 408)
+rotation = 3.1415927
+script = ExtResource("11_ros3m")
+door_width = 94.0
+thickness = 10.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Door3" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1913822049]
+position = Vector2(-357.36096, 408)
+rotation = 3.1415927
+script = ExtResource("11_ros3m")
+door_width = 107.0
+thickness = 10.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="ShelterSpot" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=21613430]
+position = Vector2(-470.15924, 358)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot2" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1313669434]
+position = Vector2(-500.10565, 312)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot3" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=248671196]
+position = Vector2(-452.19135, 272)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot4" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=709639315]
+position = Vector2(-396.29132, 283)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot5" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=506986204]
+position = Vector2(-386.30917, 317)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot6" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1619849244]
+position = Vector2(-340.3913, 352)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot7" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=744884175]
+position = Vector2(-418.25204, 368)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot8" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1708669890]
+position = Vector2(-294.47342, 376)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot9" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=109837885]
+position = Vector2(-301.46094, 308)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot10" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=564698890]
+position = Vector2(-340.3913, 269)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot11" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1126742754]
+position = Vector2(-472.15567, 74)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot12" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1807385426]
+position = Vector2(-502.1021, 28)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot13" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1775672390]
+position = Vector2(-454.1878, -12)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot14" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=2141614897]
+position = Vector2(-398.28778, -1)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot15" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1721006263]
+position = Vector2(-388.3056, 33)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot16" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=266658480]
+position = Vector2(-342.38773, 68)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot17" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=513038291]
+position = Vector2(-420.24847, 84)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot18" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=755650952]
+position = Vector2(-296.46982, 92)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot19" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=680189832]
+position = Vector2(-303.45737, 24)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot20" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=543441286]
+position = Vector2(-342.38773, -15)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot21" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=695133588]
+position = Vector2(-222.60194, 64)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot22" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=554172288]
+position = Vector2(-252.54837, 18)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot23" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=2125601085]
+position = Vector2(-204.63405, -22)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot24" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1646529568]
+position = Vector2(-148.73401, -11)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot25" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=556757140]
+position = Vector2(-138.75188, 23)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot26" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=2100177875]
+position = Vector2(-92.83399, 58)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot27" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1717348437]
+position = Vector2(-170.69475, 74)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot28" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1327635295]
+position = Vector2(-46.916103, 82)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot29" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1421384773]
+position = Vector2(-53.903606, 14)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot30" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1622138018]
+position = Vector2(-92.83399, -25)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot31" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1944786822]
+position = Vector2(-108.80543, 205)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot32" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1814800628]
+position = Vector2(-138.75188, 159)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot33" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=230333790]
+position = Vector2(-90.837555, 119)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot34" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1731087152]
+position = Vector2(-34.93752, 130)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot35" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1961448894]
+position = Vector2(-24.955376, 164)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot36" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1690729293]
+position = Vector2(20.962513, 199)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot37" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1551654133]
+position = Vector2(-56.89825, 215)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot38" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1437837923]
+position = Vector2(66.8804, 223)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot39" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=824828729]
+position = Vector2(59.8929, 155)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot40" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1407576325]
+position = Vector2(20.962513, 116)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot41" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=518612887]
+position = Vector2(-176.68404, 342)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot42" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1521638712]
+position = Vector2(-206.63048, 296)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot43" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1205033898]
+position = Vector2(-158.71617, 256)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot44" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1752614863]
+position = Vector2(-102.81613, 267)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot45" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1319883747]
+position = Vector2(-92.83399, 301)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot46" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=872118175]
+position = Vector2(-46.916103, 336)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot47" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1342207673]
+position = Vector2(-124.77686, 352)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot48" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=976349127]
+position = Vector2(-0.9982149, 360)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot49" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=7762985]
+position = Vector2(-7.985719, 292)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot50" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=974637775]
+position = Vector2(-46.916103, 253)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot51" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=971150035]
+position = Vector2(-340.3913, 230)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot52" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1067696039]
+position = Vector2(-370.3377, 184)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot53" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=134264651]
+position = Vector2(-322.4234, 144)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot54" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=282256449]
+position = Vector2(-266.5234, 155)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot55" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1907940952]
+position = Vector2(-256.54123, 189)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot56" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=1959738470]
+position = Vector2(-210.62335, 224)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot57" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=336293973]
+position = Vector2(-288.4841, 240)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot58" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=844959372]
+position = Vector2(-164.70546, 248)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot59" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=939684556]
+position = Vector2(-171.69296, 180)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="ShelterSpot60" type="Node2D" parent="TestLevel/Encounters/Choice/ShelterBuilding3" unique_id=418974933]
+position = Vector2(-210.62335, 141)
+script = ExtResource("13_cfd3t")
+metadata/_custom_type_script = "uid://c545o5pp1k361"
+
+[node name="Zombie" parent="TestLevel/Encounters/Choice" unique_id=713552506 instance=ExtResource("6_pryu5")]
+position = Vector2(40, -936)
+
+[node name="Zombie2" parent="TestLevel/Encounters/Choice" unique_id=1985159310 instance=ExtResource("6_pryu5")]
+position = Vector2(72, -952)
+
+[node name="Zombie3" parent="TestLevel/Encounters/Choice" unique_id=1841758551 instance=ExtResource("6_pryu5")]
+position = Vector2(30, -984)
+
+[node name="Zombie4" parent="TestLevel/Encounters/Choice" unique_id=1558845217 instance=ExtResource("6_pryu5")]
+position = Vector2(62, -1000)
+
+[node name="Zombie5" parent="TestLevel/Encounters/Choice" unique_id=1681692368 instance=ExtResource("6_pryu5")]
+position = Vector2(115, -952)
+
+[node name="Zombie6" parent="TestLevel/Encounters/Choice" unique_id=235960800 instance=ExtResource("6_pryu5")]
+position = Vector2(147, -968)
+
+[node name="Zombie7" parent="TestLevel/Encounters/Choice" unique_id=1381397805 instance=ExtResource("6_pryu5")]
+position = Vector2(105, -1000)
+
+[node name="Zombie8" parent="TestLevel/Encounters/Choice" unique_id=542977553 instance=ExtResource("6_pryu5")]
+position = Vector2(137, -1016)
+
+[node name="Zombie9" parent="TestLevel/Encounters/Choice" unique_id=229266809 instance=ExtResource("6_pryu5")]
+position = Vector2(-5, -1024)
+
+[node name="Zombie10" parent="TestLevel/Encounters/Choice" unique_id=853603537 instance=ExtResource("6_pryu5")]
+position = Vector2(27, -1040)
+
+[node name="Zombie11" parent="TestLevel/Encounters/Choice" unique_id=126703037 instance=ExtResource("6_pryu5")]
+position = Vector2(-15, -1072)
+
+[node name="Zombie12" parent="TestLevel/Encounters/Choice" unique_id=788703534 instance=ExtResource("6_pryu5")]
+position = Vector2(17, -1088)
+
+[node name="Zombie13" parent="TestLevel/Encounters/Choice" unique_id=1560722099 instance=ExtResource("6_pryu5")]
+position = Vector2(70, -1040)
+
+[node name="Zombie14" parent="TestLevel/Encounters/Choice" unique_id=1807299190 instance=ExtResource("6_pryu5")]
+position = Vector2(102, -1056)
+
+[node name="Zombie15" parent="TestLevel/Encounters/Choice" unique_id=510163616 instance=ExtResource("6_pryu5")]
+position = Vector2(60, -1088)
+
+[node name="Zombie16" parent="TestLevel/Encounters/Choice" unique_id=759116383 instance=ExtResource("6_pryu5")]
+position = Vector2(92, -1104)
+
+[node name="Human" parent="TestLevel/Encounters/Choice" unique_id=1674429368 instance=ExtResource("7_gspim")]
+position = Vector2(72, -393)
+
+[node name="Human2" parent="TestLevel/Encounters/Choice" unique_id=1640228374 instance=ExtResource("7_gspim")]
+position = Vector2(129, -376)
+
+[node name="Human3" parent="TestLevel/Encounters/Choice" unique_id=526461738 instance=ExtResource("7_gspim")]
+position = Vector2(87, -324)
+
+[node name="Human4" parent="TestLevel/Encounters/Choice" unique_id=1491404711 instance=ExtResource("7_gspim")]
+position = Vector2(154, -322)
+
+[node name="Human5" parent="TestLevel/Encounters/Choice" unique_id=1863008370 instance=ExtResource("7_gspim")]
+position = Vector2(171, -401)
+
+[node name="Human6" parent="TestLevel/Encounters/Choice" unique_id=566943519 instance=ExtResource("7_gspim")]
+position = Vector2(225, -344)
+
+[node name="Human7" parent="TestLevel/Encounters/Choice" unique_id=794040606 instance=ExtResource("7_gspim")]
+position = Vector2(162, -237)
+
+[node name="Human8" parent="TestLevel/Encounters/Choice" unique_id=893835349 instance=ExtResource("7_gspim")]
+position = Vector2(248, -260)
+
+[node name="Human9" parent="TestLevel/Encounters/Choice" unique_id=619632372 instance=ExtResource("7_gspim")]
+position = Vector2(289, -207)
+
+[node name="Human10" parent="TestLevel/Encounters/Choice" unique_id=1602608901 instance=ExtResource("7_gspim")]
+position = Vector2(298, -349)
+
+[node name="Human11" parent="TestLevel/Encounters/Choice" unique_id=248080746 instance=ExtResource("7_gspim")]
+position = Vector2(206, -192)
+
+[node name="Human13" parent="TestLevel/Encounters/Choice" unique_id=1605351673 instance=ExtResource("7_gspim")]
+position = Vector2(139, -594)
+
+[node name="Human14" parent="TestLevel/Encounters/Choice" unique_id=678208200 instance=ExtResource("7_gspim")]
+position = Vector2(196, -577)
+
+[node name="Human15" parent="TestLevel/Encounters/Choice" unique_id=2123596434 instance=ExtResource("7_gspim")]
+position = Vector2(154, -525)
+
+[node name="Human16" parent="TestLevel/Encounters/Choice" unique_id=1012463841 instance=ExtResource("7_gspim")]
+position = Vector2(221, -523)
+
+[node name="Human17" parent="TestLevel/Encounters/Choice" unique_id=450516609 instance=ExtResource("7_gspim")]
+position = Vector2(238, -602)
+
+[node name="Human18" parent="TestLevel/Encounters/Choice" unique_id=319756543 instance=ExtResource("7_gspim")]
+position = Vector2(292, -545)
+
+[node name="Human19" parent="TestLevel/Encounters/Choice" unique_id=818894083 instance=ExtResource("7_gspim")]
+position = Vector2(229, -438)
+
+[node name="Human20" parent="TestLevel/Encounters/Choice" unique_id=1028530715 instance=ExtResource("7_gspim")]
+position = Vector2(315, -461)
+
+[node name="Human21" parent="TestLevel/Encounters/Choice" unique_id=1221023326 instance=ExtResource("7_gspim")]
+position = Vector2(356, -408)
+
+[node name="Human22" parent="TestLevel/Encounters/Choice" unique_id=545018051 instance=ExtResource("7_gspim")]
+position = Vector2(365, -550)
+
+[node name="Human23" parent="TestLevel/Encounters/Choice" unique_id=1783841693 instance=ExtResource("7_gspim")]
+position = Vector2(273, -393)
+
+[node name="Human24" parent="TestLevel/Encounters/Choice" unique_id=1320085305 instance=ExtResource("7_gspim")]
+position = Vector2(456, -603)
+
+[node name="Human25" parent="TestLevel/Encounters/Choice" unique_id=1096245905 instance=ExtResource("7_gspim")]
+position = Vector2(513, -586)
+
+[node name="Human26" parent="TestLevel/Encounters/Choice" unique_id=2123846356 instance=ExtResource("7_gspim")]
+position = Vector2(471, -534)
+
+[node name="Human27" parent="TestLevel/Encounters/Choice" unique_id=1209976401 instance=ExtResource("7_gspim")]
+position = Vector2(538, -532)
+
+[node name="Human28" parent="TestLevel/Encounters/Choice" unique_id=1860270378 instance=ExtResource("7_gspim")]
+position = Vector2(555, -611)
+
+[node name="Human48" parent="TestLevel/Encounters/Choice" unique_id=1635514001 instance=ExtResource("7_gspim")]
+position = Vector2(534, -703)
+defender_class = 1
+
+[node name="Human49" parent="TestLevel/Encounters/Choice" unique_id=574351055 instance=ExtResource("7_gspim")]
+position = Vector2(635, -704)
+defender_class = 1
+
+[node name="Human29" parent="TestLevel/Encounters/Choice" unique_id=598907072 instance=ExtResource("7_gspim")]
+position = Vector2(609, -554)
+
+[node name="Human30" parent="TestLevel/Encounters/Choice" unique_id=195373483 instance=ExtResource("7_gspim")]
+position = Vector2(546, -447)
+
+[node name="Human31" parent="TestLevel/Encounters/Choice" unique_id=1866710576 instance=ExtResource("7_gspim")]
+position = Vector2(632, -470)
+
+[node name="Human32" parent="TestLevel/Encounters/Choice" unique_id=1079702002 instance=ExtResource("7_gspim")]
+position = Vector2(673, -417)
+
+[node name="Human33" parent="TestLevel/Encounters/Choice" unique_id=1606097721 instance=ExtResource("7_gspim")]
+position = Vector2(682, -559)
+
+[node name="Human34" parent="TestLevel/Encounters/Choice" unique_id=1364624261 instance=ExtResource("7_gspim")]
+position = Vector2(590, -402)
+
+[node name="Human35" parent="TestLevel/Encounters/Choice" unique_id=2099830652 instance=ExtResource("7_gspim")]
+position = Vector2(408, -400)
+
+[node name="Human36" parent="TestLevel/Encounters/Choice" unique_id=2078891917 instance=ExtResource("7_gspim")]
+position = Vector2(465, -383)
+
+[node name="Human37" parent="TestLevel/Encounters/Choice" unique_id=1888426245 instance=ExtResource("7_gspim")]
+position = Vector2(423, -331)
+
+[node name="Human38" parent="TestLevel/Encounters/Choice" unique_id=1044929631 instance=ExtResource("7_gspim")]
+position = Vector2(490, -329)
+
+[node name="Human39" parent="TestLevel/Encounters/Choice" unique_id=361369509 instance=ExtResource("7_gspim")]
+position = Vector2(507, -408)
+
+[node name="Human40" parent="TestLevel/Encounters/Choice" unique_id=1564475206 instance=ExtResource("7_gspim")]
+position = Vector2(561, -351)
+
+[node name="Human41" parent="TestLevel/Encounters/Choice" unique_id=2143422924 instance=ExtResource("7_gspim")]
+position = Vector2(498, -244)
+
+[node name="Human42" parent="TestLevel/Encounters/Choice" unique_id=315357964 instance=ExtResource("7_gspim")]
+position = Vector2(584, -267)
+
+[node name="Human43" parent="TestLevel/Encounters/Choice" unique_id=132640576 instance=ExtResource("7_gspim")]
+position = Vector2(625, -214)
+
+[node name="Human44" parent="TestLevel/Encounters/Choice" unique_id=1229923113 instance=ExtResource("7_gspim")]
+position = Vector2(634, -356)
+
+[node name="Human45" parent="TestLevel/Encounters/Choice" unique_id=1450931369 instance=ExtResource("7_gspim")]
+position = Vector2(542, -199)
+
+[node name="3rd - to be renamed" type="Node2D" parent="TestLevel/Encounters" unique_id=1319795464]
+position = Vector2(-3587, -532)
+
+[node name="Wall3" type="Polygon2D" parent="TestLevel/Encounters/3rd - to be renamed" unique_id=1337206859]
+position = Vector2(-27, 957)
+rotation = 1.5707964
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-105, -99, 471.00003, -99, 471.00003, -91, -105, -91)
+script = ExtResource("12_xnr4k")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall4" type="Polygon2D" parent="TestLevel/Encounters/3rd - to be renamed" unique_id=148784171]
+position = Vector2(-19, 251)
+rotation = 1.5707964
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-292.00003, -179, 420, -179, 468, -179, 476, -179, 476, -91, 468, -91, 468, -171, -292.00003, -171)
+script = ExtResource("12_xnr4k")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Human" parent="TestLevel/Encounters/3rd - to be renamed" unique_id=1938906450 instance=ExtResource("7_gspim")]
+position = Vector2(-24, 589)
+
+[node name="Human2" parent="TestLevel/Encounters/3rd - to be renamed" unique_id=1752893275 instance=ExtResource("7_gspim")]
+position = Vector2(8, 643)
+
+[node name="Human3" parent="TestLevel/Encounters/3rd - to be renamed" unique_id=1087749367 instance=ExtResource("7_gspim")]
+position = Vector2(25, 563)
+
+[node name="Wall" type="Polygon2D" parent="TestLevel/Encounters/3rd - to be renamed" unique_id=1379926254]
+position = Vector2(-48, 340)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-79, -96, -80, -128, 48, -128, 48, -112, -64, -112, -64, 128, -79, 128)
+script = ExtResource("12_xnr4k")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall2" type="Polygon2D" parent="TestLevel/Encounters/3rd - to be renamed" unique_id=1999183568]
+position = Vector2(-80, 20)
+rotation = 3.1415927
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-79, -96, -80, -128, 48, -128, 48, -112, -64, -112, -64, 128, -79, 128)
+script = ExtResource("12_xnr4k")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Escape Zones" type="Node" parent="TestLevel" unique_id=1359137202]
+
+[node name="Humans" type="Node" parent="TestLevel" unique_id=827267819]
+
+[node name="Zombies" type="Node" parent="TestLevel" unique_id=393150134]
+
+[node name="Units" type="Node2D" parent="." unique_id=1968361044 groups=["units_parent"]]
+
+[node name="SelectionManager" type="Node2D" parent="." unique_id=423906801 groups=["selection_manager"]]
+script = ExtResource("15_sk7bb")
+
+[node name="NavigationRegion" type="NavigationRegion2D" parent="." unique_id=257540646]
+visible = false
+navigation_polygon = SubResource("NavigationPolygon_yxdyl")
+script = ExtResource("16_ggltr")
+agent_radius = 15.0
+bake_cell_size = 6.0
+
+[node name="DebugOverlay" parent="." unique_id=468344591 instance=ExtResource("17_gb7bd")]
+
+[node name="EndGameOverlay" parent="." unique_id=2000451810 instance=ExtResource("18_5sngf")]
+visible = false
+
+[node name="Door" type="Node2D" parent="." unique_id=2061837351]
+position = Vector2(-2799, 37)
+rotation = 1.5707964
+script = ExtResource("11_ros3m")
+door_width = 58.0
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Door2" type="Node2D" parent="." unique_id=1137332666]
+position = Vector2(-2276, -704)
+script = ExtResource("11_ros3m")
+door_width = 201.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Wall" type="Polygon2D" parent="." unique_id=621647808]
+position = Vector2(-2674, 377)
+rotation = 1.5707964
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-100, -100, 100, -100, 100, -92, -100, -92)
+script = ExtResource("12_xnr4k")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall2" type="Polygon2D" parent="." unique_id=940584864]
+position = Vector2(-2672, 488)
+rotation = 1.5707964
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(28, -98, 92, -98, 92, -90, 28, -90)
+script = ExtResource("12_xnr4k")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"

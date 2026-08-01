@@ -1,0 +1,987 @@
+[gd_scene format=3 uid="uid://dsmxtd3pa64hp"]
+
+[ext_resource type="Script" uid="uid://3sf8250t3l5r" path="res://scripts/camera_controller.gd" id="1_ranx7"]
+[ext_resource type="Script" uid="uid://b112ultiv3ox0" path="res://scripts/level_bounds.gd" id="2_x8g7u"]
+[ext_resource type="Script" uid="uid://dlqe4p8ushalq" path="res://scripts/level_config.gd" id="3_x8g7u"]
+[ext_resource type="Script" uid="uid://crornii8mcmn3" path="res://scripts/initializer.gd" id="3_xvqv2"]
+[ext_resource type="Script" uid="uid://c7bww3rdcm8pt" path="res://scripts/game_manager.gd" id="4_xpoum"]
+[ext_resource type="PackedScene" uid="uid://c8yqh3jvpxn3w" path="res://scenes/zombie.tscn" id="5_sxbni"]
+[ext_resource type="PackedScene" uid="uid://brqxu82wy6h2r" path="res://scenes/human.tscn" id="6_8i2yc"]
+[ext_resource type="Script" uid="uid://c5fmdp1r7ticb" path="res://scripts/vision_renderer.gd" id="7_eis46"]
+[ext_resource type="PackedScene" uid="uid://bmw8qx5r2n8pk" path="res://scenes/building.tscn" id="8_l07ew"]
+[ext_resource type="Script" uid="uid://cax0dih7wnxe0" path="res://scripts/selection_manager.gd" id="11_8xmie"]
+[ext_resource type="Script" uid="uid://yd0ofoh8ih30" path="res://scripts/nav_baker.gd" id="11_g1k1b"]
+[ext_resource type="PackedScene" uid="uid://di2wxa5t7dmxv" path="res://scenes/UI/debug_overlay.tscn" id="12_irsvf"]
+[ext_resource type="PackedScene" uid="uid://cpxw4y8m7n5pk" path="res://scenes/UI/end_game_overlay.tscn" id="13_cu6wa"]
+[ext_resource type="PackedScene" uid="uid://bvx8qw2m7n5pk" path="res://scenes/escape_zone.tscn" id="14_ranx7"]
+[ext_resource type="Script" uid="uid://cvde25j0ujcg" path="res://scripts/wall.gd" id="14_wall"]
+
+[sub_resource type="NavigationPolygon" id="NavigationPolygon_x8g7u"]
+vertices = PackedVector2Array(883.25, -171.75, 614.75, -171.75, 614.75, -260, 812, -260, 883.25, -440.25, 812, -440.25, 539.25, -173.75, 270.75, -173.75, 270.75, -213, 468, -213, 539.25, -442.25, 468, -417, 270.75, -442.25, 270.75, -417, -700.5, -202.39063, -700.5, -227.35156, -635.4922, -226.64063, -635.4922, -226.45313, -583.4297, -201.60156, -620.8203, -226.49219, -606.52344, -226.36719, -582.5469, -446.5, -606.4531, -229.86719, -606.5625, -255.47656, -607.4297, -446.5, -606.3906, -255.47656, -606.52344, -229.84375, -606.5, -240.64063, 214, 135, 244.25, 164.25, -39.75, 164.25, 10, 135, 244.25, -104.25, 214, -69, -24.25, -104.25, 10, -69, -24.25, 117.109375, -24.039063, 133.02344, -24.25, 133.0625, -55.75, 179.82031, -56.46875, 221.96094, -80.10156, 221.52344, -79.359375, 133.54688, -55.75, 164.25, -55.6875, 164, -55.6875, 164.25, -39.796875, 133.0625, -24.25, 133.02344, 155, -203, 185.25, -173.75, -83.25, -173.75, -49, -203, 185.25, -442.25, 155, -407, -83.25, -442.25, -49, -407, -218, -204, -187.75, -174.75, -456.25, -174.75, -422, -204, -187.75, -443.25, -218, -408, -456.25, -443.25, -422, -408, -360, 187, -329.75, 216.25, -598.25, 216.25, -564, 187, -329.75, -52.25, -360, -17, -598.25, -52.25, -564, -17, 914.75, -140.25, 914.75, -471.75, 988, -485, 988, 491, -988, -485, 570.75, -473.75, 275.75, 195.75, -988, 491, -25.507813, 253.90625, -104.921875, 252.67969, -96.11719, 252.74219, -96.13281, 252.75, -112.07031, 252.67969, 583.25, -140.25, 275.75, -135.75, 239.25, -142.25, 570.75, -142.25, -55.75, -135.75, 216.75, -142.25, -114.75, -142.25, 583.25, -471.75, -115.11719, 252.60156, -112.0625, 252.61719, -729.5, -232.11719, -729.5, -188.02344, -729.5781, -178.13281, -756.5, -189.5, -729.5781, -232.15625, -729.5, -242.04688, -756.5, -418.5, -729.5, -256.52344, -114.75, -473.75, -156.25, -143.25, -156.25, -474.75, -636.4297, -446.5, -635.5625, -255.64844, -700.5, -256.35938, -700.5, -256.52344, -636.5, -446.5, -553.4219, -475.4922, -553.5, -475.4922, -553.5, -475.5, -582.4922, -475.5625, -582.4922, -475.5, -607.5078, -475.5, -607.5078, -475.5625, -636.5, -475.5, -636.5, -475.4922, -636.5781, -475.4922, -729.47656, -256.71875, -729.47656, -256.52344, 239.25, -473.75, 216.75, -473.75, -554.47656, -189.42969, -553.5469, -446.5, -553.5, -446.5, -55.75, 101.74219, -95.10156, 102.22656, -110.71875, 102.14844, -298.25, -83.75, -52.953125, 253.5625, -49.3125, 253.60938, -49.3125, 253.71094, -25.179688, 234.52344, -24.507813, 195.75, -52.953125, 253.53125, -110.75, 118.15625, -111.74219, 236.61719, -111.78906, 239.3125, -298.25, 247.75, -110.9375, 103.71875, -110.71875, 103.6875, -487.75, -143.25, -629.75, -83.75, -25.226563, 237.17188, -636.5, -461.6875, -715.1406, -256.52344, -29.96875, 253.95313, -29.929688, 253.86719, -38.507813, 253.79688, -629.75, 247.75, -729.5, -178.09375, -729.5, -173.5, -985.5, -189.5, -985.5, -418.5, -567.9375, -475.5, -622.0625, -475.5, -715.3125, -173.5, -579.5781, -172.57031, -568.7031, -172.49219, -561.5703, -172.46094, -554.53906, -179.49219, -487.75, -474.75, -554.4922, -187.39063, -553.5, -461.6797, -785.5, -389.5, -785.5, -218.5, -809, -242, -809, -366, -956.5, -218.5, -933, -242, -956.5, -389.5, -933, -366)
+polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3), PackedInt32Array(4, 0, 3, 5), PackedInt32Array(6, 7, 8, 9), PackedInt32Array(10, 6, 9, 11), PackedInt32Array(12, 10, 11, 13), PackedInt32Array(14, 15, 16, 17), PackedInt32Array(18, 14, 17, 19, 20), PackedInt32Array(21, 18, 20, 22), PackedInt32Array(23, 24, 21, 25), PackedInt32Array(20, 26, 22), PackedInt32Array(25, 21, 22, 27), PackedInt32Array(28, 29, 30, 31), PackedInt32Array(32, 29, 28, 33), PackedInt32Array(34, 32, 33, 35), PackedInt32Array(36, 34, 35, 31, 37), PackedInt32Array(37, 31, 30, 38), PackedInt32Array(39, 40, 41, 42, 43), PackedInt32Array(44, 45, 43, 42), PackedInt32Array(30, 44, 42, 46, 38), PackedInt32Array(37, 38, 47), PackedInt32Array(48, 49, 50, 51), PackedInt32Array(52, 49, 48, 53), PackedInt32Array(54, 52, 53, 55), PackedInt32Array(50, 54, 55, 51), PackedInt32Array(56, 57, 58, 59), PackedInt32Array(60, 57, 56, 61), PackedInt32Array(62, 60, 61, 63), PackedInt32Array(58, 62, 63, 59), PackedInt32Array(64, 65, 66, 67), PackedInt32Array(68, 65, 64, 69), PackedInt32Array(70, 68, 69, 71), PackedInt32Array(66, 70, 71, 67), PackedInt32Array(72, 73, 74, 75), PackedInt32Array(76, 74, 73, 77), PackedInt32Array(78, 75, 79, 80), PackedInt32Array(81, 82, 83, 79, 84), PackedInt32Array(85, 72, 75, 78, 86), PackedInt32Array(87, 88, 85, 86, 89), PackedInt32Array(90, 87, 89), PackedInt32Array(91, 90, 89), PackedInt32Array(92, 85, 88, 77), PackedInt32Array(93, 94, 84, 79), PackedInt32Array(95, 96, 97, 98, 99), PackedInt32Array(100, 99, 98, 101, 102), PackedInt32Array(103, 91, 104, 105), PackedInt32Array(106, 107, 108, 109, 110), PackedInt32Array(111, 112, 113), PackedInt32Array(114, 115, 116, 117), PackedInt32Array(118, 119, 120, 76), PackedInt32Array(121, 122, 102, 101), PackedInt32Array(123, 87, 90, 124), PackedInt32Array(125, 126, 127), PackedInt32Array(104, 91, 89, 128, 129, 130, 131), PackedInt32Array(132, 133, 134, 79), PackedInt32Array(135, 136, 78), PackedInt32Array(83, 137, 132, 79), PackedInt32Array(138, 139, 140, 93, 141, 131, 142), PackedInt32Array(130, 143, 142, 131), PackedInt32Array(144, 104, 131, 145), PackedInt32Array(146, 135, 78, 80), PackedInt32Array(147, 110, 109, 148, 121, 101, 120), PackedInt32Array(149, 150, 80), PackedInt32Array(149, 80, 79), PackedInt32Array(151, 149, 79, 134), PackedInt32Array(141, 93, 79, 152), PackedInt32Array(98, 97, 153, 154, 155), PackedInt32Array(145, 152, 79, 155, 154), PackedInt32Array(120, 101, 156, 76), PackedInt32Array(73, 92, 77), PackedInt32Array(111, 113, 77, 105), PackedInt32Array(76, 77, 113), PackedInt32Array(76, 113, 157, 114), PackedInt32Array(76, 114, 117), PackedInt32Array(76, 117, 158, 118), PackedInt32Array(79, 76, 156, 155), PackedInt32Array(144, 145, 154, 159, 160, 161), PackedInt32Array(144, 161, 162), PackedInt32Array(144, 162, 163), PackedInt32Array(164, 144, 163, 165, 125), PackedInt32Array(164, 125, 127), PackedInt32Array(164, 127, 166, 111), PackedInt32Array(124, 103, 105), PackedInt32Array(105, 164, 111), PackedInt32Array(105, 77, 123), PackedInt32Array(105, 123, 124), PackedInt32Array(167, 168, 169, 170), PackedInt32Array(169, 168, 171, 172), PackedInt32Array(172, 171, 173, 174), PackedInt32Array(174, 173, 167, 170)])
+cell_size = 4.0
+agent_radius = 12.0
+
+[node name="Main" type="Node2D" unique_id=151308185]
+position = Vector2(2, 0)
+
+[node name="Camera" type="Camera2D" parent="." unique_id=585395039 groups=["camera"]]
+position = Vector2(-350, -350)
+script = ExtResource("1_ranx7")
+bounds_max = Vector2(1000, 500)
+
+[node name="LevelBounds" type="Node2D" parent="." unique_id=904357471]
+position = Vector2(0, 3)
+script = ExtResource("2_x8g7u")
+bounds_min = Vector2(-1000, -500)
+bounds_max = Vector2(1000, 500)
+
+[node name="LevelConfig" type="Node2D" parent="." unique_id=1080841229]
+position = Vector2(-2, 2)
+script = ExtResource("3_x8g7u")
+chain_scan_radius = 150.0
+feral_divert_interval = null
+feral_divert_hysteresis = null
+feral_offaxis_penalty = 1.5
+metadata/_custom_type_script = "uid://dlqe4p8ushalq"
+
+[node name="Initializer" type="Node" parent="." unique_id=1515215272]
+script = ExtResource("3_xvqv2")
+enabled = false
+
+[node name="GameManager" type="Node" parent="." unique_id=1045185710 groups=["game_manager"]]
+script = ExtResource("4_xpoum")
+zombie_scene = ExtResource("5_sxbni")
+human_scene = ExtResource("6_8i2yc")
+
+[node name="VisionRenderer" type="Node2D" parent="." unique_id=1618763304]
+z_index = 1
+script = ExtResource("7_eis46")
+
+[node name="TestLevel" type="Node2D" parent="." unique_id=2129652431]
+
+[node name="Ground" type="ColorRect" parent="TestLevel" unique_id=19404831]
+offset_left = -1002.0
+offset_top = -496.0
+offset_right = 998.0
+offset_bottom = 504.0
+color = Color(0.2, 0.3, 0.2, 1)
+metadata/_edit_use_anchors_ = true
+
+[node name="Level 1" type="Node2D" parent="TestLevel" unique_id=1175887083]
+
+[node name="Wall" type="Polygon2D" parent="TestLevel/Level 1" unique_id=1140234852]
+solid = false
+position = Vector2(-871, -304)
+color = Color(0, 0, 0, 0)
+polygon = PackedVector2Array(-100, -100, 100, -100, 100, 100, -100, 100)
+script = ExtResource("14_wall")
+wall_thickness = 5.0
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Building" parent="TestLevel/Level 1" unique_id=1498543913 instance=ExtResource("8_l07ew")]
+position = Vector2(-871, -304)
+building_height = 100.0
+
+[node name="Zombie" parent="TestLevel/Level 1" unique_id=114495039 instance=ExtResource("5_sxbni")]
+position = Vector2(-943, -231)
+
+[node name="Human" parent="TestLevel/Level 1" unique_id=1321911954 instance=ExtResource("6_8i2yc")]
+position = Vector2(-799, -313)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Level 2" type="Node2D" parent="TestLevel" unique_id=2108846179]
+
+[node name="Wall1" type="Polygon2D" parent="TestLevel/Level 2" unique_id=65560385]
+solid = false
+position = Vector2(-615, -364)
+color = Color(0, 0, 0, 0)
+polygon = PackedVector2Array(-6, 123, -7, -97, 47, -97, 46, 177, -100, 176, -99.99994, 121.979675)
+script = ExtResource("14_wall")
+wall_thickness = 5.0
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Zombie2" parent="TestLevel/Level 2" unique_id=375684129 instance=ExtResource("5_sxbni")]
+position = Vector2(-691, -214)
+
+[node name="Human2" parent="TestLevel/Level 2" unique_id=1346925049 instance=ExtResource("6_8i2yc")]
+position = Vector2(-594, -350)
+initial_state = 1
+defender_class = 2
+patrol_enabled = true
+patrol_waypoints = Array[Vector2]([Vector2(-594, -215), Vector2(-594, -427)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Level 3" type="Node2D" parent="TestLevel" unique_id=1753995564]
+
+[node name="Wall2" type="Polygon2D" parent="TestLevel/Level 3" unique_id=1098669440]
+solid = false
+position = Vector2(-322, -309)
+scale = Vector2(1.5, 1.5)
+color = Color(0, 0, 0, 0)
+polygon = PackedVector2Array(-100, -100, 100, -100, 100, 100, -100, 100)
+script = ExtResource("14_wall")
+wall_thickness = 5.0
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Building3" parent="TestLevel/Level 3" unique_id=1180980100 instance=ExtResource("8_l07ew")]
+position = Vector2(-320, -306)
+building_width = 180.0
+building_height = 180.0
+
+[node name="Zombie3" parent="TestLevel/Level 3" unique_id=1266604247 instance=ExtResource("5_sxbni")]
+position = Vector2(-324, -192)
+
+[node name="Human3" parent="TestLevel/Level 3" unique_id=2041510323 instance=ExtResource("6_8i2yc")]
+position = Vector2(-439, -425)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human4" parent="TestLevel/Level 3" unique_id=1077560670 instance=ExtResource("6_8i2yc")]
+position = Vector2(-204, -421)
+initial_state = 1
+defender_class = 2
+patrol_enabled = true
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(-300, -421), Vector2(-204, -421), Vector2(-204, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Level 4" type="Node2D" parent="TestLevel" unique_id=328545491]
+
+[node name="Wall2" type="Polygon2D" parent="TestLevel/Level 4" unique_id=649433615]
+solid = false
+position = Vector2(51, -308)
+scale = Vector2(1.5, 1.5)
+color = Color(0, 0, 0, 0)
+polygon = PackedVector2Array(-100, -100, 100, -100, 100, 100, -100, 100)
+script = ExtResource("14_wall")
+wall_thickness = 5.0
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Building3" parent="TestLevel/Level 4" unique_id=1896316364 instance=ExtResource("8_l07ew")]
+position = Vector2(53, -305)
+building_width = 180.0
+building_height = 180.0
+
+[node name="Zombie3" parent="TestLevel/Level 4" unique_id=920934547 instance=ExtResource("5_sxbni")]
+position = Vector2(49, -191)
+
+[node name="Human3" parent="TestLevel/Level 4" unique_id=264729947 instance=ExtResource("6_8i2yc")]
+position = Vector2(-66, -424)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human5" parent="TestLevel/Level 4" unique_id=2081048354 instance=ExtResource("6_8i2yc")]
+position = Vector2(169, -420)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Level 5" type="Node2D" parent="TestLevel" unique_id=195236413]
+
+[node name="Wall2" type="Polygon2D" parent="TestLevel/Level 5" unique_id=1752197991]
+solid = false
+position = Vector2(405, -308)
+scale = Vector2(1.5, 1.5)
+color = Color(0, 0, 0, 0)
+polygon = PackedVector2Array(-100, -100, 100, -100, 100, 100, -100, 100)
+script = ExtResource("14_wall")
+wall_thickness = 5.0
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Building3" parent="TestLevel/Level 5" unique_id=1765303609 instance=ExtResource("8_l07ew")]
+position = Vector2(356, -315)
+building_width = 200.0
+building_height = 180.0
+
+[node name="Zombie3" parent="TestLevel/Level 5" unique_id=598842151 instance=ExtResource("5_sxbni")]
+position = Vector2(316, -431)
+
+[node name="Zombie4" parent="TestLevel/Level 5" unique_id=1295868514 instance=ExtResource("5_sxbni")]
+position = Vector2(437, -187)
+
+[node name="Zombie5" parent="TestLevel/Level 5" unique_id=791582104 instance=ExtResource("5_sxbni")]
+position = Vector2(410, -206)
+
+[node name="Zombie6" parent="TestLevel/Level 5" unique_id=2091302108 instance=ExtResource("5_sxbni")]
+position = Vector2(379, -185)
+
+[node name="Human3" parent="TestLevel/Level 5" unique_id=1194760098 instance=ExtResource("6_8i2yc")]
+position = Vector2(480, -430)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human5" parent="TestLevel/Level 5" unique_id=576099478 instance=ExtResource("6_8i2yc")]
+position = Vector2(531, -430)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human6" parent="TestLevel/Level 5" unique_id=95139448 instance=ExtResource("6_8i2yc")]
+position = Vector2(505, -402)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Level 6" type="Node2D" parent="TestLevel" unique_id=1288322897]
+
+[node name="Wall2" type="Polygon2D" parent="TestLevel/Level 6" unique_id=608894821]
+solid = false
+position = Vector2(749, -306)
+scale = Vector2(1.5, 1.5)
+color = Color(0, 0, 0, 0)
+polygon = PackedVector2Array(-100, -100, 100, -100, 100, 100, -100, 100)
+script = ExtResource("14_wall")
+wall_thickness = 5.0
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Building3" parent="TestLevel/Level 6" unique_id=37667500 instance=ExtResource("8_l07ew")]
+position = Vector2(700, -362)
+building_width = 200.0
+building_height = 180.0
+
+[node name="Zombie3" parent="TestLevel/Level 6" unique_id=958192466 instance=ExtResource("5_sxbni")]
+position = Vector2(711, -196)
+
+[node name="Zombie4" parent="TestLevel/Level 6" unique_id=1166126949 instance=ExtResource("5_sxbni")]
+position = Vector2(768, -238)
+
+[node name="Zombie5" parent="TestLevel/Level 6" unique_id=1212837890 instance=ExtResource("5_sxbni")]
+position = Vector2(757, -188)
+
+[node name="Zombie6" parent="TestLevel/Level 6" unique_id=643579858 instance=ExtResource("5_sxbni")]
+position = Vector2(726, -236)
+
+[node name="Zombie11" parent="TestLevel/Level 6" unique_id=937704681 instance=ExtResource("5_sxbni")]
+position = Vector2(674, -241)
+
+[node name="Human5" parent="TestLevel/Level 6" unique_id=1531018989 instance=ExtResource("6_8i2yc")]
+position = Vector2(850, -418)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Level 7" type="Node2D" parent="TestLevel" unique_id=2031917393]
+
+[node name="Wall2" type="Polygon2D" parent="TestLevel/Level 7" unique_id=1049515011]
+solid = false
+position = Vector2(-464, 82)
+scale = Vector2(1.5, 1.5)
+color = Color(0, 0, 0, 0)
+polygon = PackedVector2Array(-100, -100, 100, -100, 100, 100, -100, 100)
+script = ExtResource("14_wall")
+wall_thickness = 5.0
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Building3" parent="TestLevel/Level 7" unique_id=1889307383 instance=ExtResource("8_l07ew")]
+position = Vector2(-462, 85)
+building_width = 180.0
+building_height = 180.0
+
+[node name="Human3" parent="TestLevel/Level 7" unique_id=594128001 instance=ExtResource("6_8i2yc")]
+position = Vector2(-342, -31)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human5" parent="TestLevel/Level 7" unique_id=1314729568 instance=ExtResource("6_8i2yc")]
+position = Vector2(-341, 24)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human4" parent="TestLevel/Level 7" unique_id=1634536967 instance=ExtResource("6_8i2yc")]
+position = Vector2(58, 401)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human6" parent="TestLevel/Level 7" unique_id=1174633476 instance=ExtResource("6_8i2yc")]
+position = Vector2(59, 456)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human71" parent="TestLevel/Level 7" unique_id=485601543 instance=ExtResource("6_8i2yc")]
+position = Vector2(-100, 387)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human72" parent="TestLevel/Level 7" unique_id=1763502530 instance=ExtResource("6_8i2yc")]
+position = Vector2(-99, 442)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human73" parent="TestLevel/Level 7" unique_id=1650521946 instance=ExtResource("6_8i2yc")]
+position = Vector2(-669, 385)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human74" parent="TestLevel/Level 7" unique_id=520934081 instance=ExtResource("6_8i2yc")]
+position = Vector2(-668, 440)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human7" parent="TestLevel/Level 7" unique_id=544416392 instance=ExtResource("6_8i2yc")]
+position = Vector2(606, 381)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human8" parent="TestLevel/Level 7" unique_id=122093242 instance=ExtResource("6_8i2yc")]
+position = Vector2(607, 436)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human9" parent="TestLevel/Level 7" unique_id=123359927 instance=ExtResource("6_8i2yc")]
+position = Vector2(652, 363)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human10" parent="TestLevel/Level 7" unique_id=802561045 instance=ExtResource("6_8i2yc")]
+position = Vector2(653, 418)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human11" parent="TestLevel/Level 7" unique_id=2086367837 instance=ExtResource("6_8i2yc")]
+position = Vector2(705, 386)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human12" parent="TestLevel/Level 7" unique_id=2123312914 instance=ExtResource("6_8i2yc")]
+position = Vector2(706, 441)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human13" parent="TestLevel/Level 7" unique_id=1802181031 instance=ExtResource("6_8i2yc")]
+position = Vector2(751, 368)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human14" parent="TestLevel/Level 7" unique_id=1862594511 instance=ExtResource("6_8i2yc")]
+position = Vector2(752, 423)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human15" parent="TestLevel/Level 7" unique_id=1821312093 instance=ExtResource("6_8i2yc")]
+position = Vector2(602, 268)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human16" parent="TestLevel/Level 7" unique_id=407273159 instance=ExtResource("6_8i2yc")]
+position = Vector2(603, 323)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human17" parent="TestLevel/Level 7" unique_id=183575338 instance=ExtResource("6_8i2yc")]
+position = Vector2(648, 250)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human18" parent="TestLevel/Level 7" unique_id=1465967015 instance=ExtResource("6_8i2yc")]
+position = Vector2(649, 305)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human19" parent="TestLevel/Level 7" unique_id=753881892 instance=ExtResource("6_8i2yc")]
+position = Vector2(701, 273)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human20" parent="TestLevel/Level 7" unique_id=1315301692 instance=ExtResource("6_8i2yc")]
+position = Vector2(702, 328)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human21" parent="TestLevel/Level 7" unique_id=307641213 instance=ExtResource("6_8i2yc")]
+position = Vector2(747, 255)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human22" parent="TestLevel/Level 7" unique_id=1119156948 instance=ExtResource("6_8i2yc")]
+position = Vector2(748, 310)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human23" parent="TestLevel/Level 7" unique_id=739582286 instance=ExtResource("6_8i2yc")]
+position = Vector2(411, 381)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human24" parent="TestLevel/Level 7" unique_id=1011978984 instance=ExtResource("6_8i2yc")]
+position = Vector2(412, 436)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human25" parent="TestLevel/Level 7" unique_id=1206424053 instance=ExtResource("6_8i2yc")]
+position = Vector2(457, 363)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human26" parent="TestLevel/Level 7" unique_id=763210770 instance=ExtResource("6_8i2yc")]
+position = Vector2(458, 418)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human27" parent="TestLevel/Level 7" unique_id=1437281296 instance=ExtResource("6_8i2yc")]
+position = Vector2(510, 386)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human28" parent="TestLevel/Level 7" unique_id=1723281677 instance=ExtResource("6_8i2yc")]
+position = Vector2(511, 441)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human29" parent="TestLevel/Level 7" unique_id=519671664 instance=ExtResource("6_8i2yc")]
+position = Vector2(556, 368)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human30" parent="TestLevel/Level 7" unique_id=1709368166 instance=ExtResource("6_8i2yc")]
+position = Vector2(557, 423)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human31" parent="TestLevel/Level 7" unique_id=1129969910 instance=ExtResource("6_8i2yc")]
+position = Vector2(407, 268)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human32" parent="TestLevel/Level 7" unique_id=1025717526 instance=ExtResource("6_8i2yc")]
+position = Vector2(408, 323)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human33" parent="TestLevel/Level 7" unique_id=1213079309 instance=ExtResource("6_8i2yc")]
+position = Vector2(453, 250)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human34" parent="TestLevel/Level 7" unique_id=1143609845 instance=ExtResource("6_8i2yc")]
+position = Vector2(454, 305)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human35" parent="TestLevel/Level 7" unique_id=1091047095 instance=ExtResource("6_8i2yc")]
+position = Vector2(506, 273)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human36" parent="TestLevel/Level 7" unique_id=1202196120 instance=ExtResource("6_8i2yc")]
+position = Vector2(507, 328)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human37" parent="TestLevel/Level 7" unique_id=1387604670 instance=ExtResource("6_8i2yc")]
+position = Vector2(552, 255)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human38" parent="TestLevel/Level 7" unique_id=1867297987 instance=ExtResource("6_8i2yc")]
+position = Vector2(553, 310)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human39" parent="TestLevel/Level 7" unique_id=1385450221 instance=ExtResource("6_8i2yc")]
+position = Vector2(595, 149)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human40" parent="TestLevel/Level 7" unique_id=1088308616 instance=ExtResource("6_8i2yc")]
+position = Vector2(596, 204)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human41" parent="TestLevel/Level 7" unique_id=983024184 instance=ExtResource("6_8i2yc")]
+position = Vector2(641, 131)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human42" parent="TestLevel/Level 7" unique_id=47670333 instance=ExtResource("6_8i2yc")]
+position = Vector2(642, 186)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human43" parent="TestLevel/Level 7" unique_id=574994857 instance=ExtResource("6_8i2yc")]
+position = Vector2(694, 154)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human44" parent="TestLevel/Level 7" unique_id=1156658357 instance=ExtResource("6_8i2yc")]
+position = Vector2(695, 209)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human45" parent="TestLevel/Level 7" unique_id=1238193752 instance=ExtResource("6_8i2yc")]
+position = Vector2(740, 136)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human46" parent="TestLevel/Level 7" unique_id=1238499958 instance=ExtResource("6_8i2yc")]
+position = Vector2(741, 191)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human47" parent="TestLevel/Level 7" unique_id=1841165390 instance=ExtResource("6_8i2yc")]
+position = Vector2(591, 36)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human48" parent="TestLevel/Level 7" unique_id=1846610078 instance=ExtResource("6_8i2yc")]
+position = Vector2(592, 91)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human49" parent="TestLevel/Level 7" unique_id=926987552 instance=ExtResource("6_8i2yc")]
+position = Vector2(637, 18)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human50" parent="TestLevel/Level 7" unique_id=433285740 instance=ExtResource("6_8i2yc")]
+position = Vector2(638, 73)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human51" parent="TestLevel/Level 7" unique_id=1249131461 instance=ExtResource("6_8i2yc")]
+position = Vector2(690, 41)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human52" parent="TestLevel/Level 7" unique_id=1095364620 instance=ExtResource("6_8i2yc")]
+position = Vector2(691, 96)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human53" parent="TestLevel/Level 7" unique_id=1761131599 instance=ExtResource("6_8i2yc")]
+position = Vector2(736, 23)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human54" parent="TestLevel/Level 7" unique_id=1196543008 instance=ExtResource("6_8i2yc")]
+position = Vector2(737, 78)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human55" parent="TestLevel/Level 7" unique_id=1313721104 instance=ExtResource("6_8i2yc")]
+position = Vector2(398, 149)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human56" parent="TestLevel/Level 7" unique_id=666805101 instance=ExtResource("6_8i2yc")]
+position = Vector2(399, 204)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human57" parent="TestLevel/Level 7" unique_id=1159210320 instance=ExtResource("6_8i2yc")]
+position = Vector2(444, 131)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human58" parent="TestLevel/Level 7" unique_id=637887269 instance=ExtResource("6_8i2yc")]
+position = Vector2(445, 186)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human59" parent="TestLevel/Level 7" unique_id=1685946147 instance=ExtResource("6_8i2yc")]
+position = Vector2(497, 154)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human60" parent="TestLevel/Level 7" unique_id=886503814 instance=ExtResource("6_8i2yc")]
+position = Vector2(498, 209)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human61" parent="TestLevel/Level 7" unique_id=638356005 instance=ExtResource("6_8i2yc")]
+position = Vector2(543, 136)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human62" parent="TestLevel/Level 7" unique_id=1671563932 instance=ExtResource("6_8i2yc")]
+position = Vector2(544, 191)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human63" parent="TestLevel/Level 7" unique_id=1534600623 instance=ExtResource("6_8i2yc")]
+position = Vector2(394, 36)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human64" parent="TestLevel/Level 7" unique_id=1007115283 instance=ExtResource("6_8i2yc")]
+position = Vector2(395, 91)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human65" parent="TestLevel/Level 7" unique_id=806064779 instance=ExtResource("6_8i2yc")]
+position = Vector2(440, 18)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human66" parent="TestLevel/Level 7" unique_id=1125591277 instance=ExtResource("6_8i2yc")]
+position = Vector2(441, 73)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human67" parent="TestLevel/Level 7" unique_id=1673360671 instance=ExtResource("6_8i2yc")]
+position = Vector2(493, 41)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human68" parent="TestLevel/Level 7" unique_id=222132173 instance=ExtResource("6_8i2yc")]
+position = Vector2(494, 96)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human69" parent="TestLevel/Level 7" unique_id=518199684 instance=ExtResource("6_8i2yc")]
+position = Vector2(539, 23)
+initial_state = 1
+defender_class = 2
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human70" parent="TestLevel/Level 7" unique_id=1106186476 instance=ExtResource("6_8i2yc")]
+position = Vector2(540, 78)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Zombie" parent="TestLevel/Level 7" unique_id=738780467 instance=ExtResource("5_sxbni")]
+position = Vector2(-582, 68)
+
+[node name="Zombie2" parent="TestLevel/Level 7" unique_id=1813520226 instance=ExtResource("5_sxbni")]
+position = Vector2(-583, 108)
+
+[node name="Zombie3" parent="TestLevel/Level 7" unique_id=306804887 instance=ExtResource("5_sxbni")]
+position = Vector2(-583, 145)
+
+[node name="Zombie4" parent="TestLevel/Level 7" unique_id=1325715882 instance=ExtResource("5_sxbni")]
+position = Vector2(-817, 19)
+
+[node name="Zombie5" parent="TestLevel/Level 7" unique_id=1067108926 instance=ExtResource("5_sxbni")]
+position = Vector2(-818, 59)
+
+[node name="Zombie6" parent="TestLevel/Level 7" unique_id=889300941 instance=ExtResource("5_sxbni")]
+position = Vector2(-818, 96)
+
+[node name="Zombie7" parent="TestLevel/Level 7" unique_id=965821525 instance=ExtResource("5_sxbni")]
+position = Vector2(-856, 33)
+
+[node name="Zombie8" parent="TestLevel/Level 7" unique_id=782569221 instance=ExtResource("5_sxbni")]
+position = Vector2(-857, 73)
+
+[node name="Zombie9" parent="TestLevel/Level 7" unique_id=1252845129 instance=ExtResource("5_sxbni")]
+position = Vector2(-857, 110)
+
+[node name="Zombie10" parent="TestLevel/Level 7" unique_id=679392699 instance=ExtResource("5_sxbni")]
+position = Vector2(-901, 43)
+
+[node name="Zombie11" parent="TestLevel/Level 7" unique_id=1505792532 instance=ExtResource("5_sxbni")]
+position = Vector2(-902, 83)
+
+[node name="Zombie12" parent="TestLevel/Level 7" unique_id=1355043991 instance=ExtResource("5_sxbni")]
+position = Vector2(-902, 120)
+
+[node name="Level 8" type="Node2D" parent="TestLevel" unique_id=782630570]
+
+[node name="Wall2" type="Polygon2D" parent="TestLevel/Level 8" unique_id=1152607419]
+solid = false
+position = Vector2(110, 30)
+scale = Vector2(1.5, 1.5)
+color = Color(0, 0, 0, 0)
+polygon = PackedVector2Array(-100, -100, 100, -100, 100, 100, -100, 100, -100.66667, 138.66667, -137.33334, 138, -136.66667, 58.66667, -100, 58.206665)
+script = ExtResource("14_wall")
+wall_thickness = 5.0
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Building3" parent="TestLevel/Level 8" unique_id=255395384 instance=ExtResource("8_l07ew")]
+position = Vector2(112, 33)
+building_width = 180.0
+building_height = 180.0
+
+[node name="Zombie3" parent="TestLevel/Level 8" unique_id=1258766835 instance=ExtResource("5_sxbni")]
+position = Vector2(-66, 206)
+
+[node name="Human8" parent="TestLevel/Level 8" unique_id=1674365057 instance=ExtResource("6_8i2yc")]
+position = Vector2(225, 150)
+initial_state = 1
+defender_class = 2
+patrol_enabled = true
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(-20, 150), Vector2(225, 150)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Human" parent="TestLevel/Level 8" unique_id=1564918477 instance=ExtResource("6_8i2yc")]
+position = Vector2(229, -85)
+initial_state = 1
+defender_class = 2
+patrol_enabled = true
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(230, 110), Vector2(230, -84), Vector2(29, -84)])
+
+[node name="Human6" parent="TestLevel/Level 8" unique_id=480645516 instance=ExtResource("6_8i2yc")]
+position = Vector2(-1, 12)
+initial_state = 1
+defender_class = 2
+patrol_mode = 1
+patrol_waypoints = Array[Vector2]([Vector2(50, -421), Vector2(170, -421), Vector2(170, -190)])
+cohesion_strength = 12.0
+alignment_rate = 0.3
+
+[node name="Buildings" type="Node2D" parent="TestLevel" unique_id=985347166]
+
+[node name="Escape Zones" type="Node" parent="TestLevel" unique_id=1359137202]
+
+[node name="Humans" type="Node" parent="TestLevel" unique_id=827267819]
+
+[node name="Zombies" type="Node" parent="TestLevel" unique_id=393150134]
+
+[node name="Units" type="Node2D" parent="." unique_id=1968361044 groups=["units_parent"]]
+
+[node name="SelectionManager" type="Node2D" parent="." unique_id=423906801 groups=["selection_manager"]]
+script = ExtResource("11_8xmie")
+
+[node name="NavigationRegion" type="NavigationRegion2D" parent="." unique_id=257540646]
+visible = false
+navigation_polygon = SubResource("NavigationPolygon_x8g7u")
+script = ExtResource("11_g1k1b")
+
+[node name="DebugOverlay" parent="." unique_id=468344591 instance=ExtResource("12_irsvf")]
+
+[node name="EndGameOverlay" parent="." unique_id=2000451810 instance=ExtResource("13_cu6wa")]
+visible = false
+
+[node name="EscapeZone" parent="." unique_id=1179168205 instance=ExtResource("14_ranx7")]
+position = Vector2(-460, 429)

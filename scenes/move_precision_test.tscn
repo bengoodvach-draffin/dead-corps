@@ -1,0 +1,61 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" uid="uid://b112ultiv3ox0" path="res://scripts/level_bounds.gd" id="1_bounds"]
+[ext_resource type="Script" uid="uid://c7bww3rdcm8pt" path="res://scripts/game_manager.gd" id="2_gm"]
+[ext_resource type="PackedScene" uid="uid://c8yqh3jvpxn3w" path="res://scenes/zombie.tscn" id="3_zombie"]
+[ext_resource type="Script" uid="uid://yd0ofoh8ih30" path="res://scripts/nav_baker.gd" id="4_nav"]
+[ext_resource type="Script" uid="uid://3sf8250t3l5r" path="res://scripts/camera_controller.gd" id="5_cam"]
+
+[sub_resource type="GDScript" id="GDScript_driver"]
+script/source = "extends Node
+
+## Throwaway measurement driver (cursor-precision bug hunt): orders the zombie
+## +200px right, logs its CLOSEST approach to the target every half second.
+
+var fired := false
+var t := 0.0
+var target := Vector2.ZERO
+var z: Node2D = null
+var min_gap := INF
+var next_log := 0.0
+
+func _physics_process(delta: float) -> void:
+	t += delta
+	if not fired and t > 1.5:
+		fired = true
+		z = get_tree().get_first_node_in_group(\"zombies\")
+		target = z.global_position + Vector2(200, 0)
+		z.set_move_target(target)
+		print(\"MOVETEST order: \", z.global_position.round(), \" -> \", target.round())
+	if fired and z != null:
+		min_gap = minf(min_gap, z.global_position.distance_to(target))
+		if t > next_log:
+			next_log = t + 0.5
+			print(\"MOVETEST t=%.1f pos=%s gap_now=%.2f min_gap=%.2f\" % [t, z.global_position.round(), z.global_position.distance_to(target), min_gap])
+"
+
+[node name="Main" type="Node2D"]
+
+[node name="Camera" type="Camera2D" parent="." groups=["camera"]]
+script = ExtResource("5_cam")
+bounds_min = Vector2(-600, -400)
+bounds_max = Vector2(600, 400)
+
+[node name="LevelBounds" type="Node2D" parent="."]
+script = ExtResource("1_bounds")
+bounds_min = Vector2(-600, -400)
+bounds_max = Vector2(600, 400)
+
+[node name="GameManager" type="Node" parent="." groups=["game_manager"]]
+script = ExtResource("2_gm")
+
+[node name="Zombie" parent="." instance=ExtResource("3_zombie")]
+position = Vector2(-100, 0)
+
+[node name="Units" type="Node2D" parent="." groups=["units_parent"]]
+
+[node name="NavigationRegion" type="NavigationRegion2D" parent="."]
+script = ExtResource("4_nav")
+
+[node name="Driver" type="Node" parent="."]
+script = SubResource("GDScript_driver")

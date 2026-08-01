@@ -6,6 +6,11 @@ Thumbs.db
 .godot/
 .nomedia
 
+# Purchased art assets (itch.io license forbids redistribution; repo is public,
+# so the ENTIRE art tree stays local — raw packs AND the curated in-game subset).
+# If the repo ever goes private, /art/units, /art/tiles, /art/fx may be tracked again.
+/art/
+
 # Exported builds — never commit binaries (export_presets.cfg writes the .exe to repo root)
 /Exports/
 *.exe
