@@ -15,7 +15,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="Dead Corps Prototype"
-run/main_scene="uid://dsu1moflpt0m4"
+run/main_scene="uid://dsmxtd3pa64hp"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
 
@@ -26,7 +26,6 @@ buses/default_bus_layout="uid://d20g6cbygis83"
 [autoload]
 
 WorldBounds="*uid://q57huoqtmnim"
-GameConfig="*res://scripts/game_config.gd"
 
 [display]
 
@@ -86,9 +85,6 @@ command={
 2d_navigation/layer_1="Walkable"
 2d_physics/layer_2="Zombies"
 2d_physics/layer_3="Humans"
-2d_physics/layer_4="EscapeBarrier"
-2d_physics/layer_5="DoorLOS"
-2d_physics/layer_6="DoorLock"
 
 [rendering]
 

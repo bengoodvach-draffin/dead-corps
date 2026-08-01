@@ -23,9 +23,13 @@ var _is_dying: bool = false
 
 
 func _ready() -> void:
-	# Mark as special — carried over; specials aren't wired into any v2 system yet.
+	# Mark as special — disables auto-pursuit, leap, and pursuit lock in zombie.gd
 	is_special = true
-
+	
+	# Fat zombies cannot attack — clear attack stats
+	attack_damage = 0.0
+	attack_range = 0.0
+	
 	# Call parent _ready after setting is_special
 	super._ready()
 	
@@ -56,10 +60,8 @@ func die() -> void:
 	_is_dying = true
 	
 	print("🐷 FAT ZOMBIE dying — spawn corpse: ", spawn_corpse_on_death)
-
-	# Stop movement immediately. is_alive=false (this override doesn't call
-	# super.die()) so the registry / BOID treat it as dead under the v2 model.
-	is_alive = false
+	
+	# Stop movement immediately
 	current_state = State.DEAD
 	velocity = Vector2.ZERO
 	

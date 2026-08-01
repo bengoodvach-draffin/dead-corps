@@ -23,28 +23,18 @@ func _ready() -> void:
 	await get_tree().process_frame
 	game_manager = get_tree().get_first_node_in_group("game_manager")
 	
-	# Controls + scoring + unit legend. Small font + word-wrap, pinned to ~the WASD-line
-	# width so long items wrap onto new lines instead of widening the panel.
-	controls_label.add_theme_font_size_override("font_size", 12)
-	controls_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	controls_label.custom_minimum_size = Vector2(230.0, 0.0)
-	controls_label.text = """CONTROLS
-- LMB / drag: select calm zombies
-- Shift+LMB: add to selection
-- RMB ground: move selected
-- RMB on human: RELEASE (go feral)
-- Ctrl+1-9 assign group, 1-9 select
-- WASD pan, wheel zoom, Reset restarts
-
-SCORING (combo)
-- Pounce kills build a pot; longer chains pay more per kill
-- Burst + terror kills raise the x multiplier
-- Window lapses: bank pot x mult into SCORE
-
-UNITS
-- Zombie: white calm, orange feral, red dead
-- Human: M militia, P police, G GI, blank civilian
-- Cowering pale-blue, corpse red, line = filling"""
+	# Set up controls text
+	controls_label.text = """CONTROLS:
+WASD - Pan Camera
+Mouse Wheel - Zoom
+Left Click on Zombie - Select Zombies
+Left Click on Human - See Vision Cone
+Right Click - Move/Attack
+Shift+Click - Add to Selection
+Ctrl+1-9 - Assign Control Group
+1-9 - Select Control Group
+Ctrl+0 - Clear Assignment
+"""
 	
 	# Connect reset button
 	if reset_button:

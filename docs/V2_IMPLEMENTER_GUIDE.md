@@ -70,25 +70,11 @@ this branch. Faithfulness to the spec there is worth the more capable model.
 - **Pounce exclusion:** a human targeted by an in-flight pounce is invisible to
   all other ferals' retargeting. This is the only anti-pile-up rule; do not add
   attacker caps.
-- **A feral's death releases BOTH claims** — the pounce claim (`_pounce.abort()`)
-  and the pursuit claim (`_feral.clear()`), in `die()`. Leaking either strands a
-  human as permanently claimed/pursued and silently corrupts the peel-off model.
-- **An armed human halts while the front is reached** — stop-to-fire is the
-  design (A2 ruling): movement must never overwrite aim rotation while
-  `is_reached()`, or a moving defender can't fire more than ~21° off its travel
-  direction. Dormant until patrols return, but do not "simplify" it away.
 - **Cowering humans are local-scan only** — never in the global hunt pool.
 - **The break is committed the instant the fear threshold trips:** fill cancels
   immediately, line vanishes, no shot can land during the reaction beat.
-- **The fill front holds (no reset, no decay) during rotation-to-face**; it
-  cools only when NO zombie with a clear lane is visible. Firing is the only reset.
-- **Humans block line of sight for the fill** — the shot AND perception. The lane
-  raycast is blocked by environment + other (living, upright) humans, NOT by zombies;
-  a fully-screened zombie is neither filled-toward nor fired-at, and a screened-only
-  threat cools the gun (it's "not there" for that defender). Corpses and cowerers
-  don't block. (Spec §4.1 extension.)
-- **The fear count is building-LOS gated** — environment only; humans do NOT block
-  dread. A zombie behind a wall doesn't count toward a break. (Spec §4.2, revised.)
+- **The fill front holds (no reset, no decay) during rotation-to-face**, and
+  decays only when NO zombie is in range/LOS. Firing is the only reset.
 - **Escape zones are a hard boundary for ALL zombies** (calm and feral) — nobody
   dies, nobody enters; pursuers halt at the rim with target lost.
 - **Risers count toward the zombie total for the lose condition**, and
@@ -100,14 +86,6 @@ this branch. Faithfulness to the spec there is worth the more capable model.
   do not wire them into any new system. They only need to keep parsing.
 - **No timers in the frenzy** other than the no-progress failsafe (40px / 2.0s
   rolling window). Do not "fix" a stuck feral with a wind-down timer.
-- **Zombie pursuit + calm commanded moves are nav-pathed** (`Zombie.nav_move_toward`
-  → `NavigationAgent2D`, `avoidance_enabled = false` so it's deterministic); the human
-  rout is nav-pathed too. Only the pounce flight stays straight-line (in-range lunge).
-  Obstacles are excluded by the navmesh bake, not `NavigationObstacle2D`.
-- **Scoring is pounce kills only.** A zombie's death by gunfire is the player's loss,
-  never scored. The combo base is **tiered** (`kill_base × ceil(chain_position /
-  combo_tier_size)` — chain length pays); the multiplier (burst + terror, stacking) is
-  the rare lever. `was_cowering` on the victim is the terror-bonus flag (read at the kill).
 
 ### Engineering rules
 - **Every §9 tunable reads from `level_config`** — never hardcode a number that

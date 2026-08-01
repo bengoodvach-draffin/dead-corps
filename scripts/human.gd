@@ -2,770 +2,2808 @@
 extends Unit
 class_name Human
 
-## Human unit — AI defender (V2 skeleton).
+## Human unit - enemy units that flee from zombies but don't fight back
+## 
+## Humans are AI-controlled enemy units that try to survive against the zombie horde.
+## Unlike zombies, humans are defenseless - they can only run away.
 ##
-## Phase 1.1 demolition: the v1 stealth-era behavior core (morale, detection/
-## high-urgency alerts, tunnel vision, vision cones, the aim-timer shooting
-## model, GRAPPLED/grapple-escape, the old flee, swing/sentry facing, formation
-## squads) is GONE — see V2_DIRECTION_SPEC §11. What remains is a deliberately
-## sterile skeleton: stand (IDLE), patrol between waypoints with pauses
-## (positioning only — no facing/swing), and DEAD (incubation, until the rise
-## pipeline replaces it in demolition step 1.4).
+## Key features:
+## - Inherits all movement from Unit base class
+## - NO COMBAT ABILITY - humans don't fight back
+## - Vision-based detection system (cone or circle depending on state)
+## - Uses line-of-sight checks (won't flee from zombies they can't see)
+## - Emits signal when dying (for tracking and game state)
+## - Belongs to the HUMANS team
 ##
-## The v2 defense behavior (radial fill front, fear radius + break, permanent
-## rout/herding, cower) is rebuilt on top of this skeleton in Phase 3 — it reads
-## all tunables per-class from GameConfig, not from this script.
+## Humans convert to zombies when killed, growing the player's army.
+## The fleeing behavior makes them feel more alive and creates interesting
+## chase dynamics in gameplay. They're defenseless prey, not combatants.
 
-## Human behavioral states. Live in this skeleton: IDLE, DEAD (and SENTRY, which
-## now behaves like IDLE — kept so level scenes that set initial_state = SENTRY
-## still load). No code transitions into SENTRY's old watching behavior.
+## Human behavioral states - determines vision shape and behavior
 enum State {
-	IDLE,    ## Standing / calm
-	SENTRY,  ## Watching (now identical to IDLE — facing behavior deleted)
-	DEAD,    ## Permanent corpse (raised by the riser pipeline, step 2.6)
-	FLEEING, ## Permanent rout (3.2, §4.3): paths to the nearest exit, no fill, no recovery
-	COWER,   ## Cornered (3.5, §4.4): frozen, classless, no fill; dies to a normal pounce
-	## Inside a ShelterBuilding (buildings spec §6.1): entered a door while FLEEING;
-	## holds a claimed spot; out of the hunt pool; cower suspended. Exits: breach-
-	## flush (step 6), death, level end — never voluntary.
-	SHELTERED
+	IDLE,          ## Standing around, circular vision (360°)
+	SENTRY,        ## Watching a direction, arc vision (90°)
+	FLEEING,       ## Running from zombies, forward arc vision (90°)
+	GRAPPLED,      ## Being attacked, no vision
+	DEAD,          ## Incubating corpse, no vision
+	TUNNEL_VISION  ## GI/Spec Ops stress response — locked 45° cone, 10s (v0.22.4)
 }
 
-## Patrol modes for waypoint movement.
+## Patrol modes for sentry movement
 enum PatrolMode {
-	LOOP,        ## 0→1→2→3→0 (circular)
+	LOOP,        ## 0→1→2→3→0 (circular patrol)
 	PING_PONG    ## 0→1→2→3→2→1→0 (back and forth)
 }
 
-## Defender class — the PoC roster. Indexes the per-class arrays in GameConfig
-## (awareness / fill_speed / fear_threshold), so the order MUST stay
-## CIVILIAN=0, MILITIA=1, POLICE=2, GI=3. (v1's SPEC_OPS is cut — §11.)
-enum DefenderClass {
-	CIVILIAN,
-	MILITIA,
-	POLICE,
-	GI
+## Formation shapes for squad patrols (set on leader only)
+enum FormationShape {
+	LINE_ABREAST, ## Side by side perpendicular to travel (wide coverage)
+	COLUMN,       ## Single file behind leader (narrow corridors)
+	WEDGE,        ## V-shape, leader at point (general purpose)
+	ECHELON,      ## Diagonal line to the right (flanking coverage)
+	DIAMOND       ## Diamond shape, best for exactly 3 followers
 }
 
-## Emitted when this human dies. GameManager listens for win-condition tracking.
+## Defender class — determines combat capability, morale profile, and weapon stats
+## Set this in the Inspector to define what kind of human this unit is.
+## Class defaults are auto-applied in _ready() and can be overridden per-unit.
+enum DefenderClass {
+	CIVILIAN,   ## Unarmed, panics easily, collapses almost immediately
+	MILITIA,    ## Shotgun, unreliable under pressure, dangerous up close
+	POLICE,     ## Pistol, calm under sightings, breaks on social events
+	GI,         ## Assault rifle, nearly unbreakable, tunnel vision response
+	SPEC_OPS    ## Assault rifle, elite, effectively immune to normal pressure
+}
+
+## Signal emitted when this human dies
+## GameManager listens to this for win condition checking
+## @param human: This human that died
 signal human_died(human: Human)
 
-# === EXPORTED PROPERTIES ===
+# === EXPORTED PROPERTIES (Configurable in Godot Editor) ===
 
-## Initial state when this human spawns (level-design hook).
+## Initial state when human spawns (can be set in editor for level design)
 @export var initial_state: State = State.IDLE
 
-## Which defender class this unit is. Drives the v2 per-class GameConfig lookups
-## (awareness, fill speed, fear threshold) built in Phase 3.
+# === DEFENDER CLASS ===
+@export_group("Defender Class")
+
+## The class of this defender — auto-populates morale and weapon defaults on _ready().
+## Override individual values below if you need per-unit tweaks.
 @export var defender_class: DefenderClass = DefenderClass.CIVILIAN
+
+# === MORALE ===
+@export_group("Morale")
+
+## Maximum morale — bar starts full and drains under stress.
+## Populated automatically from defender_class on _ready().
+@export var morale_max: float = 65.0
+
+## Morale drained per second per visible zombie within weapon range (armed units)
+## or within full vision range (civilians). Stacks per zombie.
+## Populated automatically from defender_class on _ready().
+@export var sighting_drain: float = 30.0
+
+## Flat morale drained when a nearby ally transitions to GRAPPLED state (one-time hit per event).
+## Populated automatically from defender_class on _ready().
+@export var grappled_drain: float = 100.0
+
+## Flat morale drained when a fleeing ally moves through this unit's vicinity (one-time hit).
+## Populated automatically from defender_class on _ready().
+@export var fleeing_drain: float = 50.0
+
+## Flat morale drained when a nearby ally is killed (one-time hit per death).
+## Populated automatically from defender_class on _ready().
+@export var killed_drain: float = 150.0
+
+# === WEAPON ===
+@export_group("Weapon")
+
+## Maximum range at which this unit will engage zombies (pixels).
+## Armed units only drain morale when zombies are within this range.
+## Civilians are unarmed — this value is unused for them.
+## Populated automatically from defender_class on _ready().
+@export var weapon_range: float = 0.0
+
+## Time in seconds from target acquisition to shot firing.
+## Populated automatically from defender_class on _ready().
+@export var aim_time: float = 0.0
+
+# === SENTRY ===
+@export_group("Sentry")
+
+## Sentry facing direction in DEGREES (0° = North/Up, 90° = East/Right, 180° = South/Down, 270° = West/Left)
+## Only used if initial_state = SENTRY
+@export_range(0.0, 360.0, 1.0) var sentry_facing_degrees: float = 0.0
+
+## Whether this sentry has a swinging vision arc (looks side to side)
+@export var sentry_has_swing: bool = false
+
+## How far (in degrees) the sentry looks to each side of center
+## Example: 45° means ±45° (90° total sweep from -45° to +45°)
+@export_range(0.0, 90.0, 1.0) var sentry_swing_range: float = 45.0
+
+## Speed of the swing arc in degrees per second
+@export_range(1.0, 180.0, 1.0) var sentry_swing_speed: float = 30.0
+
+## Pause duration (in seconds) at each extreme of the swing
+@export_range(0.0, 2.0, 0.1) var sentry_swing_pause: float = 0.5
 
 # === PATROL ===
 @export_group("Patrol")
 
-## Whether this human patrols between waypoints (positioning only — no watching).
+## Whether this sentry patrols between waypoints
 @export var patrol_enabled: bool = false
 
-## Patrol mode (LOOP or PING_PONG).
+## Patrol mode (LOOP or PING_PONG)
 @export var patrol_mode: PatrolMode = PatrolMode.LOOP
 
-## Movement speed while patrolling.
+## Movement speed while patrolling (usually slower than flee speed)
 @export_range(10.0, 100.0, 5.0) var patrol_speed: float = 50.0
 
-## Patrol waypoints (world positions). If empty and child "Waypoint*" nodes
-## exist, they are loaded from those on _ready().
+## Patrol waypoints (positions to walk between)
+## Example: [(100, 100), (200, 100), (200, 200), (100, 200)]
 @export var patrol_waypoints: Array[Vector2] = []
 
 ## Pause duration (seconds) at each waypoint. Index matches waypoint index.
-## 0.0 or missing = no pause. Empty = no pauses.
+## 0.0 or missing = no pause. Empty array = no pauses (backwards compatible).
+## Example: [2.0, 0.0, 3.0] = pause 2s at waypoint 0, skip waypoint 1, pause 3s at waypoint 2
 @export var patrol_pause_durations: Array[float] = []
+
+## Whether to swing vision arc during pause at each waypoint. Index matches waypoint index.
+## Only has effect when the corresponding pause_duration > 0.
+## Example: [true, false, true] = swing at waypoints 0 and 2, stand still at 1
+@export var patrol_waypoint_swing: Array[bool] = []
+
+## Facing direction override (degrees) at each waypoint. Index matches waypoint index.
+## -1.0 = no override (keep arrival facing). 0.0-360.0 = face this direction (0°=North, 90°=East).
+## Example: [90.0, -1.0, 270.0] = face East at waypoint 0, no override at 1, face West at 2
+@export var patrol_waypoint_facing: Array[float] = []
+
+@export_subgroup("Leader")
+
+## Formation shape for this squad (set on leader only - ignored on followers)
+@export var formation_shape: FormationShape = FormationShape.WEDGE
+
+## Distance in pixels between formation slots
+@export_range(20.0, 120.0, 5.0) var formation_spacing: float = 40.0
+
+## Seconds to wait at a waypoint for followers to regroup before advancing without them
+@export_range(1.0, 30.0, 1.0) var formation_regroup_timeout: float = 10.0
+
+@export_subgroup("Follower")
+
+## NodePath to this unit's patrol leader. Set this to make this human a formation follower.
+## Leave empty for leaders and standalone sentries.
+@export var patrol_leader: NodePath = NodePath("")
+
+## Which slot in the formation this follower occupies (1-based).
+## Slot layout depends on leader's formation_shape setting.
+@export_range(1, 7, 1) var formation_slot: int = 1
+
+@export_subgroup("")
+
+# === VISION ===
+@export_group("Vision")
+
+## Idle state: circular vision radius
+@export var idle_vision_radius: float = 100.0  # Individual detection range (reduced from 120)
+
+## Sentry state: arc vision range and angle
+@export var sentry_vision_range: float = 350.0
+@export var sentry_vision_angle: float = 90.0  # Degrees
+
+## Fleeing state: forward arc vision range and angle
+@export var flee_vision_range: float = 350.0
+@export var flee_vision_angle: float = 90.0  # Degrees
+
+## How often (in seconds) to check for nearby zombies
+## Lower values = more responsive but more expensive
+## Higher values = less CPU but delayed reactions
+@export var detection_interval: float = 0.3
+
+# === FLEE ===
+@export_group("Flee")
+
+## How far (in pixels) the human tries to flee from zombies
+## Used to calculate flee target position
+@export var flee_distance: float = 200.0
+
+## Distance at which humans will start seeking the escape zone (in pixels)
+## Humans within this range with LOS to zone will be pulled toward it
+@export var escape_zone_seek_range: float = 200.0
+
+## DEPRECATED (v0.22.2): Replaced by morale system — depth cap no longer needed.
+## Morale bar naturally limits cascade spread via per-unit drain values.
+## Kept for reference; has no effect when morale system is active.
+## Will be removed in a future cleanup pass.
+# @export_range(0, 10, 1) var panic_propagation_depth: int = 2
+var panic_propagation_depth: int = 2  # Kept as non-export for any legacy references
 
 @export_group("")
 
-## Unit collision radius (must match CollisionShape2D radius).
+# DEPRECATED: Old vector-based direction (kept for backwards compatibility)
+# Use sentry_facing_degrees instead
+var sentry_direction: Vector2 = Vector2.RIGHT
+
+## Unit collision radius (must match CollisionShape2D radius)
 const UNIT_RADIUS: float = 12.0
 
-# === RUNTIME STATE ===
+# === RUNTIME STATE VARIABLES ===
 
-## Current behavioral state.
+## Current behavioral state
 var current_state: State = State.IDLE
 
-## Facing direction — updated from movement; kept for rendering/readability.
+## DEBUG: Only log for first human that flees (reduces spam)
+static var debug_logged_human: Human = null
+var enable_debug_logging: bool = false
+
+## Direction this human is facing (for sentry/fleeing arc calculation)
 var facing_direction: Vector2 = Vector2.RIGHT
 
-## Whether this human is dead (a corpse). Set by die(); read by GameManager
-## win-check, selection, end-game overlay. In v2 a killed human becomes a
-## permanent corpse here until the riser pipeline (step 2.6) raises it in place —
-## the v1 incubation→conversion pipeline was removed in step 1.4.
+## SWING ARC STATE (for sentry swing behavior)
+var swing_center_angle: float = 0.0  # Center direction in degrees
+var current_swing_offset: float = 0.0  # Current offset from center (-swing_range to +swing_range)
+var swing_direction: int = 1  # 1 = swinging right, -1 = swinging left
+var swing_pause_timer: float = 0.0  # Countdown for pause at extremes
+var is_swing_paused: bool = false  # Whether currently paused at extreme
+
+## PATROL STATE (for sentry patrol behavior)
+var current_waypoint_index: int = 0  # Which waypoint we're heading to (0-based)
+var patrol_direction: int = 1  # 1 = forward through waypoints, -1 = backward (for PING_PONG)
+var is_patrolling: bool = false  # Whether currently executing patrol
+var patrol_move_target: Vector2 = Vector2.ZERO  # Current waypoint position we're moving to
+
+## PHASE C: WAYPOINT OBSERVATION STATE
+var is_patrol_paused: bool = false    # Whether currently paused at a waypoint
+var patrol_pause_timer: float = 0.0   # Countdown for current waypoint pause (seconds)
+var is_waypoint_swinging: bool = false # Whether swinging vision during current pause
+
+## FORMATION STATE (leader)
+var is_waiting_to_regroup: bool = false  # Whether holding at waypoint waiting for followers
+var regroup_timer: float = 0.0           # Countdown before advancing without full squad
+
+## FORMATION STATE (follower)
+var _leader_node: Human = null  # Cached resolved reference to patrol_leader node
+
+## Current morale value — drains under stress, triggers response when it reaches 0.
+## Starts at morale_max (set after _apply_class_defaults() runs in _ready()).
+## No drain logic yet — wired up in Phase 3 (v0.22.2).
+var morale: float = 65.0
+
+## Whether this unit is currently grappled (synced with State.GRAPPLED for compatibility)
+## Used by zombies to check grapple status
+var is_grappled: bool = false
+
+## Number of zombies currently attacking this human
+## Used to limit max attackers to 3 per human
+var attacker_count: int = 0
+
+## Timer for reaction delay
+## Counts down from reaction_time before flee begins
+var reaction_timer: float = 0.0
+
+## Last time this human saw a threat (in seconds)
+## Used for flee momentum timeout - stops fleeing after 5s of no visible threats
+var last_threat_time: float = 0.0
+
+## Timer for grapple duration
+## Human locked while this is > 0
+var grapple_timer: float = 1.0
+
+## How long a grapple lasts if zombie moves away
+var grapple_duration: float = 0.5
+
+## Direction the grappling zombie came from (toward it at grapple time).
+## Captured on grapple; used so a released human "gets up" facing that way.
+var _grapple_came_from: Vector2 = Vector2.ZERO
+
+## Seconds a freed human stays down before standing up after its grappler dies.
+var grapple_getup_delay: float = 3.0
+
+## Countdown to standing up; starts once no zombie is grappling. 0 = not counting.
+var _getup_timer: float = 0.0
+
+## Whether this human is dead but not yet converted to zombie
 var is_dead: bool = false
 
-## Set true when this human enters COWER (3.5) and never cleared — so a kill can still
-## tell it was cowering after die() flips the state to DEAD (the terror bonus, §6 /
-## Phase 4.2). is_cowering() is the live check.
-var was_cowering: bool = false
+## Timer for incubation period (5 seconds)
+var incubation_timer: float = 5.0
 
-## Corpse commands (build-plan 6a): set true when this human is killed and queued to rise
-## (GameManager.mark_pending_rise). While it holds AND the human is dead, this corpse is a
-## SELECTABLE, commandable body — the player can queue it a click that GameManager._raise
-## re-resolves (release-or-move) when it stands. Cleared implicitly when the corpse frees.
-var is_pending_rise: bool = false
+## How long it takes for dead human to convert to zombie
+var incubation_duration: float = 5.0
 
-## The queued-rise ROUTE, mirrored from the riser entry PURELY for the interim _draw line
-## (the entry in GameManager is the source of truth, so a freed corpse can't strand it). (#8)
-var _queued_route: Array = []
+## Timer for periodic zombie detection checks
+## Counts down from detection_interval
+var detection_timer: float = 0.0
 
-## Pounce exclusion (spec §3.5): the zombie currently mid-pounce on this human,
-## or null. While claimed, other ferals' retargeting (2.3) skips this human — the
-## single anti-pile-up rule (replaces all attacker caps). Typed Unit to avoid a
-## class dependency on Zombie.
-var _pounce_claimed_by: Unit = null
+# OLD COOLDOWN SYSTEM (REPLACED by priority-based flee system in v0.10.0)
+# These variables are no longer used:
+# var flee_cooldown_timer: float = 0.0
+# var flee_cooldown_duration: float = 0.5
 
-## Readability rings (build-plan 2.4) — interim home; the full readability layer
-## (riser/cower/fill indicators) moves to vision_renderer in 5.1. Each is drawn as a
-## ring in _draw and toggled by a setter that queues a redraw; because they're drawn
-## in local space they track the human automatically without a per-frame redraw.
-## `_hunted` = a feral is currently pursuing me (driven by the GameManager hunt pool).
-## `_hover_highlighted` = the cursor is over me with releasable zombies selected (the
-## release misclick defense, spec §5.1).
-var _hunted: bool = false
-var _hover_highlighted: bool = false
+## Last direction we were fleeing in (used by momentum priority in calculate_flee_direction)
+var last_flee_direction: Vector2 = Vector2.ZERO
 
-# --- PATROL RUNTIME ---
-var current_waypoint_index: int = 0   ## Waypoint we're heading to (0-based)
-var patrol_direction: int = 1         ## 1 = forward, -1 = backward (PING_PONG)
-var is_patrolling: bool = false       ## Whether actively patrolling
-var is_patrol_paused: bool = false    ## Paused at a waypoint
-var patrol_pause_timer: float = 0.0   ## Countdown for the current waypoint pause
+## Cached original move_speed (set after super._ready initialises it).
+## Patrol overwrites move_speed with patrol_speed; this lets flee restore the real value.
+var _base_move_speed: float = 0.0
+
+## Reference to selection circle for targeting visual (selection_indicator is inherited from Unit)
+@onready var selection_circle: Line2D = $SelectionIndicator/SelectionCircle
+
+## Audio player for the gun cocking sound — fires when a zombie enters the vision cone
+@onready var _aim_sound: AudioStreamPlayer2D = $AimSoundPlayer
+
+## Gunshot foley — played once per shot in _fire_at(). Shared AK47 clip for all
+## classes for now; per-class clips can be assigned via _gunshot_sound.stream in
+## _apply_class_defaults() later. Routed through the SFX bus (limiter) to keep
+## large overlapping volleys from clipping.
+@onready var _gunshot_sound: AudioStreamPlayer2D = $GunshotSoundPlayer
+
+## Call-to-attention whistle — played when this human broadcasts a detection alert
+## to nearby allies (the 5-second cone call-out). Gated by the alert's own cooldown.
+@onready var _whistle_sound: AudioStreamPlayer2D = $WhistleSoundPlayer
+
+## Reference to the physics space for raycasting (line-of-sight checks)
+## Cached for performance
+var space_state: PhysicsDirectSpaceState2D
+
+## === MORALE SYSTEM RUNTIME (v0.22.2) ===
+
+## Number of zombies currently visible within morale drain range.
+## Updated on each detection timer tick; used for per-frame sighting drain.
+## For armed units: zombies within weapon_range.
+## For civilians: zombies within full vision range.
+var zombies_in_drain_range_count: int = 0
+
+## Number of zombies visible within full vision range (sentry_vision_range).
+## Updated each detection tick. Drives the cone timer for all classes,
+## including armed units whose drain range is gated at weapon_range.
+var _zombies_in_vision_count: int = 0
+
+## Position of the nearest zombie within full vision range.
+## Used as the threat position for the detection alert broadcast.
+var _nearest_vision_zombie_pos: Vector2 = Vector2.ZERO
+
+## Position of the nearest zombie currently in drain range.
+## Updated each detection tick alongside zombies_in_drain_range_count.
+## Used to set tunnel vision facing direction when morale empties from sighting drain.
+var _nearest_drain_zombie_pos: Vector2 = Vector2.ZERO
+
+## World position of the last event that drained morale.
+## When morale hits 0, GI/Spec Ops lock their tunnel vision toward this point.
+var _last_threat_position: Vector2 = Vector2.ZERO
+
+## Last known states of nearby allies, keyed by instance_id.
+## Used to detect ally state transitions (→ GRAPPLED, → FLEEING) for one-time drain hits.
+## Cleared when ally leaves 150px radius or dies.
+var _last_ally_states: Dictionary = {}
+
+## Programmatically created morale bar (shown when morale is below 80%).
+## Created in _ready() — no scene changes needed.
+var _morale_bar: ProgressBar = null
+
+## === TUNNEL VISION RUNTIME (v0.22.4) ===
+
+## Countdown timer for tunnel vision duration (10 seconds).
+var _tunnel_vision_timer: float = 0.0
+
+## Facing direction locked at the moment tunnel vision triggered.
+## Vision cone is fixed to this direction for the duration.
+var _tunnel_vision_locked_direction: Vector2 = Vector2.RIGHT
+
+## Tunnel vision cone angle (degrees) — narrowed from 90° to 22.5°.
+const TUNNEL_VISION_ANGLE: float = 22.5
+
+## Duration of tunnel vision state (seconds).
+const TUNNEL_VISION_DURATION: float = 10.0
+
+## === ALERT SYSTEM RUNTIME (v0.23.0) ===
+
+## How long a zombie has been continuously in this human's vision cone.
+## Resets to 0 when cone is empty. Alert fires at 5 seconds.
+var _cone_timer: float = 0.0
+
+## Whether the detection alert has already fired for the current detection event.
+## Prevents repeated firing while zombie stays in cone.
+## Resets when cone clears.
+var _alert_fired: bool = false
+
+## Cooldown after alert fires — 30 seconds before it can fire again.
+var _alert_cooldown: float = 0.0
+
+## Counts down after the target leaves the cone before a human returns to its
+## original facing. Set per loss reason: ~3s after a kill, 10s after an escape.
+## Resets (re-pinned to full) while a zombie remains engaged in the cone.
+var _facing_return_timer: float = 0.0
+
+## Counts down after the target leaves the cone before a patrolling human resumes
+## patrol. Set per loss reason: ~3s after a kill, 10s after an escape.
+## Resets (re-pinned to full) while a zombie remains engaged in the cone.
+var _patrol_resume_timer: float = 0.0
+
+## Whether this human was patrolling before the alert fired.
+## Used to correctly restore patrol state after _patrol_resume_timer expires.
+var _was_patrolling: bool = false
+
+## Whether this human is currently in an alerted state (facing overridden by alert).
+## Suppresses swing arc so alert facing isn't overwritten each frame.
+var _is_alerted: bool = false
+
+## Set when a return-to-original-facing rotation begins.
+## Tells the rotation block to clear alert state once it completes,
+## rather than snapping instantly. Cleared automatically on rotation complete.
+var _is_returning_to_original: bool = false
+
+## Facing direction captured the moment the FIRST alert fires (before any rotation).
+## Used to return to the correct original direction when all alerts resolve.
+## Only captured when _is_alerted is false — subsequent alerts don't overwrite it.
+## Zeroed out when returning to original facing so fresh captures work correctly.
+var _pre_alert_facing: Vector2 = Vector2.ZERO
+
+## === HIGH URGENCY ALERT RUNTIME (v0.23.1) ===
+
+## Shared cooldown across all high urgency events (grapple, kill, gunshot) — 2 seconds.
+## Prevents thrashing when multiple events fire in quick succession.
+var _high_urgency_cooldown: float = 0.0
+
+## Pending high urgency event position — applied after 0.4s reaction delay.
+var _high_urgency_pending_pos: Vector2 = Vector2.ZERO
+
+## Countdown before applying high urgency facing — 0.4s reaction delay.
+var _high_urgency_delay_timer: float = 0.0
+
+## Target facing direction for smooth rotation toward alert events.
+## Each frame, facing_direction rotates toward this at ALERT_TURN_SPEED.
+## Set by _apply_alert_facing() and receive_high_urgency_alert().
+## Vector2.ZERO means no active rotation target.
+var _target_facing: Vector2 = Vector2.ZERO
+
+## Turn speed for alert-driven rotation — 360°/sec = 180° in 0.5s.
+const ALERT_TURN_SPEED: float = 360.0
+var shoot_target: Unit = null
+
+## Countdown timer for aim — fires when it reaches 0.
+## Starts at aim_time on target acquisition, pauses if LOS lost, resets on new target.
+var _aim_timer: float = 0.0
+
+## Whether aim timer is currently paused (target temporarily lost LOS).
+var _aim_paused: bool = false
+
+## Whether the gun-cocking foley has already played for the current engagement.
+## Set when the cock plays on first target acquisition; reset only when the human
+## fully disengages (returns to its watch / resumes patrol). Prevents the cock
+## from replaying on every re-acquisition (e.g. per kill during a sustained
+## firefight, which was very noticeable for fast classes like Spec Ops).
+var _has_cocked: bool = false
+
+## Line2D node used to draw the tracer line on firing.
+## Created in _ready() as a child node.
+var _tracer_line: Line2D = null
+
+## How long the tracer line stays visible after firing (seconds).
+const TRACER_FADE_DURATION: float = 0.1
+
+## Countdown for tracer fade.
+var _tracer_timer: float = 0.0
 
 
-## The fill front (build-plan 3.1) — armed shot mechanic / civilian reaction clock, a
-## child component ticked by this shell's dispatcher (mirrors the zombie component
-## pattern). Null in the editor.
-var _fill_front: FillBehavior = null
+## Applies morale and weapon stat defaults based on defender_class.
+## Called at the start of _ready() so all systems see correct values.
+## Individual Inspector exports override these after this runs —
+## so you can still tweak per-unit values on top of the class baseline.
+##
+## Morale values: morale_max, sighting_drain, grappled_drain, fleeing_drain, killed_drain
+## Weapon values: weapon_range, aim_time
+##
+## Source of truth: HUMAN_DEFENDER_SYSTEM_SPEC.md v0.22.0
+func _apply_class_defaults() -> void:
+	match defender_class:
+		DefenderClass.CIVILIAN:
+			morale_max       = 65.0
+			sighting_drain   = 30.0   # Drains at full vision range (350px) — no weapon threshold
+			grappled_drain   = 100.0
+			fleeing_drain    = 50.0
+			killed_drain     = 150.0
+			weapon_range     = 0.0    # Unarmed
+			aim_time         = 0.0    # Unarmed
+		DefenderClass.MILITIA:
+			morale_max       = 150.0
+			sighting_drain   = 35.0   # Drains within weapon range only
+			grappled_drain   = 100.0
+			fleeing_drain    = 40.0
+			killed_drain     = 150.0
+			weapon_range     = 150.0  # Shotgun
+			aim_time         = 0.7
+		DefenderClass.POLICE:
+			morale_max       = 200.0
+			sighting_drain   = 0.0    # Immune to sighting drain
+			grappled_drain   = 100.0
+			fleeing_drain    = 40.0
+			killed_drain     = 150.0
+			weapon_range     = 150.0  # Pistol
+			aim_time         = 0.55
+		DefenderClass.GI:
+			morale_max       = 400.0
+			sighting_drain   = 0.0    # Immune to sighting drain
+			grappled_drain   = 275.0  # Primary breaking point
+			fleeing_drain    = 20.0
+			killed_drain     = 150.0
+			weapon_range     = 250.0  # Assault rifle
+			aim_time         = 0.525
+		DefenderClass.SPEC_OPS:
+			morale_max       = 1000.0
+			sighting_drain   = 0.0    # Immune to sighting drain
+			grappled_drain   = 100.0
+			fleeing_drain    = 0.0    # Immune to fleeing drain
+			killed_drain     = 150.0
+			weapon_range     = 250.0  # Assault rifle
+			aim_time         = 0.26
+	
+	# Initialise morale to full bar after defaults applied
+	morale = morale_max
+	
+	#print("🪖 ", name, " initialised as ", DefenderClass.keys()[defender_class],
+		#" | morale_max: ", morale_max,
+		#" | weapon_range: ", weapon_range,
+		#" | aim_time: ", aim_time)
 
-## The rout (build-plan 3.2) — steers a broken human to the nearest exit while FLEEING.
-## Null in the editor.
-var _flee: FleeBehavior = null
 
-## The fear break (build-plan 3.3) — counts zombies in fear_radius and breaks the human
-## when the class threshold is exceeded. Null in the editor.
-var _fear: FearDetector = null
-
-## Initialise the human: team, state, patrol, base unit, LOS space.
+## Called when the node enters the scene tree
+## Ensures this unit is always on the human team
 func _ready() -> void:
-	# Force onto the human team.
+	# Capture inspector value before _apply_class_defaults() clobbers it.
+	# 0.0 means "use class default"; any other value is an intentional override.
+	var _inspector_weapon_range := weapon_range
+	# Apply morale and weapon defaults for the selected defender class.
+	# Must run first — other systems may read these values.
+	_apply_class_defaults()
+	# Restore inspector override if one was set.
+	if _inspector_weapon_range != 0.0:
+		weapon_range = _inspector_weapon_range
+	
+	# Force this unit to be on the human team
 	team = Team.HUMANS
-
+	
+	# Humans are defenseless - zero attack damage
+	attack_damage = 0.0
+	
+	# Set initial state from editor configuration
 	current_state = initial_state
-
-	# Load waypoints from child "Waypoint*" nodes if none were set in the Inspector.
-	if patrol_enabled and patrol_waypoints.size() == 0:
+	
+	# If sentry, set facing direction from degrees
+	if current_state == State.SENTRY:
+		# Convert degrees to Vector2 direction
+		# 0° = North (up), 90° = East (right), 180° = South (down), 270° = West (left)
+		swing_center_angle = sentry_facing_degrees
+		facing_direction = degrees_to_vector(sentry_facing_degrees)
+		
+		# Initialize swing arc state
+		current_swing_offset = 0.0
+		swing_direction = 1  # Start swinging right
+		swing_pause_timer = 0.0
+		is_swing_paused = false
+		
+		# Backwards compatibility: update old vector property
+		sentry_direction = facing_direction
+	
+	# Load waypoints from child nodes (if no manual waypoints set)
+	# This allows visual waypoint placement by dragging Node2D children
+	# Skip for followers - they don't use waypoints directly
+	if patrol_enabled and patrol_waypoints.size() == 0 and patrol_leader.is_empty():
 		load_waypoints_from_children()
-
-	# Start patrolling if configured with at least one waypoint.
-	if patrol_enabled and patrol_waypoints.size() > 0:
+	
+	# Initialize patrol if enabled, waypoints exist, and this is a leader (not a follower)
+	if patrol_enabled and patrol_waypoints.size() > 0 and patrol_leader.is_empty():
 		is_patrolling = true
 		current_waypoint_index = 0
 		patrol_direction = 1
-
-	# Base Unit init (movement, BOID separation, bounds, selection visuals).
+		patrol_move_target = patrol_waypoints[0]
+		#print("Patrol initialized for ", name, " with ", patrol_waypoints.size(), " waypoints")
+	
+	# Call the parent class's _ready() to initialize all base unit functionality
 	super._ready()
+	
+	# Cache the real flee speed AFTER super._ready() sets it.
+	# Patrol will overwrite move_speed with patrol_speed; this lets flee restore
+	# the correct speed when a patrolling human spots a zombie.
+	_base_move_speed = move_speed
+	
+	# Cache the physics space state for raycasting
+	space_state = get_world_2d().direct_space_state
+	
+	# Create morale bar programmatically — hidden when healthy, shown when draining
+	# Sized and positioned to match the health bar (offset-based, not size-based)
+	# Health bar: offset_left=-15, offset_top=-25, offset_right=15, offset_bottom=-20 (30×5px)
+	# Morale bar sits just above it at offset_top=-32, offset_bottom=-27
+	_morale_bar = ProgressBar.new()
+	_morale_bar.min_value = 0.0
+	_morale_bar.max_value = morale_max
+	_morale_bar.value = morale_max
+	_morale_bar.offset_left = -15.0
+	_morale_bar.offset_top = -32.0
+	_morale_bar.offset_right = 15.0
+	_morale_bar.offset_bottom = -27.0
+	_morale_bar.show_percentage = false
+	_morale_bar.visible = false  # Hidden until morale starts dropping
+	# Style: yellow fill on dark background
+	var style_bg := StyleBoxFlat.new()
+	style_bg.bg_color = Color(0.1, 0.1, 0.1, 0.8)
+	var style_fill := StyleBoxFlat.new()
+	style_fill.bg_color = Color(0.9, 0.8, 0.1, 1.0)  # Yellow
+	_morale_bar.add_theme_stylebox_override("background", style_bg)
+	_morale_bar.add_theme_stylebox_override("fill", style_fill)
+	add_child(_morale_bar)
+	
+	# Create tracer Line2D — hidden until a shot fires
+	# Start point at bottom-center of sprite (y=15 = bottom edge in local space)
+	_tracer_line = Line2D.new()
+	_tracer_line.width = 1.5
+	_tracer_line.default_color = Color(1.0, 0.9, 0.3, 0.9)  # Bright yellow
+	_tracer_line.visible = false
+	_tracer_line.z_index = 2
+	add_child(_tracer_line)
 
-	# Behavior components (runtime only — no AI in the editor).
-	if not Engine.is_editor_hint():
-		_fill_front = FillBehavior.new()
-		_fill_front.name = "FillBehavior"
-		add_child(_fill_front)
-		_fill_front.setup(self)
 
-		_flee = FleeBehavior.new()
-		_flee.name = "FleeBehavior"
-		add_child(_flee)
-		_flee.setup(self)
-
-		_fear = FearDetector.new()
-		_fear.name = "FearDetector"
-		add_child(_fear)
-		_fear.setup(self)
-
-		_add_class_label()
-
-
-## Editor-only redraw so patrol-path visuals update while placing waypoints.
+## Called every frame (including in editor)
+## Used to update visual indicators when properties change
 func _process(_delta: float) -> void:
+	# In editor, redraw when sentry properties change
 	if Engine.is_editor_hint():
 		queue_redraw()
 
 
-## Per-physics-frame dispatcher (V2 skeleton): DEAD handling → patrol → base unit.
-## @param delta: Physics timestep in seconds.
+## Draws visual indicators in the editor
+## Shows sentry facing direction and swing arc range
+func _draw() -> void:
+	# Only draw in editor
+	if not Engine.is_editor_hint():
+		return
+	
+	# Only draw for sentries
+	if initial_state != State.SENTRY:
+		return
+	
+	# Draw facing direction arrow
+	var arrow_length = 60.0
+	var arrow_dir = degrees_to_vector(sentry_facing_degrees)
+	var arrow_end = arrow_dir * arrow_length
+	
+	# Main arrow line (thicker, bright color)
+	draw_line(Vector2.ZERO, arrow_end, Color.CYAN, 3.0)
+	
+	# Arrowhead
+	var arrow_size = 12.0
+	var arrow_angle = 25.0  # degrees
+	var arrow_left = arrow_end - arrow_dir.rotated(deg_to_rad(arrow_angle)) * arrow_size
+	var arrow_right = arrow_end - arrow_dir.rotated(deg_to_rad(-arrow_angle)) * arrow_size
+	draw_line(arrow_end, arrow_left, Color.CYAN, 3.0)
+	draw_line(arrow_end, arrow_right, Color.CYAN, 3.0)
+	
+	# Draw swing arc range if enabled
+	if sentry_has_swing and sentry_swing_range > 0:
+		var arc_radius = 50.0
+		var arc_color = Color(0.5, 1.0, 0.5, 0.4)  # Semi-transparent green
+		
+		# Calculate arc endpoints
+		var left_angle_deg = sentry_facing_degrees - sentry_swing_range
+		var right_angle_deg = sentry_facing_degrees + sentry_swing_range
+		
+		var left_dir = degrees_to_vector(left_angle_deg)
+		var right_dir = degrees_to_vector(right_angle_deg)
+		
+		# Draw arc lines
+		draw_line(Vector2.ZERO, left_dir * arc_radius, arc_color, 2.0)
+		draw_line(Vector2.ZERO, right_dir * arc_radius, arc_color, 2.0)
+		
+		# Draw arc curve (approximate with line segments)
+		var segments = 10
+		var angle_step = (sentry_swing_range * 2.0) / segments
+		for i in range(segments):
+			var angle1 = left_angle_deg + (angle_step * i)
+			var angle2 = left_angle_deg + (angle_step * (i + 1))
+			var p1 = degrees_to_vector(angle1) * arc_radius
+			var p2 = degrees_to_vector(angle2) * arc_radius
+			draw_line(p1, p2, arc_color, 2.0)
+	
+	# Draw patrol waypoints if enabled
+	if patrol_enabled and patrol_waypoints.size() > 0:
+		var path_color = Color(1.0, 0.8, 0.0, 0.6)  # Yellow/orange, semi-transparent
+		var waypoint_color = Color(1.0, 0.8, 0.0, 1.0)  # Solid yellow
+		
+		# Draw lines connecting waypoints
+		for i in range(patrol_waypoints.size()):
+			var current_wp = patrol_waypoints[i] - global_position  # Convert to local
+			
+			# Draw waypoint dot
+			draw_circle(current_wp, 8.0, waypoint_color)
+			
+			# Draw waypoint number
+			var number_offset = Vector2(0, -15)
+			# Note: Can't draw text in _draw() without a font, just use circles
+			
+			# Draw line to next waypoint
+			var next_index = -1
+			if patrol_mode == PatrolMode.LOOP:
+				next_index = (i + 1) % patrol_waypoints.size()  # Wrap around
+			elif patrol_mode == PatrolMode.PING_PONG:
+				if i < patrol_waypoints.size() - 1:
+					next_index = i + 1  # Forward
+			
+			if next_index >= 0:
+				var next_wp = patrol_waypoints[next_index] - global_position
+				draw_line(current_wp, next_wp, path_color, 2.0)
+		
+		# For PING_PONG, draw return path in different color
+		if patrol_mode == PatrolMode.PING_PONG and patrol_waypoints.size() > 1:
+			var return_color = Color(0.5, 0.8, 1.0, 0.4)  # Light blue, more transparent
+			# Return path is implicit - shown by patrol behavior
+
+
+## Called every physics frame (before the base Unit._physics_process)
+## Checks for nearby zombies and triggers fleeing if needed
+## Handles grapple state when caught by zombies
+## @param delta: Physics timestep in seconds
 func _physics_process(delta: float) -> void:
+	# Don't run game logic in editor
 	if Engine.is_editor_hint():
 		return
-
-	# Self-correct a stale state if anything left is_dead out of sync with DEAD.
+	
+	# Detect + self-correct a state mismatch. The correction always runs; the
+	# diagnostic is debug-build-only so it doesn't ship.
 	if is_dead and current_state != State.DEAD:
+		if OS.is_debug_build():
+			push_error("BUG FOUND! is_dead=true but current_state=", State.keys()[current_state], " at ", position)
+		# Force correct state
 		current_state = State.DEAD
 		velocity = Vector2.ZERO
 		has_target = false
-
-	# DEAD: permanent corpse — hold still. (The riser pipeline in step 2.6 will
-	# raise it in place; the v1 incubation→conversion was removed in step 1.4.)
+		attack_target = null
+	
+	# Handle incubation (dead but converting)
 	if current_state == State.DEAD:
+		# Force stop all movement every frame
 		velocity = Vector2.ZERO
-		return
-
-	if current_state == State.COWER:
-		# Frozen but alive (§4.4): no flee, no fill, NO MOVEMENT — still a normal pounce
-		# target. We deliberately DON'T call super here: its BOID separation moves the unit
-		# via move_and_collide, so a passing/huddling crowd would shove the cowerer around
-		# ("cowerer ran away"). Other units still flow around it — their own separation
-		# pushes THEM off the cowerer (it stays in the registry). Trade-off: two humans
-		# cowering at the same spot may overlap — acceptable (§4.4 "huddle together").
-		velocity = Vector2.ZERO
-		return
-
-	if current_state == State.SHELTERED:
-		# Sheltered (buildings spec §6.1): walk to the claimed spot, then hold. The
-		# cower detector is suspended (it only runs in the FLEEING tick — the §6.1
-		# "auto-cower inside" bug can't exist). FEAR IS SUSPENDED TOO: dread cannot
-		# penetrate an intact shelter, and a human standing IN the door gap sits
-		# inside the DoorLOS body where outward rays leak (hit_from_inside) — with
-		# fear live that leak caused a 60Hz break→re-enter loop.
-		#
-		# THE FLUSH (§8.1, step 6): once the building is BREACHED, dread pours in —
-		# fear re-arms for CIVILIANS, LOS-gated as always (§8.2: interior walls
-		# block dread, open doorways leak it — panic sweeps the floor plan room by
-		# room as ferals round corners). A broken civilian start_fleeing()s: out of
-		# the occupancy, out through whatever exit remains (the breached building
-		# left the set). Armed humans are the LAST STAND (§7.2): fear stays
-		# suspended forever — they hold their spots and fire until killed.
-		if not is_armed() and not is_safely_sheltered() and _fear != null:
-			_fear.tick(delta)
-		if _is_breaking():
-			velocity = Vector2.ZERO
-		elif _flee != null:
-			_flee.tick_sheltered(delta)
-		# Armed interior defense (step 5): pre-breach the fill runs only FROM THE
-		# CLAIMED SPOT — an entrant walking the door gap stands INSIDE the DoorLOS
-		# body, where outward rays leak (hit_from_inside) and drew phantom fill
-		# lines at zombies outside (Ben's step-7 catch). Once the breach opens
-		# real lanes it runs anywhere. A phantom picked up in the gap is dropped.
-		if is_armed() and _fill_front != null:
-			if at_shelter_spot() or not is_safely_sheltered():
-				_fill_front.tick(delta)
-			elif _fill_front.fill_length() > 0.0 or _fill_front.current_target() != null:
-				_fill_front.cancel()
-	elif current_state == State.FLEEING:
-		# Permanent rout (§4.3): steer to the exit. No patrol, no fill.
-		if _flee != null:
-			_flee.tick(delta)
+		
+		# Debug: Check if velocity is somehow non-zero AFTER we clear it
+		if OS.is_debug_build() and velocity.length() > 0.01:
+			push_warning("DEAD HUMAN MOVING! Velocity: ", velocity, " at ", position)
+		
+		incubation_timer -= delta
+		if incubation_timer <= 0.0:
+			# Incubation complete - spawn zombie
+			#print("DEBUG: Incubation timer reached 0, spawning zombie")
+			spawn_zombie_conversion()
+			queue_free()  # Remove corpse
+		return  # Dead humans don't move or react
+	
+	# Update detection timer
+	detection_timer -= delta
+	
+	# Handle grapple state transitions
+	if current_state == State.GRAPPLED:
+		is_grappled = true  # Sync flag for compatibility
+		# Stay grappled while a zombie is still pinning us. If the grappler is gone
+		# (killed before it could convert us — our own death would have set DEAD
+		# first and skipped this branch), wait grapple_getup_delay seconds, then the
+		# human gets up. is_being_attacked() returns false once no engaged zombie
+		# remains within range; a fresh pin cancels the pending get-up.
+		if is_being_attacked():
+			_getup_timer = 0.0  # still pinned — cancel any pending get-up
+		else:
+			if _getup_timer <= 0.0:
+				_getup_timer = grapple_getup_delay  # grappler just died — start countdown
+			_getup_timer -= delta
+			if _getup_timer <= 0.0:
+				_release_from_grapple()
 	else:
-		# Defending (IDLE / SENTRY). Fear is checked first — it can commit a break
-		# (cancels the fill) and, after the reaction beat, start the rout (3.3).
-		if _fear != null:
-			_fear.tick(delta)
-		if _is_breaking():
-			# Frozen during the fear reaction beat (spec §4.2: animation time, not a
-			# last-stand window) — no patrol, no fill, no shot.
-			velocity = Vector2.ZERO
-		elif is_armed() and _fill_front != null and _fill_front.is_reached():
-			# Stop-to-fire (A2): once the front has reached its target, halt so the aim
-			# rotation owns facing — a MOVING defender would otherwise overwrite the turn
-			# each frame (the facing = velocity line below) and never complete it off-axis.
-			# has_target/velocity are cleared so super() won't drive a move; patrol resumes
-			# automatically once the shot fires and the front resets (is_reached → false).
-			# NOTE: only manifests for a MOVING armed defender (i.e. patrol). No patrols
-			# exist yet, so this is pre-emptive and UNTESTED — deferred test lives in the
-			# phase3-test-criteria memory; re-run it when patrols return.
+		is_grappled = false  # Sync flag for compatibility
+		# Not currently grappled - check if we should be
+		if is_being_attacked():
+			# Just got grappled - transition to grappled state
+			current_state = State.GRAPPLED
+			is_grappled = true  # Sync flag
+
+	# While grappled, can't move
+	if current_state == State.GRAPPLED:
+		velocity = Vector2.ZERO
+		return  # Skip normal movement processing
+	
+	# Update patrol if enabled and in SENTRY state
+	# Followers use update_formation_follow() instead of update_patrol()
+	if not patrol_leader.is_empty() and current_state == State.SENTRY:
+		update_formation_follow(delta)
+	elif is_patrolling and current_state == State.SENTRY and not (current_state == State.FLEEING):
+		update_patrol(delta)
+	
+	# Check for nearby zombies periodically (not every frame for performance)
+	if detection_timer <= 0.0:
+		check_for_nearby_zombies()
+		detection_timer = detection_interval
+	
+	# === MORALE SIGHTING DRAIN (v0.22.2) ===
+	# Apply continuous drain from visible zombies in range — runs every frame for smoothness.
+	# Suppressed during TUNNEL_VISION (immune to all drain while active).
+	if zombies_in_drain_range_count > 0 and current_state != State.DEAD and current_state != State.GRAPPLED and current_state != State.TUNNEL_VISION:
+		_last_threat_position = _nearest_drain_zombie_pos
+		_drain_morale(sighting_drain * zombies_in_drain_range_count * delta)
+	
+	# === CONE TIMER (v0.23.0) ===
+	# Tracks how long any zombie has been continuously in this human's vision cone.
+	# Drives the detection alert system — alert fires at 5 seconds.
+	_alert_cooldown = max(0.0, _alert_cooldown - delta)
+	_high_urgency_cooldown = max(0.0, _high_urgency_cooldown - delta)
+	
+	# === HIGH URGENCY DELAY TIMER (v0.23.1) ===
+	# Applies pending high urgency facing after 0.4s reaction delay.
+	if _high_urgency_delay_timer > 0.0:
+		_high_urgency_delay_timer -= delta
+		if _high_urgency_delay_timer <= 0.0 and _high_urgency_pending_pos != Vector2.ZERO:
+			_target_facing = (_high_urgency_pending_pos - global_position).normalized()
+			print("🔄 [ROTATING] ", name, " → ", snapped(rad_to_deg(_target_facing.angle()) + 90.0, 0.1), "° (high urgency facing applied)")
+			_high_urgency_pending_pos = Vector2.ZERO
+
+	var zombies_in_cone := _zombies_in_vision_count > 0
+	if zombies_in_cone and current_state != State.TUNNEL_VISION:
+		# Zombie in cone — increment cone timer and keep the return/resume cooldowns
+		# pinned "full" for as long as a live zombie is visible, whether or not this
+		# human is aiming at it. A passive watcher is just as anchored as a shooter.
+		# Once the zombie is gone the cooldown counts down from whatever the loss set
+		# it to — a short kill reset (3s) or the full escape cooldown (10s). A kill
+		# forces an immediate recount (see _update_shooting / receive_zombie_killed_alert)
+		# so the up-to-0.3s-stale count here can't re-pin a just-killed zombie to full.
+		_cone_timer += delta
+		_facing_return_timer = 10.0
+		_patrol_resume_timer = 10.0
+
+		# Fire detection alert at 5 seconds if not in cooldown
+		if _cone_timer >= 5.0 and not _alert_fired and _alert_cooldown <= 0.0:
+			_alert_fired = true
+			_alert_cooldown = 30.0
+			# Only latch _was_patrolling when actually patrolling — never clobber an
+			# already-true value (the patrol may already be halted by halt-to-aim).
+			if is_patrolling:
+				_was_patrolling = true
+				is_patrolling = false  # Pause patrol during alert
+			var _pa_str := "not captured" if _pre_alert_facing == Vector2.ZERO else str(snapped(rad_to_deg(_pre_alert_facing.angle()) + 90.0, 0.1)) + "°"
+			print("🚨 [ALERT FIRED] ", name, " | facing: ", snapped(rad_to_deg(facing_direction.angle()) + 90.0, 0.1), "° | pre_alert_facing: ", _pa_str)
+			_is_alerted = true
+			_broadcast_detection_alert(_nearest_vision_zombie_pos)
+	else:
+		# Cone clear — reset cone timer and alert flag, count down return timers.
+		# The cooldowns were already pinned to full while engaged (above) and the
+		# loss path (kill vs escape) sets the value to count down from, so there's
+		# nothing to re-arm here.
+		_cone_timer = 0.0
+		_alert_fired = false
+		
+		# Count down return timers
+		if _facing_return_timer > 0.0:
+			_facing_return_timer -= delta
+			if _facing_return_timer <= 0.0:
+				var _ret_dir2 := _pre_alert_facing if _pre_alert_facing != Vector2.ZERO else degrees_to_vector(sentry_facing_degrees)
+				print("↩️ [DETECTION RETURN] ", name, " returning to ", snapped(rad_to_deg(_ret_dir2.angle()) + 90.0, 0.1), "° (was ", snapped(rad_to_deg(facing_direction.angle()) + 90.0, 0.1), "°  pre_alert_captured=", _pre_alert_facing != Vector2.ZERO, ")")
+				_target_facing = _ret_dir2
+				_is_returning_to_original = true
+				# Engagement over — re-arm the gun-cock so the next fresh detection
+				# cocks again (it's suppressed during a continuous engagement).
+				_has_cocked = false
+				# _is_alerted stays true — rotation block clears it when rotation completes
+		
+		# Note: a live target is dropped on cone-exit by _update_shooting (fresh
+		# per-frame check), not here — the cone block reads the lagged 0.3s vision
+		# count and must never null shoot_target, or the swing arc could snap facing
+		# to neutral during the detection lag and break the cone lock.
+		if _patrol_resume_timer > 0.0:
+			_patrol_resume_timer -= delta
+			if _patrol_resume_timer <= 0.0 and _was_patrolling and not is_patrolling:
+				# Resume patrol
+				print("🚶 [PATROL RESUME] ", name, " | current facing: ", snapped(rad_to_deg(facing_direction.angle()) + 90.0, 0.1), "°")
+				is_patrolling = true
+				_was_patrolling = false
+				# Patrol movement owns facing now — clear any pending facing-return
+				# state so the alert-rotation block doesn't fight movement facing and
+				# leave _is_alerted/_pre_alert_facing stale for the next engagement.
+				_is_alerted = false
+				_target_facing = Vector2.ZERO
+				_is_returning_to_original = false
+				_pre_alert_facing = Vector2.ZERO
+	
+	# === TUNNEL VISION TIMER (v0.22.4) ===
+	if current_state == State.TUNNEL_VISION:
+		_tunnel_vision_timer -= delta
+		if _tunnel_vision_timer <= 0.0:
+			print("🔓 ", name, " tunnel vision ended → SENTRY")
+			current_state = State.SENTRY
+			facing_direction = _tunnel_vision_locked_direction
+			morale = morale_max * 0.5
+			_update_morale_visual()
+		# Don't return here — fall through to shooting system below
+	
+	# Adjust formation cohesion based on state (BEFORE calling super)
+	# Idle/sentry: moderate cohesion (maintain patrol formations)
+	# Fleeing: strong cohesion (panic as a group)
+	match current_state:
+		State.IDLE, State.SENTRY:
+			# Formation followers reduce separation while converging to avoid shoving each other
+			# off their paths. Once in position they restore normal values.
+			if not patrol_leader.is_empty() and _leader_node != null and is_instance_valid(_leader_node):
+				var slot_target := _leader_node.global_position + _leader_node.get_formation_offset(formation_slot)
+				var dist_to_slot := global_position.distance_to(slot_target)
+				if dist_to_slot > formation_slot * 5.0:  # Still converging
+					self.cohesion_strength = 0.0
+					self.alignment_rate = 0.0
+					self.separation_radius = 8.0    # Much smaller — let them pass through
+					self.separation_strength = 20.0  # Much weaker — soft nudge only
+				else:
+					self.cohesion_strength = 0.0    # No cohesion — slot target handles positioning
+					self.alignment_rate = 0.0
+					self.separation_radius = 20.0   # Normal-ish once in position
+					self.separation_strength = 80.0
+			else:
+				self.cohesion_strength = 12.0
+				self.alignment_rate = 0.3
+				self.separation_radius = 30.0
+				self.separation_strength = 100.0
+		State.FLEEING:
+			self.cohesion_strength = 0.0  # DISABLED when fleeing - no pull
+			self.alignment_rate = 0.0      # No alignment when fleeing
+			self.separation_radius = 35.0   # More space while fleeing
+			self.separation_strength = 120.0
+		State.GRAPPLED, State.DEAD:
+			# Disable formation forces
+			self.cohesion_strength = 0.0
+			self.alignment_rate = 0.0
+			self.separation_radius = 20.0
+			self.separation_strength = 50.0
+	
+	# === ALERT ROTATION (v0.23.0) ===
+	# Smoothly rotate toward _target_facing when alerted.
+	if _target_facing != Vector2.ZERO and _is_alerted:
+		var angle_diff := facing_direction.angle_to(_target_facing)
+		var max_turn := deg_to_rad(ALERT_TURN_SPEED) * delta
+		if abs(angle_diff) <= max_turn:
+			facing_direction = _target_facing
+			_target_facing = Vector2.ZERO  # Reached target — stop rotating
+			# If this was a return-to-original rotation, clear alert state now
+			if _is_returning_to_original:
+				swing_center_angle = rad_to_deg(facing_direction.angle()) + 90.0
+				_pre_alert_facing = Vector2.ZERO
+				_is_alerted = false
+				_is_returning_to_original = false
+		else:
+			facing_direction = facing_direction.rotated(sign(angle_diff) * max_turn)
+	
+	# === SHOOT TARGET FACING (v0.25.2) ===
+	# While actively aiming, smoothly rotate to centre on the shoot target.
+	# Only in SENTRY state, not patrolling, not a formation follower.
+	# Runs independently of _is_alerted — shoot tracking takes priority over
+	# alert rotation if both are active simultaneously.
+	if shoot_target != null and is_instance_valid(shoot_target) 			and current_state == State.SENTRY 			and not is_patrolling 			and patrol_leader.is_empty():
+		# Capture original facing before shoot tracking begins (first acquisition only).
+		if _pre_alert_facing == Vector2.ZERO:
+			_pre_alert_facing = facing_direction
+			print("🔒 [PRE-ALERT CAPTURED] ", name, " | facing: ", snapped(rad_to_deg(facing_direction.angle()) + 90.0, 0.1), "° (shoot tracking start)")
+		var to_target := (shoot_target.position - position).normalized()
+		var angle_diff := facing_direction.angle_to(to_target)
+		var max_turn := deg_to_rad(ALERT_TURN_SPEED) * delta
+		if abs(angle_diff) > 0.01:
+			if abs(angle_diff) <= max_turn:
+				facing_direction = to_target
+			else:
+				facing_direction = facing_direction.rotated(sign(angle_diff) * max_turn)
+
+	# Update sentry swing arc (if applicable)
+	# Only swings when fully calm — suppressed while alerted, while shoot tracking,
+	# AND throughout the post-engagement cooldown (return/resume timers > 0). Without
+	# the cooldown guard a momentary shoot_target gap during engagement would let the
+	# swing snap facing back to its neutral centre, breaking the cone lock (the zombie
+	# would fall outside the now-neutral cone and never be re-acquired).
+	if current_state == State.SENTRY and sentry_has_swing and not is_patrolling and patrol_leader.is_empty() and not _is_alerted and shoot_target == null and _facing_return_timer <= 0.0 and _patrol_resume_timer <= 0.0:
+		update_swing_arc(delta)
+	
+	# Update facing direction based on movement
+	# Patrol and formation following both face movement direction
+	if velocity.length() > 0.1:
+		if is_patrolling or not patrol_leader.is_empty():
+			# Leaders face where they're walking; followers face their movement direction
+			facing_direction = velocity.normalized()
+		elif current_state != State.SENTRY:
+			# Non-sentries face movement direction
+			facing_direction = velocity.normalized()
+		# Stationary sentries (not patrolling, not following) maintain swing direction
+	
+	# === SHOOTING SYSTEM (v0.22.3) ===
+	# Armed units shoot in IDLE, SENTRY, or TUNNEL_VISION states
+	if weapon_range > 0.0 and (current_state == State.IDLE or current_state == State.SENTRY or current_state == State.TUNNEL_VISION):
+		_update_shooting(delta)
+
+		# === PATROL HALT-TO-AIM (v0.25.7) ===
+		# A patrolling leader that acquires a shoot target stops dead and holds
+		# aim instead of continuing its route. Clearing has_target + velocity
+		# halts movement immediately; the shoot-tracking facing block (gated on
+		# `not is_patrolling`) then locks aim onto the zombie. _was_patrolling is
+		# recorded so the existing _patrol_resume_timer machinery resumes the
+		# route after the standard cone-clear cooldown. update_patrol() re-sets
+		# the move target on resume, so clearing has_target here is safe.
+		if is_patrolling and shoot_target != null and is_instance_valid(shoot_target):
+			_was_patrolling = true
+			is_patrolling = false
 			has_target = false
 			velocity = Vector2.ZERO
-		elif is_patrolling:
-			update_patrol(delta)
+			print("🎯 [PATROL HALT] ", name, " stopped patrol to aim at ", shoot_target.name)
 
-	# Face the direction of travel (readability only).
-	if velocity.length() > 0.1:
-		facing_direction = velocity.normalized()
-
-	# Fill front (3.1): scan/aim/fire (or the civilian reaction clock). Runs after the
-	# movement-facing line so an aiming defender's facing wins; a stationary one
-	# (velocity 0) is controlled purely here. Only in the defending states — NOT while
-	# fleeing, mid-break, or cowering. (A cower triggered THIS frame flips FLEEING→COWER
-	# inside _flee.tick above; without the state gate the fill would run once on a cowerer.)
-	if (current_state == State.IDLE or current_state == State.SENTRY) and not _is_breaking() and _fill_front != null:
-		_fill_front.tick(delta)
-
-	# Base Unit physics (movement, BOID separation).
+	# Fade tracer line
+	if _tracer_timer > 0.0:
+		_tracer_timer -= delta
+		if _tracer_timer <= 0.0:
+			_tracer_line.visible = false
+	
+	# Run normal Unit physics processing (movement/combat)
 	super._physics_process(delta)
 
 
-# === PATROL ===
+## === VISION SYSTEM ===
 
-## Moves between waypoints in LOOP or PING_PONG mode, pausing at waypoints whose
-## patrol_pause_durations entry is > 0. Facing overrides, swing, and formation
-## regroup are deleted (§11 — patrols are positioning only now).
-## @param delta: Time since last frame in seconds.
+## Checks if this human can see a specific unit based on current state
+## Uses vision cones (arc) or circles depending on state
+## Also performs raycast for line-of-sight obstacle checking
+## @param target: The unit to check vision for
+## @return: true if target is visible, false otherwise
+func can_see_unit(target: Unit) -> bool:
+	if not target or not is_instance_valid(target):
+		return false
+	
+	# Dead and grappled humans have no vision
+	if current_state == State.DEAD or current_state == State.GRAPPLED:
+		return false
+	
+	# Calculate distance from center to center
+	var distance := position.distance_to(target.position)
+	
+	# Account for unit radius - vision triggers when edge touches, not center
+	# Subtract target's radius so vision triggers at edge
+	var effective_distance := distance - UNIT_RADIUS
+	
+	var in_range := false
+	
+	# Check range and angle based on current state
+	match current_state:
+		State.IDLE:
+			# Circular vision - 360° awareness
+			in_range = effective_distance <= idle_vision_radius
+		
+		State.SENTRY:
+			# Arc vision - directed watching
+			in_range = effective_distance <= sentry_vision_range
+			if in_range:
+				in_range = is_in_vision_arc(target.position, facing_direction, sentry_vision_angle)
+		
+		State.TUNNEL_VISION:
+			# Locked 45° cone — uses stored locked direction, not current facing
+			in_range = effective_distance <= sentry_vision_range
+			if in_range:
+				in_range = is_in_vision_arc(target.position, _tunnel_vision_locked_direction, TUNNEL_VISION_ANGLE)
+		
+		State.FLEEING:
+			# Fleeing vision - hyper-aware panic state with 360° awareness!
+			# Use 200px range with NO arc restriction (see threats from all directions)
+			# Momentum system handles continued fleeing after losing sight
+			# Panicked humans have "eyes in the back of their head"
+			in_range = effective_distance <= 200.0
+			# NO arc check - can see zombies from any direction when panicked!
+	
+	# If not in range/angle, can't see it
+	if not in_range:
+		return false
+	
+	# Check line of sight (buildings can block vision)
+	return has_line_of_sight_to(target)
+
+
+## Checks if a target position is within a vision arc
+## @param target_pos: World position to check
+## @param arc_direction: Direction the arc is facing (normalized)
+## @param arc_angle_degrees: Total angle of arc in degrees (e.g., 90° means 45° on each side)
+## @return: true if target is within the arc
+func is_in_vision_arc(target_pos: Vector2, arc_direction: Vector2, arc_angle_degrees: float) -> bool:
+	# Get direction to target
+	var to_target := (target_pos - position).normalized()
+	
+	# Calculate angle between arc direction and target direction
+	var angle_to_target := arc_direction.angle_to(to_target)
+	
+	# Check if within half-angle on either side
+	var half_angle_rad := deg_to_rad(arc_angle_degrees / 2.0)
+	
+	return abs(angle_to_target) <= half_angle_rad
+
+
+## Finds the nearest zombie that is both within vision range AND visible
+## Uses vision cones/circles and line-of-sight raycasting
+## @return: The nearest visible zombie, or null if none found
+func find_nearest_visible_zombie() -> Unit:
+	# Get all zombie units
+	var zombies := get_tree().get_nodes_in_group("zombies")
+	
+	var nearest_visible: Unit = null
+	var nearest_distance := INF
+	
+	# Check each zombie
+	for zombie in zombies:
+		if not zombie is Zombie:
+			continue
+		
+		# Skip dead zombies (incubating corpses)
+		if zombie.is_dead if zombie.has_method("is_dead") else false:
+			continue
+		
+		# Costumed zombies are invisible to all human detection
+		if zombie.get("is_costumed") == true:
+			continue
+		
+		# Check if this zombie is in our vision (cone or circle)
+		if can_see_unit(zombie):
+			var distance := position.distance_to(zombie.position)
+			if distance < nearest_distance:
+				nearest_distance = distance
+				nearest_visible = zombie
+	
+	return nearest_visible
+
+
+## Checks for nearby zombies and allies each detection tick.
+## Drives the morale system:
+##   - Counts zombies in drain range → stored for per-frame sighting drain
+##   - Detects ally state transitions → applies one-time morale hits
+##   - Continues updating flee direction if already fleeing
+## (v0.22.2 — replaces binary flee trigger and propagate_flee_to_group cascade)
+func check_for_nearby_zombies() -> void:
+	# Skip if dead or grappled (no detection)
+	# Also skip during tunnel vision — immune to all morale drain events while active
+	if current_state == State.DEAD or current_state == State.GRAPPLED or current_state == State.TUNNEL_VISION:
+		return
+	
+	var all_humans := get_tree().get_nodes_in_group("humans")
+	var morale_event_radius: float = 150.0  # Radius for ally event hooks
+	
+	# === ALLY STATE TRANSITION HOOKS ===
+	# Scan nearby allies and detect state transitions since last tick.
+	# One-time flat morale hits are applied on the tick the transition is first detected.
+	var current_ally_states: Dictionary = {}
+	
+	for other in all_humans:
+		if other == self or not other is Human:
+			continue
+		var ally := other as Human
+		if not is_instance_valid(ally) or ally.current_state == State.DEAD:
+			continue
+		
+		var dist := position.distance_to(ally.position)
+		if dist > morale_event_radius:
+			continue
+		
+		var ally_id := ally.get_instance_id()
+		var current_ally_state := ally.current_state
+		current_ally_states[ally_id] = current_ally_state
+		
+		# Only fire transition events if we knew this ally before
+		if _last_ally_states.has(ally_id):
+			var last_state = _last_ally_states[ally_id]
+			
+			# Ally just transitioned to GRAPPLED → apply grappled_drain + high urgency alert
+			if current_ally_state == State.GRAPPLED and last_state != State.GRAPPLED:
+				#print("💛 ", name, " morale hit: ally grappled nearby (", int(dist), "px) — -", grappled_drain)
+				_last_threat_position = _find_closest_zombie_to(ally.position)
+				_drain_morale(grappled_drain)
+				_broadcast_high_urgency_alert(ally.position, 75.0)
+			
+			# Ally just transitioned to FLEEING (moving past) → apply fleeing_drain
+			if current_ally_state == State.FLEEING and last_state != State.FLEEING:
+				if ally.velocity.length() > 10.0:  # Must be actually moving (fleeing past)
+					#print("💛 ", name, " morale hit: ally fleeing past (", int(dist), "px) — -", fleeing_drain)
+					_last_threat_position = _find_closest_zombie_to(ally.position)
+					_drain_morale(fleeing_drain)
+	
+	# Replace last known ally states with current snapshot (only tracked allies)
+	_last_ally_states = current_ally_states
+	
+	# === ZOMBIE DRAIN RANGE COUNT ===
+	# Count visible zombies within morale drain range.
+	# For armed units: weapon_range threshold. For civilians: full vision range.
+	# Result stored in zombies_in_drain_range_count for per-frame sighting drain.
+	var drain_threshold: float = weapon_range if weapon_range > 0.0 else sentry_vision_range
+	var zombies := get_tree().get_nodes_in_group("zombies")
+	var new_drain_count: int = 0
+	var new_vision_count: int = 0
+	var nearest_drain_dist := INF
+	var nearest_vision_dist := INF
+	
+	for zombie in zombies:
+		if not zombie is Zombie or not is_instance_valid(zombie):
+			continue
+		var z := zombie as Zombie
+		if z.current_state == Zombie.State.DEAD:
+			continue
+		# Costumed zombies are invisible to all human detection
+		if z.get("is_costumed") == true:
+			continue
+		var dist_to_zombie := position.distance_to(z.position)
+		var visible := can_see_unit(z)
+		if dist_to_zombie <= drain_threshold and visible:
+			new_drain_count += 1
+			if dist_to_zombie < nearest_drain_dist:
+				nearest_drain_dist = dist_to_zombie
+				_nearest_drain_zombie_pos = z.position
+		if dist_to_zombie <= sentry_vision_range and visible:
+			new_vision_count += 1
+			if dist_to_zombie < nearest_vision_dist:
+				nearest_vision_dist = dist_to_zombie
+				_nearest_vision_zombie_pos = z.position
+	
+	zombies_in_drain_range_count = new_drain_count
+	_zombies_in_vision_count = new_vision_count
+	
+	# === FLEE DIRECTION UPDATE ===
+	# If already fleeing, keep updating movement direction toward safety.
+	# (Flee initiation is now handled by _check_morale(), not here.)
+	if current_state == State.FLEEING:
+		var flee_dir := calculate_flee_direction()
+		if flee_dir == Vector2.ZERO:
+			# Priority system says we're safe — stop fleeing
+			#print("Human at ", position, " stopped fleeing - truly safe")
+			last_flee_direction = Vector2.ZERO
+			zombies_in_drain_range_count = 0
+			current_state = State.SENTRY if initial_state == State.SENTRY else State.IDLE
+			# Recover to half morale — still rattled, more vulnerable to second trigger
+			morale = morale_max * 0.5
+			_update_morale_visual()
+		else:
+			var flee_target := position + flee_dir * flee_distance
+			set_move_target(flee_target)
+
+
+## === SHOOTING SYSTEM METHODS (v0.22.3) ===
+
+## Main shooting update — called every frame for armed units in IDLE/SENTRY.
+## Handles target acquisition, aim countdown, LOS pause, and firing.
+## @param delta: Time since last frame
+func _update_shooting(delta: float) -> void:
+	# If we have a target, check it's still valid
+	if shoot_target != null:
+		if not is_instance_valid(shoot_target) or shoot_target.current_state == Zombie.State.DEAD:
+			# Capture the kill location before clearing the target — used to tell
+			# nearby alerted watchers "the threat is gone" so they normalize on the
+			# same quick (3s) clock instead of mistaking it for an escape (10s).
+			var _kill_pos := shoot_target.global_position if is_instance_valid(shoot_target) else global_position
+			shoot_target = null
+			_aim_timer = 0.0
+			_aim_paused = false
+			# Kill = quick reset: threat eliminated, normalize fast (~3s) rather than
+			# the full escape cooldown. Force the value (the in-cone pin left it at 10).
+			if not _is_alerted:
+				_is_alerted = true
+			_facing_return_timer = 3.0
+			_patrol_resume_timer = 3.0
+			# Force an immediate vision recount. The cone count is only refreshed every
+			# 0.3s, so it still includes the zombie we just killed — without this, next
+			# frame's cone block would re-pin the timer back to 10s and clobber the 3s
+			# reset. The recount excludes DEAD zombies, dropping us to the true live count.
+			check_for_nearby_zombies()
+			detection_timer = detection_interval
+			_broadcast_zombie_killed(_kill_pos, 150.0)
+			var _ret_str_d := "sentry default" if _pre_alert_facing == Vector2.ZERO else str(snapped(rad_to_deg(_pre_alert_facing.angle()) + 90.0, 0.1)) + "°"
+			print("↩️ [SHOOT TARGET LOST - DEAD] ", name, " | current: ", snapped(rad_to_deg(facing_direction.angle()) + 90.0, 0.1), "° | will return to: ", _ret_str_d, " in 3s")
+			return
+		
+		var in_vision := can_see_unit(shoot_target)  # Full vision cone check
+		var in_weapon_range := position.distance_to(shoot_target.position) <= weapon_range
+		
+		if in_vision:
+			# Target visible in cone — run aim timer regardless of weapon range
+			_aim_paused = false
+
+			# === RETARGET CHECK (v0.25.3) ===
+			# If current target is outside weapon range, check whether a closer
+			# zombie has entered weapon range. If so, switch to it with a 50%
+			# aim time penalty — punishes switching without making it free to exploit.
+			# (Leapfrogging zombies across the front still costs the player real time.)
+			if not in_weapon_range and weapon_range > 0.0:
+				var closer := _find_in_range_target()
+				if closer != null and closer != shoot_target:
+					print("🔄 ", name, " retargeting — closer threat in weapon range: ", closer.name)
+					shoot_target = closer
+					_aim_timer = aim_time * 0.5
+
+			_aim_timer -= delta
+			if _aim_timer <= 0.0:
+				if in_weapon_range:
+					# In range — fire
+					_fire_at(shoot_target)
+					# Reacquire immediately
+					shoot_target = _acquire_shoot_target()
+					_aim_timer = aim_time if shoot_target != null else 0.0
+					_aim_paused = false
+				else:
+					# Timer expired but not in range yet — hold at 0, wait for zombie to close
+					_aim_timer = 0.0
+		else:
+			# Target left the vision cone (arc, LOS, or range — all fold into
+			# can_see_unit). This is the authoritative "lost aim" signal and uses a
+			# fresh per-frame check, so it's the single place a live target is
+			# dropped — the cone block (which reads the lagged 0.3s vision count)
+			# never nulls shoot_target, which is what keeps the swing arc from
+			# snapping facing to neutral during the acquisition/detection lag.
+			# If another zombie is still in the cone, re-lock immediately (no
+			# cooldown). Otherwise drop and start the 15s escape cooldown.
+			shoot_target = _acquire_shoot_target()
+			if shoot_target != null:
+				_aim_timer = aim_time
+				_aim_paused = false
+			else:
+				_aim_timer = 0.0
+				_aim_paused = false
+				if not _is_alerted:
+					_is_alerted = true
+				_facing_return_timer = 10.0
+				_patrol_resume_timer = 10.0
+				var _ret_str_r := "sentry default" if _pre_alert_facing == Vector2.ZERO else str(snapped(rad_to_deg(_pre_alert_facing.angle()) + 90.0, 0.1)) + "°"
+				print("↩️ [SHOOT TARGET LOST - LEFT CONE] ", name, " | current: ", snapped(rad_to_deg(facing_direction.angle()) + 90.0, 0.1), "° | will return to: ", _ret_str_r, " in 10s")
+	else:
+		# No target — try to acquire within vision cone
+		shoot_target = _acquire_shoot_target()
+		if shoot_target:
+			_aim_timer = aim_time
+			_aim_paused = false
+			# Cock once per engagement — not on every re-acquisition (per-kill spam).
+			# Reset to false when the human fully disengages (see cone-clear block).
+			if not _has_cocked:
+				_aim_sound.play()
+				_has_cocked = true
+			#print("🎯 ", name, " acquired target: ", shoot_target.name, " (", int(position.distance_to(shoot_target.position)), "px)")
+
+
+## Finds the closest zombie within weapon range in the vision cone.
+## Used for retarget checks — only returns a target if it's closer than current
+## and within weapon range. Returns null if no qualifying target found.
+func _find_in_range_target() -> Unit:
+	var zombies := get_tree().get_nodes_in_group("zombies")
+	var best: Unit = null
+	var best_dist := INF
+	for z in zombies:
+		if not z is Zombie or not is_instance_valid(z):
+			continue
+		var zombie := z as Zombie
+		if zombie.current_state == Zombie.State.DEAD:
+			continue
+		if zombie.get("is_costumed") == true:
+			continue
+		var dist: float = position.distance_to(zombie.position)
+		if dist > weapon_range:
+			continue
+		if not can_see_unit(zombie):
+			continue
+		if dist < best_dist:
+			best_dist = dist
+			best = zombie
+	return best
+
+
+## Finds the closest zombie visible in the vision cone (full vision range).
+## Acquisition range = full vision (350px), not weapon range.
+## @return: Closest valid shoot target, or null if none found
+func _acquire_shoot_target() -> Unit:
+	var zombies := get_tree().get_nodes_in_group("zombies")
+	var best_target: Unit = null
+	var best_dist := INF
+	
+	for z in zombies:
+		if not z is Zombie or not is_instance_valid(z):
+			continue
+		var zombie := z as Zombie
+		if zombie.current_state == Zombie.State.DEAD:
+			continue
+		# Costumed zombies cannot be targeted
+		if zombie.get("is_costumed") == true:
+			continue
+		if not can_see_unit(zombie):  # Uses full vision range + cone + LOS
+			continue
+		var dist := position.distance_to(zombie.position)
+		if dist < best_dist:
+			best_dist = dist
+			best_target = zombie
+	
+	return best_target
+
+
+## Fires a shot at the target — draws tracer first, then applies damage.
+## Tracer drawn before damage so it's visible even if the zombie dies instantly.
+## @param target: The zombie to shoot
+func _fire_at(target: Unit) -> void:
+	if not is_instance_valid(target):
+		return
+	
+	#print("⚡ ", name, " fired at ", target.name, " (", int(position.distance_to(target.position)), "px)")
+
+	# Gunshot foley — every human type fires through this path
+	_gunshot_sound.play()
+
+	# Broadcast high urgency alert to nearby allies — gunshot radius 150px
+	_broadcast_high_urgency_alert(target.global_position, 150.0)
+	
+	# Draw tracer FIRST — before damage — so it's visible even if zombie dies this frame
+	var start_local := Vector2(0.0, 15.0)  # Bottom edge of sprite
+	var target_local := to_local(target.global_position)
+	_tracer_line.clear_points()
+	_tracer_line.add_point(start_local)
+	_tracer_line.add_point(target_local)
+	_tracer_line.visible = true
+	_tracer_timer = TRACER_FADE_DURATION
+	
+	# Apply damage after tracer is set up — 50 = one-shot kill (humans have 75hp)
+	# Knockback pushes zombie AWAY from shooter (target - shooter = toward target, so negate it)
+	var shot_direction := (target.global_position - global_position).normalized()
+	if target is Zombie:
+		(target as Zombie).take_damage(50.0, shot_direction)
+	else:
+		target.take_damage(50.0)
+
+
+## === ALERT SYSTEM (v0.23.0) ===
+
+## Facing offsets per defender class, relative to threat direction.
+## Index 0 = the alerting human themselves. Subsequent indices assigned to
+## nearby allies sorted by distance. Degrees are relative to threat direction,
+## not world north. Civilians have no offsets — flee response only.
+## Facing offset magnitudes per defender class.
+## ALERT_OFFSETS (v0.23.0) — per-class formation facing on detection alert.
+## Disabled in v0.25.5: all units now face threat directly (offset 0°) to prevent
+## ping-pong when multiple alerters fire simultaneously at a shared ally.
+## Re-enable by restoring _broadcast_detection_alert right/left side logic
+## and passing offset_deg per class rather than always 0.0.
+##
+## Design intent was:
+##   Militia:   all face threat directly (0°)
+##   Police:    fan out ±45°, ±90°
+##   GI/SpecOps: cover flanks ±105°, ±165°
+##
+#const ALERT_OFFSETS: Dictionary = {
+#	DefenderClass.MILITIA:   [0, 0, 0, 0],
+#	DefenderClass.POLICE:    [0, 45, 90],
+#	DefenderClass.GI:        [0, 105, 165],
+#	DefenderClass.SPEC_OPS:  [0, 105, 165],
+#}
+
+## Radius within which detection alert propagates to nearby allies.
+const ALERT_RADIUS: float = 150.0
+
+
+## Broadcasts a detection alert to nearby allies.
+## All classes now face the threat directly (0° offset) — v0.25.5.
+## Per-class formation offsets removed to prevent ping-pong when multiple
+## alerters fire at a shared ally simultaneously. See ALERT_OFFSETS comment
+## above for the original offset values if reimplementing.
+## Civilians excluded — their flee response cascades through morale system.
+## @param threat_pos: World position of the detected zombie
+func _broadcast_detection_alert(threat_pos: Vector2) -> void:
+	if threat_pos == Vector2.ZERO:
+		return
+
+	# Call-to-attention whistle — the audible "everyone focus that one" cue
+	_whistle_sound.play()
+
+	# Alerter faces threat directly
+	_apply_alert_facing(threat_pos)
+
+	# Notify all nearby eligible allies — all face threat directly (no class offsets)
+	var all_humans := get_tree().get_nodes_in_group("humans")
+	for other in all_humans:
+		if other == self or not other is Human:
+			continue
+		var ally := other as Human
+		if not is_instance_valid(ally):
+			continue
+		if ally.current_state in [State.FLEEING, State.GRAPPLED, State.DEAD, State.TUNNEL_VISION]:
+			continue
+		if ally.shoot_target != null:
+			continue
+		if ally.defender_class == DefenderClass.CIVILIAN:
+			continue
+		if global_position.distance_to(ally.global_position) > ALERT_RADIUS:
+			continue
+		ally._receive_detection_alert(threat_pos)
+
+
+## Called by an alerting ally to face this human toward the detected threat.
+## All classes now face threat directly — offset system removed in v0.25.5.
+## @param threat_pos: World position of the detected zombie
+func _receive_detection_alert(threat_pos: Vector2) -> void:
+	if current_state in [State.FLEEING, State.GRAPPLED, State.DEAD, State.TUNNEL_VISION]:
+		return
+	# Being alerted by an ally suppresses this human's OWN call-out — set before
+	# the aiming early-out so an already-engaged human is silenced too. This is
+	# what stops the whistle from cascading across the whole squad (each member
+	# re-broadcasting at its own 5s mark).
+	_alert_cooldown = 30.0
+	if shoot_target != null:
+		return
+	# Capture original facing before first alert — preserved across chained alerts.
+	if not _is_alerted:
+		_pre_alert_facing = facing_direction
+		print("🔒 [PRE-ALERT CAPTURED] ", name, " | facing: ", snapped(rad_to_deg(facing_direction.angle()) + 90.0, 0.1), "° (detection alert)")
+	else:
+		print("🔒 [PRE-ALERT PRESERVED] ", name, " | already alerted, keeping: ", snapped(rad_to_deg(_pre_alert_facing.angle()) + 90.0, 0.1), "°")
+	# Only latch when actually patrolling — never clobber an already-true value
+	# (patrol may already be halted to aim and awaiting its resume cooldown).
+	if is_patrolling:
+		_was_patrolling = true
+		is_patrolling = false
+	_facing_return_timer = 10.0
+	_patrol_resume_timer = 10.0
+	_is_alerted = true
+	_apply_alert_facing(threat_pos)
+
+
+## Faces this human toward a threat position using smooth rotation.
+## All classes face directly — offset system removed in v0.25.5.
+## Civilians excluded (no facing response to detection alerts).
+## @param threat_pos: World position of the detected zombie
+func _apply_alert_facing(threat_pos: Vector2) -> void:
+	if defender_class == DefenderClass.CIVILIAN:
+		return
+	var own_threat_dir := (threat_pos - global_position).normalized()
+	_target_facing = own_threat_dir
+	print("🔄 [ROTATING] ", name, " → ", snapped(rad_to_deg(_target_facing.angle()) + 90.0, 0.1), "° (detection alert, direct facing)")
+
+
+## === HIGH URGENCY ALERT SYSTEM (v0.23.1) ===
+
+## Broadcasts a high urgency alert to nearby humans within radius.
+## Used for ally grappled (75px), ally killed (75px), and gunshot (150px) events.
+## All classes respond identically — direct facing, no class offsets.
+## Civilians included — FLEEING state check excludes them naturally once running.
+## @param event_pos: World position of the event
+## @param radius: Broadcast radius
+func _broadcast_high_urgency_alert(event_pos: Vector2, radius: float) -> void:
+	# The broadcaster also reacts to its own event (subject to receive_*'s guards:
+	# cooldown, IDLE/SENTRY only, no shoot_target). Without this, a lone witness —
+	# e.g. only two humans where one is the grappled victim — would alert nobody and
+	# never turn. With 3+ humans two witnesses cross-trigger, which had masked the bug.
+	# Safe for the gunshot caller: the shooter has a shoot_target, so receive_* no-ops.
+	receive_high_urgency_alert(event_pos)
+	var all_humans := get_tree().get_nodes_in_group("humans")
+	for other in all_humans:
+		if other == self or not other is Human:
+			continue
+		var ally := other as Human
+		if not is_instance_valid(ally):
+			continue
+		if global_position.distance_to(ally.global_position) <= radius:
+			ally.receive_high_urgency_alert(event_pos)
+
+
+## Called when a nearby high urgency event occurs (grapple, kill, or gunshot).
+## All classes respond identically — direct facing toward event position.
+## 0.4s reaction delay before facing updates. 2s shared cooldown. Seeds the
+## unified return timer (~2s) so the human holds the alerted facing before
+## relaxing — re-pinned to 10s while a live zombie stays in its cone.
+## @param event_pos: World position of the event to face
+func receive_high_urgency_alert(event_pos: Vector2) -> void:
+	if _high_urgency_cooldown > 0.0:
+		return
+	if current_state not in [State.IDLE, State.SENTRY]:
+		return
+	if shoot_target != null:
+		return
+	# Capture original facing before first alert — preserved across chained alerts.
+	if not _is_alerted:
+		_pre_alert_facing = facing_direction
+		print("🔒 [PRE-ALERT CAPTURED] ", name, " | facing: ", snapped(rad_to_deg(facing_direction.angle()) + 90.0, 0.1), "° (high urgency)")
+	else:
+		print("🔒 [PRE-ALERT PRESERVED] ", name, " | already alerted, keeping: ", snapped(rad_to_deg(_pre_alert_facing.angle()) + 90.0, 0.1), "°")
+	_high_urgency_pending_pos = event_pos
+	_high_urgency_delay_timer = 0.4
+	_high_urgency_cooldown = 2.0
+	# Seed the unified return timer. If a zombie is (or comes) in cone, the cone
+	# block re-pins this to 10s every frame; if the human turned toward an event it
+	# can't actually see, it counts down from here and returns after ~2s.
+	_facing_return_timer = 2.0
+	_patrol_resume_timer = 2.0
+	_is_alerted = true
+	print("⚡ [HIGH URGENCY] ", name, " | event at: ", event_pos.snapped(Vector2(1,1)), " | reacting in 0.4s")
+
+
+## Tells nearby alerted humans that a zombie they may have been reacting to has
+## been killed, so they normalize on the quick kill clock (3s) rather than the
+## escape clock (10s). A watcher cannot tell locally whether the threat it lost
+## sight of died or walked off — this is how the killer announces it died.
+## @param event_pos: World position of the kill (broadcast origin)
+## @param radius: Broadcast radius
+func _broadcast_zombie_killed(event_pos: Vector2, radius: float) -> void:
+	var all_humans := get_tree().get_nodes_in_group("humans")
+	for other in all_humans:
+		if other == self or not other is Human:
+			continue
+		var ally := other as Human
+		if not is_instance_valid(ally):
+			continue
+		if global_position.distance_to(ally.global_position) <= radius:
+			ally.receive_zombie_killed_alert()
+
+
+## Received by an alerted human when a nearby zombie is killed. Switches the
+## return countdown to the quick kill clock (3s). Skipped if this human is still
+## aiming at another live target. If it still passively sees ANOTHER live zombie,
+## the forced recount below keeps the cone count > 0 and the cone block re-pins to
+## 10s — so this only "sticks" once no live threat remains in view.
+func receive_zombie_killed_alert() -> void:
+	if not _is_alerted:
+		return
+	if shoot_target != null:
+		return
+	_facing_return_timer = 3.0
+	_patrol_resume_timer = 3.0
+	# Refresh our own vision now — like the shooter, our cone count is up to 0.3s
+	# stale and may still include the just-killed zombie, which would re-pin us to
+	# 10s next frame. The recount excludes DEAD zombies so the 3s clock survives.
+	check_for_nearby_zombies()
+	detection_timer = detection_interval
+
+
+## Applies a morale drain, clamps to 0, and checks for response trigger.
+## @param amount: Amount to subtract from current morale (positive value)
+func _drain_morale(amount: float) -> void:
+	if current_state == State.DEAD or current_state == State.GRAPPLED:
+		return
+	morale = max(0.0, morale - amount)
+	_update_morale_visual()
+	_check_morale()
+
+
+## Checks if morale has hit 0 and triggers the primary stress response.
+## For Civilian, Militia, Police: flee.
+## Tunnel Vision (GI, Spec Ops) implemented in Phase 5.
+func _check_morale() -> void:
+	if morale > 0.0 or current_state == State.FLEEING:
+		return
+	if current_state == State.DEAD or current_state == State.GRAPPLED:
+		return
+	
+	match defender_class:
+		DefenderClass.CIVILIAN, DefenderClass.MILITIA, DefenderClass.POLICE:
+			#print("💀 ", name, " morale empty → FLEEING (", DefenderClass.keys()[defender_class], ")")
+			current_state = State.FLEEING
+			is_patrolling = false
+			# Find nearest visible zombie to flee from; fall back to direction-only if none
+			var threat := find_nearest_visible_zombie()
+			if threat:
+				start_fleeing(threat)
+			else:
+				# No visible zombie — flee away from nearest zombie in any direction
+				var zombies := get_tree().get_nodes_in_group("zombies")
+				var nearest_zombie: Unit = null
+				var nearest_dist := INF
+				for z in zombies:
+					if z is Zombie and z.current_state != Zombie.State.DEAD:
+						var d := position.distance_to(z.position)
+						if d < nearest_dist:
+							nearest_dist = d
+							nearest_zombie = z
+				if nearest_zombie:
+					var away := (position - nearest_zombie.position).normalized()
+					start_fleeing_in_direction(away)
+		DefenderClass.GI, DefenderClass.SPEC_OPS:
+			#print("🔍 ", name, " tunnel vision → locked toward threat")
+			current_state = State.TUNNEL_VISION
+			is_patrolling = false
+			# Lock toward the event that broke morale — face the threat, not just forward
+			if _last_threat_position != Vector2.ZERO:
+				_tunnel_vision_locked_direction = ((_last_threat_position - position).normalized())
+			else:
+				_tunnel_vision_locked_direction = facing_direction  # Fallback to current facing
+			_tunnel_vision_timer = TUNNEL_VISION_DURATION
+
+
+## Updates the morale bar visibility based on current morale.
+## Bar appears below 80% morale only when unit is IDLE or SENTRY.
+## Hidden when fleeing, grappled, or dead — no longer actionable in those states.
+func _update_morale_visual() -> void:
+	if not _morale_bar:
+		return
+	
+	# Only show bar when unit is standing their ground
+	if current_state != State.IDLE and current_state != State.SENTRY:
+		_morale_bar.visible = false
+		return
+	
+	var ratio := morale / morale_max if morale_max > 0.0 else 0.0
+	_morale_bar.max_value = morale_max
+	_morale_bar.value = morale
+	_morale_bar.visible = ratio < 0.8
+
+
+## Finds the world position of the closest zombie to a given point.
+## Used to point tunnel vision toward the zombie causing an ally event,
+## rather than toward the ally themselves.
+## Falls back to the reference point if no zombies found.
+## @param point: World position to search near
+## @return: Position of closest zombie, or point if none found
+func _find_closest_zombie_to(point: Vector2) -> Vector2:
+	var zombies := get_tree().get_nodes_in_group("zombies")
+	var closest_pos := point  # Fallback
+	var closest_dist := INF
+	for z in zombies:
+		if not z is Zombie or not is_instance_valid(z):
+			continue
+		if (z as Zombie).current_state == Zombie.State.DEAD:
+			continue
+		var d := point.distance_to(z.position)
+		if d < closest_dist:
+			closest_dist = d
+			closest_pos = z.position
+	return closest_pos
+
+
+## Called by a dying nearby ally to apply killed_drain to this unit.
+## Invoked from die() on humans within 150px.
+## @param ally_position: World position of the ally that died
+func receive_ally_killed_shock(ally_position: Vector2) -> void:
+	if current_state == State.DEAD or current_state == State.GRAPPLED:
+		return
+	#print("💛 ", name, " morale hit: ally killed nearby — -", killed_drain)
+	_last_threat_position = _find_closest_zombie_to(ally_position)
+	_drain_morale(killed_drain)
+	_broadcast_high_urgency_alert(ally_position, 75.0)
+
+
+## Uses raycasting to detect if buildings are blocking the view
+## @param target: The Unit to check line of sight to
+## @return: true if we can see the target, false if buildings block the view
+func has_line_of_sight_to(target: Unit) -> bool:
+	# Create a raycast query from this human to the target
+	var query := PhysicsRayQueryParameters2D.create(position, target.position)
+	
+	# Exclude units from the raycast - we only want to hit buildings
+	# This checks collision layer 1 (default layer for StaticBody2D)
+	query.collision_mask = 1
+	
+	# Don't collide with the human or zombie themselves
+	query.exclude = [self, target]
+	
+	# Perform the raycast
+	var result := space_state.intersect_ray(query)
+	
+	# If the raycast hit something (a building), LOS is blocked
+	# If it didn't hit anything, we have clear line of sight
+	return result.is_empty()
+
+
+## Checks if there's a clear line of sight to a specific point (like escape zone)
+## Uses raycasting to detect if buildings are blocking the view
+## @param point: The world position to check line of sight to
+## @return: true if we can see the point, false if buildings block the view
+func has_line_of_sight_to_point(point: Vector2) -> bool:
+	# Create a raycast query from this human to the point
+	var query := PhysicsRayQueryParameters2D.create(position, point)
+	
+	# Exclude units from the raycast - we only want to hit buildings
+	query.collision_mask = 1
+	
+	# Don't collide with the human itself
+	query.exclude = [self]
+	
+	# Perform the raycast
+	var result := space_state.intersect_ray(query)
+	
+	# If the raycast hit something (a building), LOS is blocked
+	return result.is_empty()
+
+
+## Finds the nearest VISIBLE escape zone to this human
+## Only considers zones with clear line of sight (no walls blocking)
+## @return: The closest visible EscapeZone node, or null if none visible
+func get_nearest_escape_zone() -> Node2D:
+	var escape_zones := get_tree().get_nodes_in_group("escape_zone")
+	if escape_zones.is_empty():
+		return null
+	
+	var nearest_zone: Node2D = null
+	var nearest_distance := INF
+	
+	for zone in escape_zones:
+		if not is_instance_valid(zone):
+			continue
+		
+		# CRITICAL: Use global_position for nested zones
+		var distance := global_position.distance_to(zone.global_position)
+		
+		# Only consider zones we can actually see (no walls blocking)
+		if not has_line_of_sight_to_point(zone.global_position):
+			continue
+		
+		if distance < nearest_distance:
+			nearest_distance = distance
+			nearest_zone = zone
+	
+	return nearest_zone
+
+
+## Converts degrees to a normalized Vector2 direction
+## 0° = North (up), 90° = East (right), 180° = South (down), 270° = West (left)
+## @param degrees: Angle in degrees (0-360)
+## @return: Normalized direction vector
+func degrees_to_vector(degrees: float) -> Vector2:
+	# Convert to radians
+	# Godot's coordinate system: 0° right, 90° down
+	# We want: 0° up, 90° right
+	# So subtract 90° to rotate the reference
+	var radians = deg_to_rad(degrees - 90.0)
+	return Vector2(cos(radians), sin(radians)).normalized()
+
+
+## Loads patrol waypoints from child Node2D nodes
+## Looks for children named "Waypoint1", "Waypoint2", etc.
+## Sorts them by name and uses their global positions as waypoints
+## This allows visual waypoint placement in the editor
+func load_waypoints_from_children() -> void:
+	var waypoint_nodes: Array[Node] = []
+	
+	# Find all children with "Waypoint" in their name
+	for child in get_children():
+		if child.name.begins_with("Waypoint"):
+			waypoint_nodes.append(child)
+	
+	# If no waypoints found, nothing to do
+	if waypoint_nodes.size() == 0:
+		return
+	
+	# Sort waypoints by name (Waypoint1, Waypoint2, etc.)
+	# Using natural sort to handle numbers correctly (Waypoint1 < Waypoint2 < Waypoint10)
+	waypoint_nodes.sort_custom(func(a, b): return a.name.naturalnocasecmp_to(b.name) < 0)
+	
+	# Extract global positions
+	patrol_waypoints.clear()
+	for i in range(waypoint_nodes.size()):
+		var waypoint = waypoint_nodes[i]
+		if waypoint is Node2D:
+			patrol_waypoints.append(waypoint.global_position)
+			#print("  Loaded waypoint: ", waypoint.name, " at ", waypoint.global_position)
+	
+	#print("Loaded ", patrol_waypoints.size(), " waypoints from child nodes for ", name)
+
+
+## Updates the swing arc for sentry behavior
+## Uses smooth sin/cos oscillation for natural head-turning motion
+## Called every frame when in SENTRY state with swing enabled
+## @param delta: Time since last frame in seconds
+## @param force: If true, bypasses sentry_has_swing check (used for per-waypoint swing)
+func update_swing_arc(delta: float, force: bool = false) -> void:
+	if not sentry_has_swing and not force:
+		return
+	
+	# Handle pause at extremes
+	if is_swing_paused:
+		swing_pause_timer -= delta
+		if swing_pause_timer <= 0.0:
+			is_swing_paused = false
+			swing_direction *= -1  # Reverse direction after pause
+		return
+	
+	# Update swing offset using smooth oscillation
+	# Instead of linear movement, use sin wave for natural acceleration/deceleration
+	var swing_progress = current_swing_offset / sentry_swing_range if sentry_swing_range > 0 else 0
+	
+	# Smooth speed adjustment: slower at extremes, faster in middle
+	# Using cos(progress) to slow down at edges
+	var speed_multiplier = 1.0
+	if abs(swing_progress) > 0.7:  # Near extremes
+		speed_multiplier = 0.5 + 0.5 * (1.0 - abs(swing_progress))
+	
+	current_swing_offset += sentry_swing_speed * delta * swing_direction * speed_multiplier
+	
+	# Check if reached extreme
+	if abs(current_swing_offset) >= sentry_swing_range:
+		# Clamp to range
+		current_swing_offset = sentry_swing_range * swing_direction
+		
+		# Start pause
+		is_swing_paused = true
+		swing_pause_timer = sentry_swing_pause
+	
+	# Update facing direction based on swing
+	var current_angle = swing_center_angle + current_swing_offset
+	facing_direction = degrees_to_vector(current_angle)
+
+
+## Updates patrol movement for sentries
+## Moves between waypoints in LOOP or PING_PONG mode
+## Phase C: Supports per-waypoint pause, swing, and facing overrides
+## v0.21.0: Supports formation regroup waiting before advancing
+## @param delta: Time since last frame in seconds
 func update_patrol(delta: float) -> void:
 	if patrol_waypoints.size() == 0:
 		is_patrolling = false
 		return
-
-	# Hold position while paused at a waypoint.
+	
+	# === PHASE C: HANDLE ACTIVE WAYPOINT PAUSE ===
 	if is_patrol_paused:
+		# Run swing if enabled for this waypoint (force=true bypasses sentry_has_swing)
+		if is_waypoint_swinging:
+			update_swing_arc(delta, true)
+		
 		patrol_pause_timer -= delta
 		if patrol_pause_timer <= 0.0:
 			is_patrol_paused = false
+			is_waypoint_swinging = false
+			#print("▶️ PATROL RESUMING from waypoint ", current_waypoint_index)
+			# Check regroup before advancing
+			if _has_followers() and not all_followers_in_formation():
+				is_waiting_to_regroup = true
+				regroup_timer = formation_regroup_timeout
+				has_target = false
+				velocity = Vector2.ZERO
+				#print("⏳ WAITING TO REGROUP after pause at waypoint ", current_waypoint_index)
+				return
+			# All followers in position (or no followers) - advance now
 			advance_to_next_waypoint()
-			set_move_target(patrol_waypoints[current_waypoint_index])
-			move_speed = patrol_speed
-		return
-
-	var target_waypoint := patrol_waypoints[current_waypoint_index]
-	var distance_to_waypoint := global_position.distance_to(target_waypoint)
-
+			if patrol_waypoints.size() > 0:
+				set_move_target(patrol_waypoints[current_waypoint_index])
+				move_speed = patrol_speed
+		return  # Stay stopped until pause completes
+	
+	# === FORMATION REGROUP WAIT ===
+	if is_waiting_to_regroup:
+		regroup_timer -= delta
+		if all_followers_in_formation() or regroup_timer <= 0.0:
+			if regroup_timer <= 0.0:
+				pass
+				#print("⏱️ REGROUP TIMEOUT - advancing without full squad at waypoint ", current_waypoint_index)
+			else:
+				pass
+				#print("✅ SQUAD REGROUPED - advancing from waypoint ", current_waypoint_index)
+			is_waiting_to_regroup = false
+			advance_to_next_waypoint()
+			if patrol_waypoints.size() > 0:
+				set_move_target(patrol_waypoints[current_waypoint_index])
+				move_speed = patrol_speed
+		return  # Hold position while waiting
+	
+	# === WAYPOINT ARRIVAL CHECK ===
+	var target_waypoint = patrol_waypoints[current_waypoint_index]
+	var distance_to_waypoint = global_position.distance_to(target_waypoint)
+	
 	if distance_to_waypoint < 10.0:
-		# Arrived. Pause here if this waypoint has a configured pause.
+		# Arrived - apply Phase C observation behaviour if configured
+		
+		# 1. FACING OVERRIDE: Turn to face a specific direction on arrival
+		if current_waypoint_index < patrol_waypoint_facing.size():
+			var override_degrees = patrol_waypoint_facing[current_waypoint_index]
+			if override_degrees >= 0.0:  # -1.0 = no override
+				swing_center_angle = override_degrees
+				facing_direction = degrees_to_vector(override_degrees)
+				current_swing_offset = 0.0  # Reset swing to center of new facing
+				#print("🧭 FACING OVERRIDE at waypoint ", current_waypoint_index, ": ", override_degrees, "°")
+		
+		# 2. PAUSE: Stop and observe for a duration
 		var pause_duration := 0.0
 		if current_waypoint_index < patrol_pause_durations.size():
 			pause_duration = patrol_pause_durations[current_waypoint_index]
-
+		
 		if pause_duration > 0.0:
 			is_patrol_paused = true
 			patrol_pause_timer = pause_duration
+			
+			# Stop movement for duration of pause
 			has_target = false
 			velocity = Vector2.ZERO
+			
+			# 3. SWING: Look around during the pause
+			var should_swing := false
+			if current_waypoint_index < patrol_waypoint_swing.size():
+				should_swing = patrol_waypoint_swing[current_waypoint_index]
+			
+			if should_swing:
+				is_waypoint_swinging = true
+				# Reset swing state for a clean start from current facing
+				current_swing_offset = 0.0
+				swing_direction = 1
+				is_swing_paused = false
+				#print("⏸️ PATROL PAUSED at waypoint ", current_waypoint_index,
+						#" for ", pause_duration, "s (🔍 swinging)")
+			else:
+				pass
+				#print("⏸️ PATROL PAUSED at waypoint ", current_waypoint_index,
+						#" for ", pause_duration, "s")
+			return  # Don't advance until pause completes
+		
+		# 4. REGROUP CHECK (no pause configured)
+		if _has_followers() and not all_followers_in_formation():
+			is_waiting_to_regroup = true
+			regroup_timer = formation_regroup_timeout
+			has_target = false
+			velocity = Vector2.ZERO
+			#print("⏳ WAITING TO REGROUP at waypoint ", current_waypoint_index)
 			return
-
-		# No pause — advance immediately.
+		
+		# No pause, no regroup needed - advance immediately
 		advance_to_next_waypoint()
-		target_waypoint = patrol_waypoints[current_waypoint_index]
-
-	# Move toward the current waypoint at patrol speed.
+		
+		# Get new target after advancing
+		if current_waypoint_index < patrol_waypoints.size():
+			target_waypoint = patrol_waypoints[current_waypoint_index]
+	
+	# Move toward current waypoint at patrol speed
 	set_move_target(target_waypoint)
 	move_speed = patrol_speed
 
 
-## Advances current_waypoint_index per patrol mode.
+## Advances to the next waypoint based on patrol mode
 func advance_to_next_waypoint() -> void:
 	if patrol_mode == PatrolMode.LOOP:
+		# LOOP mode: 0→1→2→3→0 (wraps around)
 		current_waypoint_index = (current_waypoint_index + 1) % patrol_waypoints.size()
+	
 	elif patrol_mode == PatrolMode.PING_PONG:
+		# PING_PONG mode: 0→1→2→3→2→1→0
 		current_waypoint_index += patrol_direction
+		
+		# Check if reached either end
 		if current_waypoint_index >= patrol_waypoints.size():
-			current_waypoint_index = patrol_waypoints.size() - 2  # reverse
+			# Reached end, reverse
+			current_waypoint_index = patrol_waypoints.size() - 2  # Go back one
 			patrol_direction = -1
 		elif current_waypoint_index < 0:
-			current_waypoint_index = 1
+			# Reached beginning, reverse
+			current_waypoint_index = 1  # Go forward one
 			patrol_direction = 1
 
 
-## Loads patrol waypoints from child "Waypoint*" Node2Ds, natural-sorted by name
-## (so Waypoint2 precedes Waypoint10). Allows visual waypoint placement.
-func load_waypoints_from_children() -> void:
-	var waypoint_nodes: Array[Node] = []
-	for child in get_children():
-		if child.name.begins_with("Waypoint"):
-			waypoint_nodes.append(child)
-	if waypoint_nodes.size() == 0:
-		return
-	waypoint_nodes.sort_custom(func(a, b): return a.name.naturalnocasecmp_to(b.name) < 0)
-	patrol_waypoints.clear()
-	for waypoint in waypoint_nodes:
-		if waypoint is Node2D:
-			patrol_waypoints.append(waypoint.global_position)
+## Returns true if this human is a formation follower (has a patrol_leader set)
+func is_follower() -> bool:
+	return not patrol_leader.is_empty()
 
 
-## True if this human is an armed class (uses the fill front + fires). Civilians are
-## the only unarmed class — they flee on fill completion (3.2) instead.
-func is_armed() -> bool:
-	return defender_class != DefenderClass.CIVILIAN
-
-
-## Stamps a class letter on the unit so the roster reads at a glance: M/P/G for the
-## armed classes; civilians stay blank (they're the bulk). Runtime only.
-func _add_class_label() -> void:
-	var letter := ""
-	match defender_class:
-		DefenderClass.MILITIA:
-			letter = "M"
-		DefenderClass.POLICE:
-			letter = "P"
-		DefenderClass.GI:
-			letter = "G"
-	if letter == "":
-		return
-	var label := Label.new()
-	label.text = letter
-	label.add_theme_font_size_override("font_size", 16)
-	label.add_theme_color_override("font_color", Color.WHITE)
-	label.position = Vector2(-5.0, -11.0)   # roughly centred on the ~24px unit
-	label.z_index = 10                       # above the body
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE   # don't eat selection clicks
-	add_child(label)
-
-
-# === LINE OF SIGHT (buildings + intact doors block) ===
-# The has_line_of_sight_to OVERRIDE is gone (Tier-4 dead code): since the
-# cluster fix it was byte-identical to Unit's — the base method serves.
-
-## True if no building or intact door blocks the straight line from this human to
-## `point` (a world-space coordinate, e.g. an escape zone).
-func has_line_of_sight_to_point(point: Vector2) -> bool:
-	var query := PhysicsRayQueryParameters2D.create(global_position, point)
-	query.collision_mask = 17           # Environment (1) + intact-door "DoorLOS" blockers (16)
-	query.exclude = [self]
-	return get_world_2d().direct_space_state.intersect_ray(query).is_empty()
-
-
-## THE unified exit set (buildings spec §9): escape zones ∪ shelter doors that are
-## intact and unlocked — one set, no class preferences. A broken human runs to
-## whatever safety is closest. Membership churn (engaged doors dropping out,
-## breached buildings leaving forever) arrives with steps 3–4 via is_locked() /
-## is_intact() going live.
-func get_exit_set() -> Array[Node2D]:
-	var exits: Array[Node2D] = []
-	for zone in get_tree().get_nodes_in_group("escape_zone"):
-		if is_instance_valid(zone):
-			exits.append(zone)
-	for door in get_tree().get_nodes_in_group("shelter_doors"):
-		if not is_instance_valid(door) or not door.is_intact() or door.is_locked():
-			continue
-		# Only doors of a true, unbreached SHELTER are exits: standalone gate
-		# doors (no building) and dumb boxes (is_shelter false) are plain
-		# terrain, and a breached building leaves the set permanently — all its
-		# doors, even intact ones (§9: a hole in the wall is not shelter).
-		var b: Node = door.building()
-		if b == null or not b.is_shelter or b.is_breached():
-			continue
-		exits.append(door)
-	return exits
-
-
-## Nearest exit (escape zone or shelter door), or null. NO line-of-sight requirement
-## (spec §4.3: a routed human knows the exits) — used by the rout (FleeBehavior, 3.2).
-func get_nearest_escape_zone() -> Node2D:
-	var nearest_exit: Node2D = null
-	var nearest_distance := INF
-	for exit in get_exit_set():
-		# global_position — exits are nested scenes / building children.
-		var distance := global_position.distance_to(exit.global_position)
-		if distance < nearest_distance:
-			nearest_distance = distance
-			nearest_exit = exit
-	return nearest_exit
-
-
-## Breaks this human into a permanent rout (spec §4.3) — called by the civilian
-## reaction clock (3.2) and the fear break (3.3). Cancels patrol/fill; FleeBehavior
-## steers to the nearest exit. No-op if already fleeing or dead (broken is broken).
-## From SHELTERED this is the flush (buildings spec §8.1, wired fully in step 6):
-## occupancy is released — a flushed human is out, the building forgets it.
-func start_fleeing() -> void:
-	if current_state == State.FLEEING or current_state == State.DEAD:
-		return
-	if current_state == State.SHELTERED and _shelter_building != null:
-		_shelter_building.release_occupant(self)
-		_shelter_building = null
-	current_state = State.FLEEING
-	is_patrolling = false
-	has_target = false
-	if _flee != null:
-		_flee.begin()
-	queue_redraw()   # drop the fill-line debug viz
-
-
-## Cancels the fill front (called by the fear break, 3.3, the instant it commits, so
-## no shot lands during the reaction beat). Safe if the component isn't built.
-func cancel_fill() -> void:
-	if _fill_front != null:
-		_fill_front.cancel()
-
-
-## True while a fear break has committed (during the reaction beat or the frame it
-## flees). The dispatcher freezes movement and skips the fill while this holds.
-func _is_breaking() -> bool:
-	return _fear != null and _fear.is_breaking()
-
-
-## Interim cower tint (a cold, helpless pale-blue) — the readable "this one's cornered"
-## cue. Proper cower readability (pose + scream) is the vision_renderer pass in 5.1.
-const COWER_TINT := Color(0.45, 0.6, 1.0, 1.0)
-
-
-## Drops this human into COWER (spec §4.4) — cornered, frozen, classless, no fill, no
-## recovery. Called by FleeBehavior's net-displacement detector (3.5). Still alive, so
-## it dies to a normal pounce; was_cowering records it for the terror bonus (4.2).
-func start_cowering() -> void:
-	if current_state == State.COWER or current_state == State.DEAD:
-		return
-	current_state = State.COWER
-	was_cowering = true
-	print("🔍 COWER: %s cornered at %s" % [name, global_position.round()])
-	velocity = Vector2.ZERO
-	has_target = false
-	# Drop off the Humans collision layer so a cowerer no longer blocks armed defenders'
-	# firing lanes (B3, spec §4.1: corpses AND cowerers don't screen shots) — mirrors die().
-	# Layer only: the pounce is claim/range-based (still kills a cowerer) and huddle
-	# separation is registry-based, so neither depends on this.
-	collision_layer = 0
-	modulate = COWER_TINT
-	queue_redraw()   # drop the fill-line debug viz
-
-
-## Live check: is this human currently cowering? Used by FeralBrain to keep cowering
-## humans LOCAL-SCAN-ONLY in the hunt pool (§3.4 seam).
-func is_cowering() -> bool:
-	return current_state == State.COWER
-
-
-# === SHELTER (buildings spec §6, slice-1 step 2) ===
-
-## The ShelterBuilding this human occupies while SHELTERED (dynamically typed — no
-## class dependency). Read by step 3+ (BREACHING prey-proxy, flush routing).
-var _shelter_building: Node2D = null
-
-
-## Enters SHELTERED — the §6.1 transition, only reachable from FLEEING (crossing an
-## intact, unlocked door; FleeBehavior detects the crossing). Atomically: leaves
-## FLEEING (→ out of the fleeing pool; pursuers drop via FeralBrain's sheltered
-## check, draining the pursued pool), suspends the cower detector (not ticked in
-## SHELTERED), claims a spot and walks to it. Blocks the win by simply remaining
-## alive on the map (§6.1) — no extra wiring.
-func enter_shelter(building: Node2D, door: Node2D) -> void:
-	if current_state != State.FLEEING:
-		return
-	current_state = State.SHELTERED
-	has_target = false
-	velocity = Vector2.ZERO
-	_shelter_building = building
-	var spot: Vector2 = building.claim_spot(self, door)
-	if _flee != null:
-		_flee.begin_sheltered(spot)
-	print("🔍 SHELTER: %s entered %s via %s → spot %s" % [name, building.name, door.name, spot])
-	queue_redraw()   # drop any lingering line viz
-
-
-## Level-start adoption (Ben's ruling 2026-07-26): a human PLACED inside an
-## intact shelter becomes SHELTERED at boot as if it had fled in — same spot
-## claims, same flush, same last stand. Called by GameManager after registration;
-## eligibility (intact + is_shelter building, not patrolling) is the caller's job.
-## `door` = the notional entry (nearest intact door), may be null.
-func adopt_into_shelter(building: Node2D, door: Node2D) -> void:
-	if current_state == State.DEAD or current_state == State.SHELTERED:
-		return
-	current_state = State.SHELTERED
-	is_patrolling = false
-	has_target = false
-	velocity = Vector2.ZERO
-	_shelter_building = building
-	var spot: Vector2 = building.claim_spot(self, door)
-	if _flee != null:
-		_flee.begin_sheltered(spot)
-	print("🔍 SHELTER: %s adopted by %s → spot %s" % [name, building.name, spot])
-	queue_redraw()
-
-
-## Live check: is this human in the SHELTERED state (regardless of whether the
-## building still protects it)?
-func is_sheltered() -> bool:
-	return current_state == State.SHELTERED
-
-
-## Sheltered AND the building is still intact — the protection check. Safely
-## sheltered humans are not valid feral targets (§6.1: pursuers besiege instead)
-## and can't be release-pinned. Once the building is BREACHED, its occupants are
-## normal prey again (§5.2 room-by-room hunting) even while still SHELTERED.
-func is_safely_sheltered() -> bool:
-	if current_state != State.SHELTERED:
+## Returns true if this leader has any formation followers
+func _has_followers() -> bool:
+	if not get_tree():
 		return false
-	return _shelter_building != null and is_instance_valid(_shelter_building) \
-		and not _shelter_building.is_breached()
+	var humans := get_tree().get_nodes_in_group("humans")
+	for human in humans:
+		if not human is Human or human == self:
+			continue
+		var follower := human as Human
+		if follower.patrol_leader.is_empty():
+			continue
+		var leader_node = follower.get_node_or_null(follower.patrol_leader)
+		if leader_node == self:
+			return true
+	return false
 
 
-## The occupied building, or null (the siege prey-proxy, read by FeralBrain).
-func shelter_building() -> Node2D:
-	return _shelter_building
+## Returns true if all SENTRY-state followers are within range of their formation slots
+## Ignores followers who are fleeing or grappled (out of action)
+func all_followers_in_formation() -> bool:
+	if not get_tree():
+		return true
+	var humans := get_tree().get_nodes_in_group("humans")
+	var threshold := formation_spacing * 2.0  # Generous tolerance
+	for human in humans:
+		if not human is Human or human == self:
+			continue
+		var follower := human as Human
+		if follower.patrol_leader.is_empty():
+			continue
+		var leader_node = follower.get_node_or_null(follower.patrol_leader)
+		if leader_node != self:
+			continue
+		# Only count SENTRY followers - fleeing/grappled ones are out of action
+		if follower.current_state != State.SENTRY:
+			continue
+		var target_pos := global_position + get_formation_offset(follower.formation_slot)
+		if follower.global_position.distance_to(target_pos) > threshold:
+			return false
+	return true
 
 
-## True while sheltered AND settled on the claimed spot — the door-watch (§7.1)
-## only arms from the defensive position, not mid-walk.
-func at_shelter_spot() -> bool:
-	return current_state == State.SHELTERED and _flee != null and _flee.at_spot()
+## Calculates the world-space offset for a given formation slot number
+## Based on this leader's current facing_direction and formation_shape
+## @param slot: 1-based slot index
+## @return: Offset vector to add to leader's global_position
+func get_formation_offset(slot: int) -> Vector2:
+	# Use facing direction, fall back to UP if stationary
+	var forward := facing_direction if facing_direction.length() > 0.1 else Vector2.UP
+	var right := forward.rotated(PI / 2.0)
+	var back := -forward
+	var s := formation_spacing
+	
+	match formation_shape:
+		FormationShape.LINE_ABREAST:
+			# Side by side perpendicular to travel: R1, L1, R2, L2, R3...
+			var side_index := int(ceil(float(slot) / 2.0))
+			var side_sign := 1 if slot % 2 == 1 else -1
+			return right * side_sign * side_index * s
+		
+		FormationShape.COLUMN:
+			# Single file directly behind leader
+			return back * slot * s
+		
+		FormationShape.WEDGE:
+			# V-shape: followers spread behind and to the sides
+			var row := int(ceil(float(slot) / 2.0))
+			var side_sign := 1 if slot % 2 == 1 else -1
+			return back * row * s + right * side_sign * row * s * 0.75
+		
+		FormationShape.ECHELON:
+			# Diagonal line extending right and behind
+			return back * slot * s + right * slot * s * 0.75
+		
+		FormationShape.DIAMOND:
+			# Diamond: right, left, behind — overflow to column for 4+
+			match slot:
+				1: return right * s
+				2: return -right * s
+				3: return back * s
+				_: return back * (slot - 2) * s
+	
+	return Vector2.ZERO
 
 
-# === CORPSE COMMANDS (build-plan 6a) ===
+## Formation follower update — called each frame instead of update_patrol()
+## Resolves leader reference lazily (handles node ordering in scene)
+## Moves this follower to their assigned formation slot behind the leader
+## @param delta: Physics timestep in seconds
+func update_formation_follow(delta: float) -> void:
+	# Lazy-resolve leader NodePath to a cached node reference
+	if _leader_node == null or not is_instance_valid(_leader_node):
+		if not patrol_leader.is_empty():
+			_leader_node = get_node_or_null(patrol_leader) as Human
+		# Still null - node not found yet, try again next frame
+		if _leader_node == null:
+			return
+	
+	# Leader validity check every frame — handles leader death
+	if not is_instance_valid(_leader_node):
+		_leader_node = null
+		# Go idle if we were still on patrol duty
+		if current_state == State.SENTRY:
+			#print("⚠️ ", name, ": leader gone — going idle")
+			current_state = State.IDLE
+			has_target = false
+			velocity = Vector2.ZERO
+		return
+	
+	# If we're not in a moveable state, don't try to hold formation
+	if current_state == State.FLEEING or current_state == State.GRAPPLED or current_state == State.DEAD:
+		return
+	
+	# If the leader is fleeing, don't try to follow them
+	# Our own check_for_nearby_zombies() will trigger our flee independently
+	if _leader_node.current_state == State.FLEEING:
+		return
+	
+	# Calculate where our slot is right now
+	var slot_target: Vector2 = _leader_node.global_position + _leader_node.get_formation_offset(formation_slot)
+	var distance_to_slot: float = global_position.distance_to(slot_target)
+	var base_speed: float = _leader_node.patrol_speed
+	
+	# Ramp speed smoothly based on distance from slot.
+	# In position: 1× speed. Far behind: up to 2.5× speed.
+	# Uses lerp for smooth acceleration/deceleration rather than sudden jumps.
+	var distance_ratio: float = distance_to_slot / 15.0
+	var target_speed_multiplier: float = clamp(distance_ratio, 1.0, 1.5)
+	# Smooth the multiplier over time to avoid sudden speed changes
+	var current_multiplier: float = move_speed / max(base_speed, 1.0)
+	var smooth_multiplier: float = lerp(current_multiplier, target_speed_multiplier, 0.1)
+	move_speed = base_speed * smooth_multiplier
+	
+	if distance_to_slot > 5.0:
+		set_move_target(slot_target)
+	else:
+		# In position — stop and face same direction as leader
+		has_target = false
+		velocity = Vector2.ZERO
+		facing_direction = _leader_node.facing_direction
 
-## Marks this dead human as a pending-rise corpse — makes it selectable/commandable.
-## Called by GameManager when the kill is queued into the riser pipeline.
-func mark_pending_rise() -> void:
-	is_pending_rise = true
-	queue_redraw()
+
+## Adjusts flee direction to avoid obstacles (buildings)
+## Uses raycasting to detect obstacles and steers around them
+## Picks angle closest to desired direction (maintains flee vector)
+## @param desired_direction: The direction the human wants to flee
+## @return: Adjusted direction that avoids obstacles
+func avoid_obstacles(desired_direction: Vector2) -> Vector2:
+	# Check if path is clear in desired direction
+	var check_distance: float = 80.0  # Look ahead distance
+	var target_point := position + desired_direction * check_distance
+	
+	var query := PhysicsRayQueryParameters2D.create(position, target_point)
+	query.collision_mask = 1  # Only hit buildings
+	query.exclude = [self]
+	
+	var result := space_state.intersect_ray(query)
+	
+	# If path is clear, use desired direction
+	if result.is_empty():
+		return desired_direction
+	
+	# Path is blocked - find angle closest to desired direction
+	# Test smaller angles first (max ±45°, not ±90°)
+	var test_angles := [-15.0, 15.0, -30.0, 30.0, -45.0, 45.0]
+	var best_direction := desired_direction
+	var best_alignment := -1.0  # Dot product score (-1 to 1)
+	var best_clearance := 0.0
+	
+	for angle in test_angles:
+		var test_direction := desired_direction.rotated(deg_to_rad(angle))
+		var test_point := position + test_direction * check_distance
+		
+		var test_query := PhysicsRayQueryParameters2D.create(position, test_point)
+		test_query.collision_mask = 1
+		test_query.exclude = [self]
+		
+		var test_result := space_state.intersect_ray(test_query)
+		
+		if test_result.is_empty():
+			# Path is clear - check alignment with desired direction
+			# Dot product: 1.0 = same direction, -1.0 = opposite
+			var alignment := desired_direction.dot(test_direction)
+			
+			if alignment > best_alignment:
+				best_alignment = alignment
+				best_direction = test_direction
+		else:
+			# Partially blocked - track clearance as fallback
+			var clearance := position.distance_to(test_result.position)
+			if clearance > best_clearance:
+				best_clearance = clearance
+				best_direction = test_direction
+	
+	# Return direction with best alignment (or most clearance if all blocked)
+	return best_direction
 
 
-## True while this is a selectable corpse: dead AND still counting down to rise. Selection
-## (click/box) includes these alongside calm zombies; a move/release order is STORED and
-## re-resolved when it stands (GameManager._raise).
-func is_selectable_corpse() -> bool:
-	return is_pending_rise and not is_alive
+## Checks if any zombie has locked onto this human as their target
+## Used to keep fleeing even when zombie is out of sight (behind wall, etc.)
+## @return: true if being actively pursued by a zombie
+func is_being_pursued() -> bool:
+	var zombies := get_tree().get_nodes_in_group("zombies")
+	for zombie in zombies:
+		if zombie is Zombie:
+			var zombie_unit := zombie as Zombie
+			# Check if this zombie is locked onto THIS human
+			if zombie_unit.attack_target == self:
+				if enable_debug_logging:
+					pass
+					#print("  ⚠️ BEING PURSUED by zombie at ", zombie_unit.position)
+				return true
+	return false
 
 
-## Mirrors the queued rise-route for the interim debug line (source of truth is the riser
-## entry in GameManager). Called from GameManager.set_rise_route / queue_rise_waypoint. (#8)
-func set_queued_route(route: Array) -> void:
-	_queued_route = route.duplicate()
-	queue_redraw()
+## Calculates optimal flee direction based on all nearby zombie threats
+## and pull toward escape zone if nearby
+## Uses weighted threat vectors - closer zombies have more influence
+## Escape zone adds attraction force scaled by distance (20% at 200px, 80% at 50px)
+## @return: Normalized direction vector for fleeing
+func calculate_flee_direction() -> Vector2:
+	if enable_debug_logging:
+		pass
+		#print("\n=== CALCULATE_FLEE_DIRECTION ===")
+		#print("Human at position: ", position)
+		#print("Current state: ", State.keys()[current_state])
+	
+	var zombies := get_tree().get_nodes_in_group("zombies")
+	if enable_debug_logging:
+		pass
+		#print("Total zombies in scene: ", zombies.size())
+	
+	var total_threat := Vector2.ZERO
+	var visible_zombie_count := 0
+	
+	# Calculate threat from zombies
+	for zombie in zombies:
+		if not zombie is Unit:
+			if enable_debug_logging:
+				pass
+				#print("  Skipping non-Unit zombie")
+			continue
+		
+		var distance := position.distance_to(zombie.position)
+		if enable_debug_logging:
+			pass
+			#print("  Zombie at ", zombie.position, " - distance: ", distance)
+		
+		# Use wider vision range when calculating flee (hyper-aware panic state)
+		# 200px range - momentum system handles continued fleeing after losing sight
+		var max_range: float = 200.0
+		if distance > max_range:
+			if enable_debug_logging:
+				pass
+				#print("    SKIP: Too far (> 200px)")
+			continue
+		
+		# Check if zombie is visible (in vision cone/circle + line of sight)
+		if not can_see_unit(zombie):
+			if enable_debug_logging:
+				pass
+				#print("    SKIP: Not visible (LOS blocked or out of arc)")
+			continue
+		
+		visible_zombie_count += 1
+		
+		# Calculate direction away from this zombie
+		var away_direction: Vector2 = (position - zombie.position).normalized()
+		if enable_debug_logging:
+			pass
+			#print("    ✓ VISIBLE ZOMBIE #", visible_zombie_count)
+			#print("      Away direction: ", away_direction)
+		
+		# Weight by inverse distance (closer = stronger influence)
+		var weight := 1.0 - (distance / max_range)
+		if enable_debug_logging:
+			pass
+			#print("      Weight: ", weight)
+			#print("      Contribution: ", away_direction * weight)
+		
+		# Add weighted threat
+		total_threat += away_direction * weight
+	
+	if enable_debug_logging:
+		pass
+		#print("Total visible zombies: ", visible_zombie_count)
+		#print("Total threat vector (before normalization): ", total_threat)
+		#print("Total threat length: ", total_threat.length())
+	
+	# NOTE: Human separation forces disabled - not needed with current physics
+	# Godot's CharacterBody2D collision handles human-human avoidance naturally
+	
+	# SMART ESCAPE ZONE BLENDING
+	# When zone is nearby, blend zone direction with threat avoidance
+	# Closer to zone = stronger pull toward it, weaker threat response
+	# This allows humans to escape even during active chases!
+	var escape_zone := get_nearest_escape_zone()
+	if escape_zone:
+		# Use global_position for nested zones
+		var distance_to_zone := global_position.distance_to(escape_zone.global_position)
+		
+		# Active blending within 200px
+		if distance_to_zone < 200.0:
+			var to_zone: Vector2 = (escape_zone.global_position - global_position).normalized()
+			
+			# Calculate zone weight based on distance
+			# 50px away = 90% zone pull, 10% threat avoidance
+			# 100px away = 75% zone pull, 25% threat avoidance
+			# 150px away = 60% zone pull, 40% threat avoidance
+			# 200px away = 40% zone pull, 60% threat avoidance
+			var zone_weight := 0.4 + (0.5 * (1.0 - (distance_to_zone / 200.0)))
+			var threat_weight := 1.0 - zone_weight
+			
+			# If there are visible threats, blend with zone direction
+			if total_threat.length() > 0.01:
+				var threat_normalized := total_threat.normalized()
+				var blended := (to_zone * zone_weight) + (threat_normalized * threat_weight)
+				
+				# Return blended direction (escape toward zone while dodging zombies)
+				return blended.normalized()
+			else:
+				# No threats, just head straight to zone
+				return to_zone
+	
+	# If no nearby zone, use pure threat avoidance or fallback priorities
+	if total_threat.length() > 0.01:
+		# Visible threats detected - flee directly away
+		if enable_debug_logging:
+			pass
+			#print("Visible threats detected!")
+			#print("FINAL FLEE DIRECTION: ", total_threat.normalized())
+		last_threat_time = Time.get_ticks_msec() / 1000.0
+		return total_threat.normalized()
+	else:
+		# No visible threats - use intelligent fallback priority system
+		if enable_debug_logging:
+			pass
+			#print("No visible threats - checking fallback priorities...")
+		
+		# PRIORITY 0.5: Being actively targeted (attacker_count > 0)?
+		# This catches cases where zombies are pursuing but temporarily out of vision
+		if attacker_count > 0:
+			if enable_debug_logging:
+				pass
+				#print("  Priority 0.5: BEING TARGETED (", attacker_count, " attackers)")
+				#print("  Continuing in last direction: ", last_flee_direction)
+				#print("=================================\n")
+			# Continue fleeing in last known direction
+			if last_flee_direction.length() > 0.1:
+				return last_flee_direction
+			else:
+				# No last direction, flee away from center
+				return (position - Vector2.ZERO).normalized()
+		
+		# PRIORITY 1: Being actively pursued by a zombie?
+		if is_being_pursued():
+			if enable_debug_logging:
+				pass
+				#print("  Priority 1: BEING PURSUED - keep fleeing!")
+				#print("  Using last flee direction: ", last_flee_direction)
+				#print("=================================\n")
+			return last_flee_direction
+		
+		# PRIORITY 2: Escape zone nearby? (fallback when NO visible threats)
+		# Main zone seeking happens in blending system above
+		# This is just for humans who are safe but still fleeing
+		if current_state == State.FLEEING:
+			var escape_zone_fallback := get_nearest_escape_zone()
+			if escape_zone_fallback:
+				var distance_to_zone := global_position.distance_to(escape_zone_fallback.global_position)
+				if distance_to_zone < 200.0:
+					var to_zone: Vector2 = (escape_zone_fallback.global_position - global_position).normalized()
+					if enable_debug_logging:
+						pass
+						#print("  Priority 2: ESCAPE ZONE FALLBACK (no threats)")
+						#print("  Distance to zone: ", distance_to_zone)
+						#print("  Heading straight to zone")
+					return to_zone
+		
+		# PRIORITY 3: Momentum (continue fleeing if recent threat)
+		if last_flee_direction.length() > 0.1:
+			var time_elapsed := (Time.get_ticks_msec() / 1000.0) - last_threat_time
+			if time_elapsed < 5.0:  # 5 second timeout
+				if enable_debug_logging:
+					pass
+					#print("  Priority 3: MOMENTUM (", time_elapsed, "s since last threat)")
+					#print("  Continuing in last direction: ", last_flee_direction)
+					#print("=================================\n")
+				return last_flee_direction
+			else:
+				if enable_debug_logging:
+					pass
+					#print("  TIMEOUT REACHED (", time_elapsed, "s since last threat)")
+		
+		# PRIORITY 4: Truly safe - stop fleeing
+		if enable_debug_logging:
+			pass
+			#print("  Priority 4: TRULY SAFE - stopping")
+			#print("=================================\n")
+		return Vector2.ZERO
 
 
-# === DEATH / CONVERSION ===
+## Initiates flee behavior - human abandons everything and runs from zombie
+## Calculates a flee direction away from the threatening zombie
+## @param threat: The zombie that triggered the flee response
+func start_fleeing(threat: Unit) -> void:
+	# State is already set to FLEEING by caller
+	
+	# Restore full flee speed — patrol_speed may have lowered move_speed
+	if _base_move_speed > 0.0:
+		move_speed = _base_move_speed
+	is_patrolling = false
+	
+	# DEBUG: Enable logging for first human that flees
+	if Human.debug_logged_human == null:
+		Human.debug_logged_human = self
+		enable_debug_logging = true
+		#print("\n🎯 DEBUG LOGGING ENABLED FOR THIS HUMAN (first to flee)")
+		#print("Position: ", position)
+		#print("============================================\n")
+	
+	# IMMEDIATELY stop current movement to prevent moving toward zombie
+	velocity = Vector2.ZERO
+	has_target = false
+	
+	# Stop any current attack (though humans can't attack anyway)
+	attack_target = null
+	
+	# Calculate flee direction and target
+	update_flee_direction(threat)
 
-## Kills this human: notify GameManager, enter DEAD (incubating corpse).
-## The morale-shock broadcast and attacker bookkeeping of the v1 die() are gone.
+
+## Starts fleeing with an inherited direction from nearby panicking humans
+## Used for cascading panic propagation - creates natural spreading patterns
+## @param threat: The zombie that triggered the group panic
+## @param inherited_direction: Direction from the human who first detected threat
+func start_fleeing_with_direction(threat: Unit, inherited_direction: Vector2) -> void:
+	# Set state
+	current_state = State.FLEEING
+	# Restore full flee speed — patrol_speed may have lowered move_speed
+	if _base_move_speed > 0.0:
+		move_speed = _base_move_speed
+	is_patrolling = false
+	velocity = Vector2.ZERO
+	has_target = false
+	attack_target = null
+	
+	# Calculate own threat assessment
+	var my_threats := calculate_flee_direction()
+	
+	# Blend: 70% inherited direction, 30% own calculation
+	# This creates wave effect while still being responsive
+	var blended_direction: Vector2 = (inherited_direction * 0.7 + my_threats * 0.3).normalized()
+	
+	# Apply obstacle avoidance
+	blended_direction = avoid_obstacles(blended_direction)
+	
+	# Calculate proposed flee target
+	var flee_target := position + blended_direction * flee_distance
+	
+	# DISABLED FOR TESTING: DANGER ZONE CHECK
+	# var zombies := get_tree().get_nodes_in_group("zombies")
+	# for zombie in zombies:
+	#     if not zombie is Zombie:
+	#         continue
+	#     var zombie_unit := zombie as Zombie
+	#     var distance_to_target: float = flee_target.distance_to(zombie_unit.position)
+	#     if distance_to_target < 60.0:
+	#         blended_direction = blended_direction.rotated(PI / 2.0)
+	#         flee_target = position + blended_direction * flee_distance
+	#         break
+	
+	# Store direction and set target
+	last_flee_direction = blended_direction.normalized()
+	set_move_target(flee_target)
+
+
+## Updates the flee target position based on current threat
+## Recalculates threat vector from all nearby zombies and avoids obstacles
+## @param _threat: The zombie to flee from (deprecated - now uses all zombies)
+func update_flee_direction(_threat: Unit) -> void:
+	if enable_debug_logging:
+		pass
+		#print("\n>>> UPDATE_FLEE_DIRECTION called <<<")
+		#print("Current position: ", position)
+	
+	# Recalculate flee direction from ALL nearby zombies
+	var flee_direction := calculate_flee_direction()
+	
+	if enable_debug_logging:
+		pass
+		#print("Flee direction from calculate: ", flee_direction)
+		#print("flee_distance: ", flee_distance)
+	
+	# Apply smart obstacle avoidance (picks angle closest to desired flee direction)
+	flee_direction = avoid_obstacles(flee_direction)
+	
+	# Calculate proposed flee target
+	var flee_target := position + flee_direction * flee_distance
+	if enable_debug_logging:
+		pass
+		#print("Calculated flee_target: ", flee_target)
+		#print("Vector from position to flee_target: ", flee_target - position)
+	
+	# NOTE: Danger zone check disabled - weighted threat system handles multiple zombies
+	# If humans flee into ambushes, consider re-enabling with gentler rotation
+	
+	# Store this direction for cooldown period
+	if flee_direction.length() > 0.1:
+		last_flee_direction = flee_direction.normalized()
+	
+	# Command ourselves to move to that flee point
+	set_move_target(flee_target)
+	#print("Called set_move_target with: ", flee_target)
+	#print(">>> END UPDATE_FLEE_DIRECTION <<<\n")
+
+
+## Starts fleeing in a specific direction (for panic spreading)
+## Used when nearby humans are attacked but zombie isn't visible
+## @param direction: The direction to flee in (should be normalized)
+func start_fleeing_in_direction(direction: Vector2) -> void:
+	# Restore full flee speed — patrol_speed may have lowered move_speed
+	if _base_move_speed > 0.0:
+		move_speed = _base_move_speed
+	is_patrolling = false
+	# Stop current movement
+	velocity = Vector2.ZERO
+	has_target = false
+	attack_target = null
+	
+	# Apply obstacle avoidance
+	var safe_direction := avoid_obstacles(direction)
+	
+	# Calculate flee target
+	var flee_target := position + safe_direction * flee_distance
+	
+	# Store direction and set target
+	last_flee_direction = safe_direction.normalized()
+	last_threat_time = Time.get_ticks_msec() / 1000.0
+	set_move_target(flee_target)
+
+
+## Called when this human's health reaches 0
+## Enters dead state and starts incubation timer
+## Override of Unit.die()
 func die() -> void:
+	# Guard: Don't run if already dead (prevents infinite loop)
 	if current_state == State.DEAD:
 		return
-
+	
+	# Let GameManager know this human died
+	# (GameManager uses this to check win conditions and track remaining humans)
 	human_died.emit(self)
-
-	is_alive = false
+	
+	# Notify nearby humans of this death — triggers killed_drain on their morale bars
+	var all_humans := get_tree().get_nodes_in_group("humans")
+	for other in all_humans:
+		if other is Human and other != self and is_instance_valid(other):
+			if position.distance_to(other.position) <= 150.0:
+				other.receive_ally_killed_shock(position)
+	
+	# Enter dead state (don't remove immediately)
 	current_state = State.DEAD
-	is_dead = true
-
+	is_dead = true  # Keep for compatibility with other systems
+	incubation_timer = incubation_duration
+	
+	# Clear attacker tracking - no longer being chased
+	attacker_count = 0
+	update_targeting_visual()  # Remove red border
+	
+	# Clear all movement and targets
 	velocity = Vector2.ZERO
 	has_target = false
-
-	modulate = Color(0.8, 0.2, 0.2, 1.0)   # red corpse
-	collision_layer = 0                     # corpses block nothing
-	collision_mask = 0
-
-
-# === POUNCE EXCLUSION (spec §3.5) ===
-
-## Claimed by a feral when it starts an in-flight pounce on this human.
-func claim_pounce(zombie: Unit) -> void:
-	_pounce_claimed_by = zombie
-
-
-## Released when the pounce lands or aborts.
-func release_pounce() -> void:
-	_pounce_claimed_by = null
+	attack_target = null
+	
+	# Change color to red (dead corpse)
+	modulate = Color(0.8, 0.2, 0.2, 1.0)
+	
+	# Disable collision - corpses don't block line of sight or movement
+	collision_layer = 0  # Remove from all collision layers
+	collision_mask = 0   # Don't collide with anything
+	
+	#print("Human died - incubating for ", incubation_duration, " seconds")
 
 
-## True while an in-flight pounce has this human claimed — other ferals' retarget
-## (2.3) treats a claimed human as invisible.
-func is_pounce_claimed() -> bool:
-	return _pounce_claimed_by != null and is_instance_valid(_pounce_claimed_by)
+## Spawns a zombie at this human's position after incubation complete
+## Called when incubation timer reaches 0
+func spawn_zombie_conversion() -> void:
+	# Let GameManager know to spawn zombie
+	var game_manager := get_tree().get_first_node_in_group("game_manager")
+	if game_manager and game_manager.has_method("on_human_converted"):
+		game_manager.on_human_converted(self)
+		#print("Human converted to zombie after incubation!")
 
 
-# === READABILITY HIGHLIGHTS (build-plan 2.4) ===
+## Checks if any zombie is in melee range (30 pixels)
+## Used to determine if human should stay grappled
+## @return: true if at least one zombie is very close AND targeting this human
+## Checks if any zombie is close enough to keep this human grappled
+## @return: true if any zombie within grapple range (50px) AND attacking this human
+func is_being_attacked() -> bool:
+	var zombies := get_tree().get_nodes_in_group("zombies")
+	
+	for zombie in zombies:
+		if zombie is Zombie:
+			var distance := position.distance_to(zombie.position)
+			
+			# FIXED: Only grapple if zombie is actually in combat (leaping or melee)
+			# Not just walking nearby!
+			if distance <= 50.0 and zombie.attack_target == self:
+				# Check if zombie is actively engaging (not just walking nearby)
+				var is_combat_engaged = zombie.has_leap_grappled or zombie.is_melee_attacker
+				
+				if not is_combat_engaged:
+					# Zombie is just walking toward target, not in combat yet
+					continue
+				
+				# If not yet grappled, initiate grapple (state transition happens in _physics_process)
+				# Don't grapple if already dead!
+				if not is_grappled and current_state != State.DEAD:
+					is_grappled = true
+					current_state = State.GRAPPLED
+					grapple_timer = grapple_duration
+					# Instantly turn to face the attacker — a pinned human struggles
+					# toward the zombie on them. GRAPPLED returns early in
+					# _physics_process before the smooth-rotation block, so set
+					# facing_direction directly (no easing). The same direction is stored
+					# as _grapple_came_from for the get-up facing when released.
+					var to_grappler: Vector2 = zombie.global_position - global_position
+					if to_grappler.length() > 0.01:
+						facing_direction = to_grappler.normalized()
+						_target_facing = facing_direction
+						_grapple_came_from = facing_direction  # remember for get-up
+				return true  # Return true whether newly grappled or already grappled
+	
+	return false
 
-## Toggled by the GameManager hunt pool when the first/last feral starts/stops
-## pursuing me — the "targeted" ring.
-func set_hunted(value: bool) -> void:
-	if _hunted == value:
+
+## Releases this human from a grapple when the grappling zombie is gone (killed
+## before it could convert us). The human "gets up" into SENTRY watch, facing the
+## way the zombie came from (re-centres the swing arc there too so it doesn't snap
+## back to its old post). Patrol is not auto-resumed — it was just attacked.
+func _release_from_grapple() -> void:
+	is_grappled = false
+	grapple_timer = 0.0
+	_getup_timer = 0.0
+	current_state = State.SENTRY
+	is_patrolling = false
+	if _grapple_came_from != Vector2.ZERO:
+		facing_direction = _grapple_came_from
+		_target_facing = Vector2.ZERO
+		swing_center_angle = rad_to_deg(_grapple_came_from.angle()) + 90.0
+	print("🧍 [GRAPPLE RELEASED] ", name, " got up facing ", snapped(rad_to_deg(facing_direction.angle()) + 90.0, 0.1), "° (grappler killed)")
+
+
+## Humans don't attack - they're defenseless
+## This override prevents any combat behavior
+## Override of Unit.perform_attack()
+func perform_attack() -> void:
+	# Humans cannot attack - do nothing
+	# This function exists only to override the base Unit behavior
+	pass
+
+
+## Takes damage and enters grappled state
+## Override of Unit.take_damage()
+## @param amount: How much damage to take
+func take_damage(amount: float) -> void:
+	# Call parent to handle health reduction
+	super.take_damage(amount)
+	
+	# Don't change state if already dead (die() was called by super)
+	if current_state == State.DEAD:
+#			print("DEBUG: take_damage called on dead human - NOT setting grappled state")
 		return
-	_hunted = value
-	queue_redraw()
+	
+	# Getting hit means we're grappled by a zombie!
+	if not is_grappled:
+		pass
+		#print("Human at ", position, " grappled by zombie!")
+	is_grappled = true
+	current_state = State.GRAPPLED
+	grapple_timer = grapple_duration
 
 
-## Toggled by the SelectionManager when the cursor hovers me with releasable zombies
-## selected — the "release here" ring (misclick defense).
-func set_hover_highlighted(value: bool) -> void:
-	if _hover_highlighted == value:
+## Humans don't pursue attack targets since they can't attack
+## This override prevents combat targeting
+## Override of Unit.set_attack_target()
+func set_attack_target(_target: Unit) -> void:
+	# Humans cannot attack - ignore attack commands
+	# They can only flee
+	pass
+
+
+## Counts zombies currently in MELEE against this human (is_melee_attacker == true).
+## Distinct from attacker_count, which tracks every zombie *targeting* this human.
+## The 2-attacker cap applies to melee slots, NOT to how many may target/approach —
+## so a large horde can be commanded onto one human and rotate into the 2 melee
+## slots as the front rank dies. @return: number of zombies actively meleeing.
+func count_melee_attackers() -> int:
+	var count: int = 0
+	for zombie in get_tree().get_nodes_in_group("zombies"):
+		if zombie is Zombie and zombie.attack_target == self and zombie.is_melee_attacker:
+			count += 1
+	return count
+
+
+## True if a melee slot is open (fewer than 2 zombies currently meleeing).
+func can_accept_attacker() -> bool:
+	return count_melee_attackers() < 2
+
+
+## Increments the attacker count when a zombie targets this human.
+## Called by zombie when setting this human as attack target. Any number of
+## zombies may target one human (no cap here) — the melee cap is separate.
+func add_attacker() -> void:
+	attacker_count += 1
+	update_targeting_visual()  # Show red border when targeted
+
+
+## Decrements the attacker count when a zombie stops targeting this human
+## Called when zombie dies, switches targets, or goes idle
+func remove_attacker() -> void:
+	attacker_count = max(0, attacker_count - 1)  # Prevent negative
+	update_targeting_visual()  # Hide border when no longer targeted
+
+
+## Updates visual indicator showing this human is being targeted
+## Shows dark red border when zombies are pursuing
+func update_targeting_visual() -> void:
+	if not selection_indicator or not selection_circle:
 		return
-	_hover_highlighted = value
-	queue_redraw()
-
-
-# === VISUALS ===
-
-## "Targeted" ring — amber/red, drawn while a feral is hunting this human. Kept low-
-## alpha so a crowd full of them reads as ambient state, not an in-your-face overlay.
-const HUNTED_RING_RADIUS := 20.0
-const HUNTED_RING_COLOR := Color(0.95, 0.35, 0.15, 0.35)
-## "Release here" ring — white, opaque, drawn under the cursor (slightly larger so it
-## reads concentric when the hovered human is already hunted). This is the active
-## cursor telegraph, so it stays prominent.
-const HOVER_RING_RADIUS := 24.0
-const HOVER_RING_COLOR := Color(1.0, 1.0, 1.0, 0.95)
-
-
-## Runtime: the readability rings (alive humans only — corpses show nothing). In the
-## editor: the patrol-path visuals instead (units don't run AI there).
-func _draw() -> void:
-	if not Engine.is_editor_hint():
-		if is_alive:
-			if _hunted:
-				draw_arc(Vector2.ZERO, HUNTED_RING_RADIUS, 0.0, TAU, 48, HUNTED_RING_COLOR, 2.0, true)
-			if _hover_highlighted:
-				draw_arc(Vector2.ZERO, HOVER_RING_RADIUS, 0.0, TAU, 48, HOVER_RING_COLOR, 2.0, true)
-			_draw_fill_line()
-		elif is_selectable_corpse():
-			_draw_corpse_cues()
-		return
-
-	# --- Editor patrol-path visuals (waypoint dots + connecting lines). Sentry
-	# facing arrow and swing arc visuals are deleted (§11). ---
-	if not patrol_enabled or patrol_waypoints.size() == 0:
-		return
-
-	var path_color := Color(1.0, 0.8, 0.0, 0.6)
-	var waypoint_color := Color(1.0, 0.8, 0.0, 1.0)
-
-	for i in range(patrol_waypoints.size()):
-		var current_wp := patrol_waypoints[i] - global_position   # to local
-		draw_circle(current_wp, 8.0, waypoint_color)
-
-		var next_index := -1
-		if patrol_mode == PatrolMode.LOOP:
-			next_index = (i + 1) % patrol_waypoints.size()
-		elif patrol_mode == PatrolMode.PING_PONG:
-			if i < patrol_waypoints.size() - 1:
-				next_index = i + 1
-		if next_index >= 0:
-			var next_wp := patrol_waypoints[next_index] - global_position
-			draw_line(current_wp, next_wp, path_color, 2.0)
-
-
-## Debug fill-line rendering (build-plan 3.1 — the front can't be tuned blind; interim
-## home, moves to vision_renderer in 5.1). A line from the human toward the zombie the
-## front is on, length = the current fill progress (clamped to the target's distance).
-## Orange while filling; red once the front has reached the target (rotating to fire).
-func _draw_fill_line() -> void:
-	# Defenders and sheltered garrisons draw it; a fleeing human has no front.
-	if current_state != State.IDLE and current_state != State.SENTRY and current_state != State.SHELTERED:
-		return
-	if _fill_front == null:
-		return
-	var end_g: Vector2
-	var t := _fill_front.current_target()
-	if t != null and is_instance_valid(t):
-		end_g = t.global_position
-	elif _fill_front.watching():
-		end_g = _fill_front.watch_pos()   # the door-watch line, pinned at the door (§10)
+	
+	if attacker_count > 0:
+		# Show dark red targeting indicator
+		selection_indicator.visible = true
+		selection_circle.default_color = Color(0.6, 0.0, 0.0, 1.0)  # Dark red
+		selection_circle.width = 2.0
 	else:
-		return
-	var length := _fill_front.fill_length()
-	if length <= 0.0:
-		return
-	var to := end_g - global_position   # local delta (the node is unrotated)
-	if to == Vector2.ZERO:
-		return
-	var seg_len := minf(length, to.length())
-	# Half-transparent so a field of fill lines reads as ambient, not in-your-face.
-	var col := Color(1.0, 0.3, 0.2, 0.5) if _fill_front.is_reached() else Color(1.0, 0.85, 0.2, 0.5)
-	draw_line(Vector2.ZERO, to.normalized() * seg_len, col, 2.0)
+		# Hide indicator when not targeted
+		selection_indicator.visible = false
 
 
-## Interim corpse-command cue (build-plan 6a; → vision_renderer 5.1): a faint line to the
-## queued destination. The persistent "commandable" marker RING was removed — under the
-## corpse's red modulate it rendered as a red circle around every corpse. Selection still
-## shows the base Unit selection_indicator; proper corpse readability is the Phase 5 pass.
-const CORPSE_CUE_COLOR := Color(0.55, 0.9, 0.4, 0.55)
-
-func _draw_corpse_cues() -> void:
-	if _queued_route.is_empty():
-		return
-	var prev := Vector2.ZERO
-	for p in _queued_route:
-		var lp: Vector2 = (p as Vector2) - global_position
-		draw_line(prev, lp, CORPSE_CUE_COLOR, 1.5)
-		prev = lp

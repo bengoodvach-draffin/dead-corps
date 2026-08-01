@@ -1,392 +1,433 @@
 extends Unit
 class_name Zombie
 
-## Zombie unit — player-controlled undead. Thin SHELL per ARCHITECTURE_GUIDELINES
-## rule 2: it owns the state enum, identity/selectability, and the per-frame
-## dispatch; the actual behaviors live in child components.
-##
-## State model (spec §3.1): CALM (full RTS control — idle-shamble or commanded
-## move) vs FERAL (autonomous hunting) vs DEAD. _physics_process is a dispatcher
-## (rule 4) routing to _tick_calm / _tick_feral; DEAD is inert.
-##
-## Components:
-##   - ShambleBehavior (built 2.1) — calm idle wander, ticked from _tick_calm.
-##   - FeralBrain / PounceBehavior (2.2–2.3) — not built yet; _tick_feral stubbed.
+## Zombie unit - player-controlled undead unit
+## 
+## Engagement model (v0.25.0):
+## - Zombies NEVER auto-pursue. Only a player right-click starts an engagement.
+## - Once commanded, zombies chase freely until leaping/grappled/in melee.
+## - Leaping, grappled, and melee states are committed — cannot be redirected.
+## - On kill, zombie auto-scans for nearest human within continuation_range (250px)
+##   with clear LOS — if found, re-engages without player input.
+## - Special zombies skip post-kill continuation.
 
 enum State {
-	CALM,   ## RTS-controlled: idle-shamble when no target, move when commanded
-	FERAL,  ## autonomous hunting (built in 2.2) — not selectable
+	IDLE,
+	MOVING,
+	PURSUING,
+	LEAPING,
+	MELEE,
 	DEAD
 }
 
-## Emitted on a kill — re-emitted by the Pounce in 2.2. Kept wired so
-## GameManager's listener survives.
 signal zombie_killed_human(human: Unit, zombie: Zombie)
 
 @onready var nav_agent: NavigationAgent2D = $NavigationAgent2D if has_node("NavigationAgent2D") else null
 
-var current_state: State = State.CALM
+@export var leap_range: float = 40.0
+@export var leap_speed_multiplier: float = 2.0
+## Range to scan for next target after a kill
+@export var continuation_range: float = 250.0
+
+var current_state: State = State.IDLE
 var facing_direction: Vector2 = Vector2.RIGHT
-
-## Special zombies (FatZombie/CostumeZombie) set this true in their _ready().
-## Read by end_game_overlay.gd. Specials are PoC-excluded / non-functional.
+var is_leaping: bool = false
+var normal_speed: float = 0.0
+var is_melee_attacker: bool = false
+var has_leap_grappled: bool = false
+var leap_grappled_target: Human = null
+## When true, zombie cannot receive new commands until current target dies
+var is_committed_to_target: bool = false
+## Special zombies (FatZombie, CostumeZombie): no leap, no continuation, full player control
 var is_special: bool = false
+var melee_enter_time: float = 0.0
+const MELEE_VISION_DELAY: float = 0.5
 
-## Behavior components (child nodes), ticked from the dispatcher.
-var _shamble: ShambleBehavior = null   ## calm idle wander
-var _feral: FeralBrain = null          ## feral pursuit / target
-var _pounce: PounceBehavior = null     ## the lunge / kill-at-landing / recovery
-var _breach: CalmBreach = null         ## calm auto-breach of a door in the way
+@onready var selection_circle: Line2D = $SelectionIndicator/SelectionCircle
 
-## Tracks whether we were executing a commanded move last frame, so the shamble
-## anchor can reset to the arrival point the moment a move completes (spec §3.2).
-var _was_moving: bool = false
-
-## Deferred attack (#8): a human to release toward once the current move route finishes —
-## "attacking is another waypoint". Set by a shift+RMB on an enemy while moves are queued;
-## fires in _tick_calm when the queue empties. Cleared by a plain move and on ignite.
-var queued_attack: Human = null
-
-## Guards the nav-arrival "is_navigation_finished" check (#8 stuck fix): only trust the agent's
-## finished flag once its path for the CURRENT target has actually loaded (a real next-path
-## direction has appeared). Otherwise a stale finished flag from the previous target would make
-## the unit "arrive" instantly and skip the new waypoint. Reset whenever the target changes.
-var _nav_path_ready: bool = false
-
-## Placeholder calm/feral tint for testability — the proper readability layer
-## (calm/feral colors, riser/cower) is built in 2.4 / 5.1.
-const CALM_TINT := Color(1, 1, 1, 1)
-const FERAL_TINT := Color(1.0, 0.5, 0.2)   # orange
+var stuck_check_interval: float = 0.5
+var stuck_check_timer: float = 0.0
+var stuck_sample_position: Vector2 = Vector2.ZERO
+var stuck_max_count: int = 3
+var stuck_count: int = 0
+var stuck_distance_threshold: float = 15.0
 
 
 func _ready() -> void:
 	team = Team.ZOMBIES
+	normal_speed = move_speed
+	stuck_sample_position = position
+	stuck_check_timer = stuck_check_interval
 	super._ready()
 
-	# Behavior components — created at runtime, ticked by this shell's dispatcher,
-	# so none has its own _physics_process (single dispatcher, rule 4).
-	_shamble = ShambleBehavior.new()
-	_shamble.name = "ShambleBehavior"
-	add_child(_shamble)
-	_shamble.setup(self)
 
-	_feral = FeralBrain.new()
-	_feral.name = "FeralBrain"
-	add_child(_feral)
-	_feral.setup(self)
-
-	_pounce = PounceBehavior.new()
-	_pounce.name = "PounceBehavior"
-	add_child(_pounce)
-	_pounce.setup(self)
-	_pounce.landed_kill.connect(_on_pounce_kill)
-
-	_breach = CalmBreach.new()
-	_breach.name = "CalmBreach"
-	add_child(_breach)
-	_breach.setup(self)
-
-
-## Whether this zombie can receive a player command. Calm only.
+## Returns true if this zombie can receive a new player command right now.
+## Committed zombies (leaping, grappled, in melee) must finish their engagement first.
 func can_receive_command() -> bool:
-	return current_state == State.CALM
+	return not (is_leaping or is_committed_to_target)
 
 
-## Whether the player can select this zombie. Calm only — feral zombies are not
-## selectable (released is released, spec §3.1).
-func is_selectable() -> bool:
-	return current_state == State.CALM
-
-
-## FINISHING (Ben's ruling 2026-07-24, the corpse-command model applied to the
-## pounce recovery): a feral in its stationary post-kill second is box-selectable
-## alongside calm zombies, and an order to it is STORED, applying the instant it
-## calms. If the hunt continues instead (prey remains → retarget), the stored
-## order is dropped — the hunt always wins; released is released stays intact.
-func is_finishing_kill() -> bool:
-	return current_state == State.FERAL and _pounce != null and _pounce.is_recovering()
-
-
-## True while this CALM zombie is pounding a door that blocks its ordered move
-## (calm auto-breach). Stays selectable and commandable throughout — this is
-## terrain clearing, not a siege. Readability / debug hook.
-func is_calm_breaching() -> bool:
-	return current_state == State.CALM and _breach != null and _breach.is_breaching()
-
-
-## Stored order for a finishing zombie (see is_finishing_kill). The attack case
-## reuses queued_attack (consumed by _tick_calm once idle).
-var _pending_calm_move: Vector2 = Vector2.ZERO
-var _has_pending_calm_move: bool = false
-
-
-func queue_finish_move(slot: Vector2) -> void:
-	if not is_finishing_kill():
-		return
-	_pending_calm_move = slot
-	_has_pending_calm_move = true
-	queued_attack = null
-
-
-func queue_finish_attack(human: Human) -> void:
-	if not is_finishing_kill():
-		return
-	queued_attack = human
-	_has_pending_calm_move = false
-
-
-## The hunt continued past the recovery (retarget / next pounce) — the stored
-## order is void (the hunt always wins).
-func _drop_finish_order() -> void:
-	_has_pending_calm_move = false
-	queued_attack = null
-
-
-## Per-frame dispatcher (rule 4). DEAD is inert; CALM/FERAL route to handlers.
 func _physics_process(delta: float) -> void:
 	if current_state == State.DEAD:
 		velocity = Vector2.ZERO
 		return
-
-	_apply_boid_tuning()
-	apply_separation_force()
-	apply_alignment_force()
-
+	
+	update_zombie_state()
+	
 	match current_state:
-		State.CALM:
-			_tick_calm(delta)
-		State.FERAL:
-			_tick_feral(delta)
-
-	clamp_position_to_bounds()
-
+		State.IDLE:
+			self.cohesion_strength = 15.0
+			self.alignment_rate = 0.5
+			self.separation_radius = 30.0
+			self.separation_strength = 100.0
+		State.PURSUING, State.LEAPING:
+			self.cohesion_strength = 0.0
+			self.alignment_rate = 1.5
+			self.separation_radius = 45.0
+			self.separation_strength = 150.0
+		State.MOVING:
+			self.cohesion_strength = 0.0
+			self.alignment_rate = 0.8
+			self.separation_radius = 35.0
+			self.separation_strength = 120.0
+		State.MELEE, State.DEAD:
+			self.cohesion_strength = 0.0
+			self.alignment_rate = 0.0
+			self.separation_radius = 25.0
+			self.separation_strength = 80.0
+	
 	if velocity.length() > 0.1:
 		facing_direction = velocity.normalized()
-
-
-## CALM: execute a commanded move if we have one, otherwise idle-shamble. When a
-## commanded move just completed, reset the shamble anchor to the arrival point.
-func _tick_calm(delta: float) -> void:
-	# CALM BREACH: a door that blocks this route, or one the player clicked
-	# directly, gets broken down without leaving calm control. It drives movement
-	# on the frames it pounds, and hands control back the frame the door falls.
-	if _breach.tick(has_target, target_position, delta):
-		_was_moving = true
-		return
-
-	if has_target:
-		# Commanded move at the chase speed (§9 zombie_speed). Read live from config
-		# (robust to LevelConfig push order) — same speed as feral pursuit. Nav-pathed
-		# so the move routes around buildings/walls instead of stalling on them.
-		if nav_move_toward(target_position, GameConfig.zombie_speed):
-			# Arrived — walk to the next queued waypoint if any, else stop (idle-shamble). (#8)
-			if not _advance_move_queue():
-				has_target = false
-		_was_moving = true
-	else:
-		# Route finished (or none) — if an attack was queued for the end, go feral now (#8:
-		# "attacking is another waypoint" — the release waits until the moves are done).
-		if queued_attack != null:
-			var h := queued_attack
-			queued_attack = null
-			if is_instance_valid(h) and h.is_alive:
-				ignite_feral(h)
+	elif attack_target and is_instance_valid(attack_target):
+		facing_direction = (attack_target.position - position).normalized()
+	
+	# Check if target has died or become invalid
+	if attack_target:
+		var target_dead := false
+		if attack_target is Human and attack_target.is_dead:
+			target_dead = true
+		if not is_instance_valid(attack_target) or target_dead:
+			if target_dead and not is_special:
+				print("Zombie's target died - running post-kill continuation check")
+				_check_post_kill_continuation()
+			clear_attack_target()
 			return
-		if _was_moving:
-			_shamble.set_anchor(global_position)
-			_was_moving = false
-		_shamble.tick(delta)
-
-
-## FERAL: orchestrate the hunt. While a pounce is active (committed), tick only
-## it; otherwise tick the brain and act on its report. The shell mediates between
-## FeralBrain and PounceBehavior (rule 2 — they never call each other).
-func _tick_feral(delta: float) -> void:
-	if _pounce.is_active():
-		_pounce.tick(delta)
-		return
-
-	match _feral.tick(delta):
-		FeralBrain.Result.READY_TO_POUNCE:
-			_drop_finish_order()   # the hunt continues — a stored finish-order is void
-			_pounce.start(_feral.current_target())
-		FeralBrain.Result.NO_TARGET:
-			_set_calm()
-		FeralBrain.Result.PURSUING:
-			_drop_finish_order()   # ditto — pursuit resumed after the recovery
-
-
-## Releases this zombie into the frenzy. Released is released — FERAL zombies
-## aren't commandable (can_receive_command → false) and aren't selectable (filtered
-## in selection). `target` is the release seed (§5.2); contagion (§3.3) passes none,
-## so FeralBrain._retarget() grabs the nearest reachable prey on the first feral tick
-## (and calms instantly if there's none — set_target(null) is a safe no-op).
-func ignite_feral(target: Human = null) -> void:
-	current_state = State.FERAL
-	# Drop any pending commanded move — released is released. Otherwise, when this
-	# zombie kills out and returns to CALM, _tick_calm would resume the stale move
-	# order and walk back to where it was last sent.
-	has_target = false
-	_was_moving = false
-	move_queue.clear()      # released is released — drop any queued route (#8)
-	queued_attack = null    # and any deferred attack
-	_breach.cancel()        # and any calm breach — the hunt owns the door rules now
-	_feral.set_target(target)
-	modulate = FERAL_TINT
-
-
-## Release-at-the-building (buildings spec §5.1 + the footprint amendment):
-## ignite FERAL with an occupied building as the siege seed — this zombie
-## besieges its OWN nearest door (nearest-door-per-feral, no coordination).
-## Same verb weight as release-on-human: released is released, no recall.
-func ignite_feral_at_building(building: Node2D) -> void:
-	current_state = State.FERAL
-	has_target = false
-	_was_moving = false
-	move_queue.clear()
-	queued_attack = null
-	_breach.cancel()
-	_feral.set_siege(building)
-	modulate = FERAL_TINT
-
-
-## ORDERED CALM BREACH (Ben's ruling 2026-07-30): RMB on an intact door sends
-## this zombie to break that specific one — a plain calm order, not a release.
-## Release is for prey; orders are for terrain. It stays selectable and
-## commandable throughout, and any new order cancels the job instantly.
-##
-## Replaces release-on-door as the door click's verb: a door isn't prey (it
-## doesn't move, doesn't fight back, doesn't feed the combo, and pounds for the
-## same damage either way), so going feral to break one bought nothing but the
-## loss of control.
-func order_breach(door: Node2D) -> void:
-	if not can_receive_command():
-		return
-	# A plain command replaces any route, exactly like a move order does.
-	has_target = false
-	_was_moving = false
-	move_queue.clear()
-	queued_attack = null
-	_breach.order(door)
-
-
-## The pounce landed a kill — relay it as the zombie's kill signal (feeds
-## contagion in 2.5 and risers in 2.6).
-func _on_pounce_kill(human: Human) -> void:
-	zombie_killed_human.emit(human, self)
-
-
-## Returns to CALM control: clears the feral target, reverts the tint, and anchors
-## the shamble where the zombie ended up. A stored finish-order (move) applies
-## NOW; a stored finish-attack (queued_attack) fires via _tick_calm's normal path.
-func _set_calm() -> void:
-	current_state = State.CALM
-	_feral.clear()
-	modulate = CALM_TINT
-	_shamble.set_anchor(global_position)
-	if _has_pending_calm_move:
-		_has_pending_calm_move = false
-		set_move_target(_pending_calm_move)
-
-
-## Moves toward `point` along the navmesh (around buildings/walls) at `speed`, returning true
-## once the target is reached. Used by calm commanded moves + feral pursuit (pounce flight is
-## separate). Drives the NavigationAgent2D (avoidance off — deterministic).
-##
-## Arrival (#8 stuck fix): the agent's target_desired_distance, NOT a tight 5px — the agent
-## stops giving path guidance once inside that band, so insisting on 5px left crowded / near-
-## terrain units grinding into walls forever. Falls back to is_navigation_finished() (once the
-## path has loaded) so a waypoint tucked BEHIND terrain arrives at the nearest reachable point
-## and the caller advances. When no path direction is available yet, it holds still for a frame
-## rather than straight-lining into terrain (the old fallback dragged stuck units deeper in).
-func nav_move_toward(point: Vector2, speed: float, arrive_dist: float = 5.0) -> bool:
-	if nav_agent == null:
-		if global_position.distance_to(point) <= arrive_dist:
-			velocity = Vector2.ZERO
-			return true
-		return step_toward(point, speed, arrive_dist)
-
-	# Only (re)set the target when it changes — resetting every frame churns the path solve.
-	if nav_agent.target_position != point:
-		nav_agent.target_position = point
-		_nav_path_ready = false
-
-	# Inside the target's neighbourhood: close the FINAL stretch straight-line to
-	# a tight 2px so the unit lands ON the ordered point, not a radius short (the
-	# old stop-at-band left the body's edge kissing the cursor). Fall back to the
-	# agent's arrival ONLY when the straight approach is genuinely BLOCKED (point
-	# tucked against terrain / crowd jam — progress toward the point collapses);
-	# the agent itself reports "finished" anywhere inside its 20px band, which is
-	# exactly the imprecision being closed here, so its word alone doesn't count.
-	if global_position.distance_to(point) <= nav_agent.target_desired_distance:
-		var before_d := global_position.distance_to(point)
-		if step_toward(point, speed, 2.0):
-			return true
-		var progressed := before_d - global_position.distance_to(point)
-		if progressed < speed * get_physics_process_delta_time() * 0.25:
-			return _nav_path_ready and nav_agent.is_navigation_finished()
-		return false
-
-	var dir := nav_agent.get_next_path_position() - global_position
-	if dir.length() > 0.01:
-		_nav_path_ready = true
-		velocity = dir.normalized() * speed
-		move_and_slide()
+	
+	# Stuck detection (only when chasing a target)
+	if attack_target and is_instance_valid(attack_target):
+		check_if_stuck(delta)
 	else:
-		velocity = Vector2.ZERO   # path not ready — wait, don't straight-line into terrain
+		stuck_count = 0
+		stuck_check_timer = stuck_check_interval
+	
+	if attack_target and is_instance_valid(attack_target) and attack_target.is_human():
+		manage_melee_attacker_status()
 
-	# Behind-terrain / blocked target: once the path has loaded, trust the agent's own
-	# arrival at the nearest reachable point so the route advances instead of sticking.
-	# ONLY while still outside the desired-distance band — the agent reports "finished"
-	# anywhere inside it, which would end the order a radius short the very frame we
-	# cross in and starve the precision branch above (the cursor-gap bug).
-	if _nav_path_ready and nav_agent.is_navigation_finished() \
-			and global_position.distance_to(point) > nav_agent.target_desired_distance:
-		velocity = Vector2.ZERO
-		return true
-	return false
+	update_leap_state()
+	super._physics_process(delta)
 
 
-## BOID separation/alignment params, tuned per state (set before the forces run).
-## Cohesion is omitted — it's disabled in unit.gd.
-func _apply_boid_tuning() -> void:
-	match current_state:
-		State.CALM:
-			if has_target:
-				separation_radius = 35.0
-				separation_strength = 120.0
-				alignment_rate = 0.8
+## Scans for nearest valid human within continuation_range after a kill.
+## LOS check only — no vision arc. Zombie knows where the fight is.
+func _check_post_kill_continuation() -> void:
+	var nearest := _find_nearest_human_simple(continuation_range)
+	if nearest:
+		print("⚡ POST-KILL CONTINUATION: ", name, " -> ", nearest.name)
+		set_attack_target(nearest)
+
+
+## Finds nearest living, attackable human within range using LOS check only.
+## Used for post-kill continuation and stuck detection recovery.
+func _find_nearest_human_simple(range: float) -> Unit:
+	var humans := get_tree().get_nodes_in_group("humans")
+	var best: Unit = null
+	var best_dist := range
+	
+	for human in humans:
+		if not human is Human:
+			continue
+		if human.is_dead:
+			continue
+		if human.attacker_count >= 2:
+			continue
+		
+		var dist := position.distance_to(human.position)
+		if dist >= best_dist:
+			continue
+		
+		if not has_line_of_sight_to(human):
+			continue
+		
+		best_dist = dist
+		best = human
+	
+	return best
+
+
+func handle_combat(_delta: float) -> void:
+	if not is_instance_valid(attack_target):
+		attack_target = null
+		return
+	
+	var distance := position.distance_to(attack_target.position)
+	
+	if distance > attack_range:
+		if nav_agent and nav_agent.is_inside_tree():
+			nav_agent.target_position = attack_target.position
+			if not nav_agent.is_navigation_finished():
+				var next_position = nav_agent.get_next_path_position()
+				var direction = (next_position - position).normalized()
+				velocity = direction * move_speed
+				move_and_slide()
 			else:
-				separation_radius = 30.0
-				separation_strength = 100.0
-				alignment_rate = 0.5
-		State.FERAL:
-			separation_radius = 45.0
-			separation_strength = 150.0
-			alignment_rate = 1.5
+				var direction := (attack_target.position - position).normalized()
+				velocity = direction * move_speed
+				move_and_slide()
+		else:
+			var direction := (attack_target.position - position).normalized()
+			velocity = direction * move_speed
+			move_and_slide()
+	else:
+		velocity = Vector2.ZERO
+		if attack_timer <= 0:
+			perform_attack()
+			attack_timer = attack_cooldown
 
 
-## Death: enter DEAD, stop, recolor, linger as a corpse, then free.
+func move_to_target(_delta: float) -> void:
+	var distance := position.distance_to(target_position)
+	
+	if distance > 5.0:
+		if nav_agent and nav_agent.is_inside_tree():
+			nav_agent.target_position = target_position
+			if not nav_agent.is_navigation_finished():
+				var next_position = nav_agent.get_next_path_position()
+				var direction = (next_position - position).normalized()
+				velocity = direction * move_speed
+				move_and_slide()
+			else:
+				var direction := (target_position - position).normalized()
+				velocity = direction * move_speed
+				move_and_slide()
+		else:
+			var direction := (target_position - position).normalized()
+			velocity = direction * move_speed
+			move_and_slide()
+	else:
+		velocity = Vector2.ZERO
+		has_target = false
+
+
+func update_zombie_state() -> void:
+	var old_state := current_state
+	
+	# Melee (committed — highest priority)
+	if is_melee_attacker and attack_target and is_instance_valid(attack_target):
+		var distance_to_target := position.distance_to(attack_target.position)
+		if distance_to_target <= attack_range:
+			if old_state != State.MELEE:
+				melee_enter_time = Time.get_ticks_msec() / 1000.0
+			current_state = State.MELEE
+			return
+	
+	if is_leaping:
+		current_state = State.LEAPING
+		return
+	
+	if attack_target:
+		current_state = State.PURSUING
+		return
+	
+	if has_target:
+		current_state = State.MOVING
+		return
+	
+	current_state = State.IDLE
+
+
+## LOS check between this zombie and a target unit
+func has_line_of_sight_to(target: Unit) -> bool:
+	var query := PhysicsRayQueryParameters2D.create(position, target.position)
+	query.collision_mask = 1
+	var space_state := get_world_2d().direct_space_state
+	var result := space_state.intersect_ray(query)
+	return result.is_empty()
+
+
+func update_leap_state() -> void:
+	if is_special:
+		return
+	
+	if attack_target and is_instance_valid(attack_target) and attack_target.is_human():
+		var distance := position.distance_to(attack_target.position)
+		
+		if distance <= leap_range and not is_leaping:
+			start_leap()
+		
+		# Guaranteed pin at 40px
+		if is_leaping and distance <= 40.0 and not has_leap_grappled:
+			attack_target.is_grappled = true
+			attack_target.grapple_timer = attack_target.grapple_duration
+			has_leap_grappled = true
+			leap_grappled_target = attack_target
+			is_committed_to_target = true
+			print("Zombie landed leap - target PINNED!")
+		
+		if distance > leap_range and is_leaping:
+			stop_leap()
+	else:
+		if is_leaping:
+			stop_leap()
+
+
+func start_leap() -> void:
+	is_leaping = true
+	move_speed = normal_speed * leap_speed_multiplier
+	print("Zombie leaping toward human!")
+
+
+func stop_leap() -> void:
+	is_leaping = false
+	move_speed = normal_speed
+
+
+## Manages melee attacker slot on target. Max 2 per human (v0.25.0).
+func manage_melee_attacker_status() -> void:
+	var distance_to_target := position.distance_to(attack_target.position)
+	
+	if distance_to_target <= attack_range:
+		if not is_melee_attacker:
+			# Gate on actual MELEE occupancy, not the targeting count. A whole horde
+			# may be commanded onto one human; only 2 hold melee slots at a time, and
+			# freed slots (from a dying attacker) are claimed by waiting zombies here.
+			var melee_count: int = attack_target.count_melee_attackers()
+			if melee_count < 2:
+				is_melee_attacker = true
+				is_committed_to_target = true
+				print("Zombie entered melee with human (", melee_count + 1, "/2 melee attackers)")
+			else:
+				if not is_committed_to_target:
+					var new_target := _find_nearest_human_simple(continuation_range)
+					if new_target and new_target != attack_target:
+						print("Human melee full - switching to ", new_target.name)
+						set_attack_target(new_target)
+	else:
+		if is_melee_attacker:
+			is_melee_attacker = false
+			print("Zombie left melee range")
+
+
+func check_if_stuck(delta: float) -> void:
+	stuck_check_timer -= delta
+	if stuck_check_timer > 0.0:
+		return
+	
+	stuck_check_timer = stuck_check_interval
+	var distance_moved := position.distance_to(stuck_sample_position)
+	stuck_sample_position = position
+	
+	if distance_moved >= stuck_distance_threshold:
+		stuck_count = 0
+		return
+	
+	if is_committed_to_target or is_melee_attacker or has_leap_grappled:
+		print("⏸️ Zombie barely moved but in combat - staying engaged")
+		stuck_count = 0
+		return
+	
+	stuck_count += 1
+	print("⚠️ ZOMBIE STUCK CHECK: ", name, " moved only ", snappedf(distance_moved, 0.1),
+		  "px (count: ", stuck_count, "/", stuck_max_count, ")")
+	
+	if stuck_count < stuck_max_count:
+		return
+	
+	stuck_count = 0
+	print("🚧 ZOMBIE STUCK CONFIRMED - finding new target or going idle")
+	
+	var new_target := _find_nearest_human_simple(continuation_range)
+	if new_target and new_target != attack_target:
+		set_attack_target(new_target)
+		print("  ✅ Switched to new target: ", new_target.name)
+	else:
+		clear_attack_target()
+		print("  ❌ No other targets — going idle")
+
+
+## Sets attack target. player_commanded param kept for API compatibility but no longer used.
+func set_attack_target(target: Unit, _player_commanded: bool = true) -> void:
+	if attack_target == target and is_instance_valid(target):
+		return
+	
+	# Clean up old target's attacker slot
+	if attack_target and is_instance_valid(attack_target) and attack_target.is_human():
+		attack_target.remove_attacker()
+	
+	if is_melee_attacker:
+		is_melee_attacker = false
+	
+	has_leap_grappled = false
+	leap_grappled_target = null
+	is_committed_to_target = false
+	
+	super.set_attack_target(target)
+	
+	if target and is_instance_valid(target) and target.is_human():
+		target.add_attacker()
+
+
+func clear_attack_target() -> void:
+	if attack_target and is_instance_valid(attack_target) and attack_target.is_human():
+		attack_target.remove_attacker()
+	
+	if is_melee_attacker:
+		is_melee_attacker = false
+	
+	has_leap_grappled = false
+	leap_grappled_target = null
+	is_committed_to_target = false
+	attack_target = null
+
+
 func die() -> void:
-	is_alive = false
+	if is_melee_attacker and attack_target and is_instance_valid(attack_target) and attack_target.is_human():
+		attack_target.remove_attacker()
+
+	# A dead zombie is no longer attacking — clear ALL engagement flags (not just
+	# is_melee_attacker) so a human it was grappling detects the grappler is gone
+	# (is_being_attacked() reads these) and gets up. Previously has_leap_grappled
+	# stayed true, pinning the human to its dead attacker forever.
+	is_melee_attacker = false
+	has_leap_grappled = false
+	leap_grappled_target = null
+	is_committed_to_target = false
+
 	current_state = State.DEAD
 	velocity = Vector2.ZERO
 	modulate = Color(0.4, 0.0, 0.0)
-	# If shot mid-pounce (3.1), release the victim's exclusion claim so it isn't left
-	# permanently invisible to other ferals. No kill registers (kill is at _land only).
-	if _pounce != null and _pounce.is_active():
-		_pounce.abort()
-	# Release the PURSUIT claim too (A1): a feral killed mid-chase (routine since gunfire,
-	# 3.1) must free its target from the hunt pool. Otherwise that straggler stays
-	# is_pursued() forever — no other feral peels onto it and its hunted ring never clears,
-	# silently degrading the peel-off model exactly when a defender is thinning the chasers.
-	# clear() is null-safe and also used by _set_calm, so it's safe on any death path.
-	if _feral != null:
-		_feral.clear()
-	if _breach != null:
-		_breach.cancel()
-	# Living zombies stop being pushed by this corpse via the BOID separation skip
-	# (dead units excluded by is_alive in the registry), not collision layers.
+	# NOTE: living zombies stop being pushed by this corpse via the BOID separation
+	# skip (dead units excluded by current_health <= 0 in apply_separation_force),
+	# not via collision layers — units don't collide with each other anyway.
+
 	await get_tree().create_timer(0.3).timeout
 	if is_instance_valid(self):
 		queue_free()
+
+
+func take_damage(amount: float, knockback_direction: Vector2 = Vector2.ZERO) -> void:
+	current_health -= amount
+	update_health_bar()
+	
+	if current_health <= 0:
+		die()
+		if knockback_direction != Vector2.ZERO and is_instance_valid(self):
+			var tween := create_tween()
+			tween.tween_property(self, "position", position + knockback_direction * 8.0, 0.15)
+
+
+func perform_attack() -> void:
+	if is_instance_valid(attack_target) and attack_target.is_human():
+		var was_alive := attack_target.current_health > 0
+		attack_target.take_damage(attack_damage)
+		if was_alive and attack_target.current_health <= 0:
+			zombie_killed_human.emit(attack_target, self)

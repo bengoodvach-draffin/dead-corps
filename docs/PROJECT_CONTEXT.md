@@ -1,20 +1,20 @@
 # Dead Corps — Project Context
 
-**Current version:** v0.43.0 · **Branch:** v2-poc · **Engine:** Godot 4.6 / GDScript · **Location:** Amsterdam, NL
+**Current version:** v0.28.0 · **Engine:** Godot 4.6 / GDScript · **Location:** Amsterdam, NL
 
 Technical state, per-script purpose table, known issues, and quick-reference values. For design intent, zombie/defender specs, and the decision log, see `GAME_DESIGN_DOCUMENT.md`. For working rules, see the root `CLAUDE.md`. For the full feature history, see `archive/` changelogs and GDD §2.
 
 ---
 
-## ⚠️ STALE BELOW — v2-poc Phases 1–4 COMPLETE (v0.43.0)
+## ⚠️ V2 Predator Pivot (June 2026) — read before acting on this document
 
-`V2_DIRECTION_SPEC.md` is the authoritative core-loop design; `V2_POC_BUILD_PLAN.md` tracks implementation. On branch `v2-poc`, **Phases 0–4 are done (v0.43.0) — the M1 core loop is feature-complete.** The v1 stealth systems (morale, alerts, vision cones, tunnel vision, HP/grapple melee, leap, Spec Ops, the incubation pipeline) were removed, then built on the new substrate: **predation** (feral/Pounce/contagion/risers), **defense** (fill front/fear break/rout+herding/cower), **win/lose** (§8), **combo scoring** (§6), and **nav pathing** for zombies + humans. Substrate: GameConfig/LevelConfig, the GameManager unit registry, DetHash, the EscapeBarrier (layer 4), `is_alive` liveness, and the **dispatcher-shell + behavior-component** architecture.
+`V2_DIRECTION_SPEC.md` is the authoritative core-loop design (design locked pending PoC validation). It supersedes the GDD's core-loop sections and slates large parts of the systems documented below for removal or rewrite — morale, alerts, vision cones, tunnel vision, HP/grapple melee, Spec Ops, the incubation pipeline, and more (full mapping: spec §11 deprecation audit).
 
-**So the "Current state", the Scripts table, and the Known Issues below describe the PRE-demolition v1 codebase and are now substantially STALE.** They are kept for historical reference and bug-archaeology only. For the *current* architecture, read **CLAUDE.md → "Architecture at a glance"** (kept in sync). This document gets a full v1→v2 rewrite once the PoC validates and the v2 systems are stable — deferred deliberately because Phases 2–7 will churn it heavily.
+**This document still accurately describes the codebase as it exists** — the code is v1 until the PoC is built — so it remains the correct reference for diagnosing bugs and understanding current scripts. But do not *extend* a system listed as dead in the spec's deprecation audit without flagging it. Sections below that the pivot moots are annotated inline; values for the v2 systems live in spec §9 and the new `level_config.gd` (not yet created).
 
 ---
 
-## Current state (high level) — ⚠️ describes pre-demolition v1, see banner above
+## Current state (high level)
 
 The prototype has core RTS control, combat/conversion, vision, navigation, a full patrol system (manual + visual waypoints, Phase C per-waypoint behaviour, formation squads), five human defender classes with a morale bar and shooting, a low/high-urgency alert system, a click-to-pin vision-cone system, player-controlled engagement (no auto-pursuit), and two special zombies (Fat, Costume). Not yet built: the entire v2 core loop (feral/calm states, pounce, fill, fear radius, Mark, combo scoring, rise-in-place — see `V2_DIRECTION_SPEC.md`), multiple levels, campaign, audio (in progress), final art, and the 3D migration (now gated behind the v2 PoC).
 
@@ -22,7 +22,7 @@ GDD §2 has the authoritative implemented/not-implemented breakdown **for v1 sys
 
 ---
 
-## Scripts (`scripts/`) — ⚠️ STALE: this table describes the pre-demolition v1 scripts. For the current v2 skeletons see CLAUDE.md → "Architecture at a glance".
+## Scripts (`scripts/`)
 
 | File | Class / role | Notes |
 |------|--------------|-------|
@@ -56,9 +56,9 @@ UI: `debug_overlay.tscn`, `end_game_overlay.tscn`.
 
 ---
 
-## Known issues — ⚠️ STALE (pre-demolition v1)
+## Known issues
 
-Most entries here concerned v1 systems that **Phase 1 demolition has now removed** (morale, alerts, vision cones, HP/grapple melee, the incubation pipeline, etc.), so they no longer apply on `v2-poc`. Kept for historical reference; a fresh v2 issues list comes with the post-PoC rewrite.
+Several entries are **mooted by the v2 pivot** (the underlying system is slated for removal) — marked below. They remain listed because the code still runs today.
 
 - **Fat Zombie corpse navigation:** `FatZombieCorpse` blocks movement physically, but zombies don't path around it cleanly because `avoidance_enabled = false` on the zombie `NavigationAgent2D` — `NavigationObstacle2D` has no effect without it. Fix = enable avoidance + add `NavigationObstacle2D` to `fat_zombie_corpse.gd`. Deferred to a future avoidance pass.
 - **Morale / shooting tuning:** per-class kill counts run higher than spec because the aim timer starts at vision range. Fundamentally working; left for playtest tuning. *(Mooted by v2: morale and the aim-timer shooting model are both dead — replaced by fill + fear radius; kill counts become emergent from the fill-speed/zombie-speed ratio.)*
