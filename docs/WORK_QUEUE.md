@@ -58,6 +58,13 @@ Unplanned; came out of playtesting the terrain kit at docks scale. All parse-gat
 
 **Still open from this batch (not scheduled):** nested-building click resolution — `_shelter_building_at` returns the first group-order building whose footprint contains the click, so RMB on a shop inside a market can target the market. Fix would be innermost/smallest-footprint wins. Same first-match shape affects the Mark's building aggro.
 
+## Tier 3.6 — Performance at scale (2026-08-01 batch ✅ · next round pending a proper load test)
+The v0.48.0 perf overhaul (spatial hash, scan cadences, BOID sample/cadence, nav re-path throttle — see the commit) took the docks load test (44 zombies / 447 humans) from unplayable to "better but still chuggy" at full-conversion mega-horde scale. Ben wants 2–5× unit counts, so a second round is expected. **Remaining known costs scale linearly per unit: FeralBrain.tick, NavigationServer queries, engine physics (`move_and_slide` × ~500 bodies).**
+
+- **⭐ FIRST STEP NEXT ROUND — build the perf sampler.** A debug-only monitor (GM child or overlay hook) that appends frame-time / physics-time / script-time / unit-counts (calm/feral/fleeing/sheltered) to the log every few seconds while `debug_logs` is on. The 08-01 session diagnosed everything through hand-copied profiler screenshots — one frame at a time, whichever frame Ben happened to click. With the sampler Claude reads the whole session's performance curve from `godot.log` itself (file logging is already enabled) and the load test produces numbers from real play. Build it BEFORE optimizing anything further.
+- Then: the proper load-test assessment (2–5× counts, full-conversion frenzy, mass rout) → decide between feral-brain cadence work and a design-side cap on simultaneous ferals. Both are design conversations, not free optimizations.
+- **Still owed from the 08-01 batch: the §10 determinism check** — `debug_logs = true`, boot the same scenario twice, diff the logs. Every cadence is sim_tick+uid staggered and should be identical run-to-run; verify before trusting the batch.
+
 ## Tier 4 — Housekeeping bug batch ✅ DONE 2026-07-26 (landed with v0.45.0)
 - ✅ **A4 + A5** — solved together: the lose verdict moved to the death instant (`report_gunfire_kill`, the only zombie-death source) — frame-exact, framerate-independent, teardown-immune; `_on_zombie_removed` is bookkeeping only; `get_total_zombie_count` = living + pending risers.
 - ✅ Cross-owner control-group write — GM rise-handoff routes via new `SelectionManager.set_control_group`.
