@@ -56,6 +56,18 @@ var _progress_timer: float = 0.0
 ## needs 2s of tolerance before abandoning a hunt.
 var _wedge := DoorBreach.Wedge.new()
 
+## PRESSING (fences spec §A6.2) — a flag, not a state: the intact fence this
+## pursuit is wedged against with live prey beyond it. Movement is untouched
+## (we keep nav-moving at the target and physically jam on the barrier — that
+## jam IS the press). THRESHOLD-GATED give-up exemption (Ben's amendment
+## 2026-08-02): the failsafe clock holds ONLY while the fence is actually
+## folding (press >= threshold). An under-strength press runs the normal 2s
+## give-up, so the feral calms out IN the strip — where its body still counts
+## toward the press and control returns to the player — instead of being
+## committed forever to wire it cannot fold. Peel-off stays live throughout:
+## a fence is the lowest-priority thing a feral can be doing, same as a door.
+var _pressing_fence: Fence = null
+
 ## Peel-off cadence (§2.4): countdown to the next opportunistic divert scan. Starts at
 ## 0 so a freshly-released feral peels onto its nearest fresh straggler immediately.
 var _divert_timer: float = 0.0
@@ -71,6 +83,7 @@ func set_target(human: Human) -> void:
 	if _target == human:
 		return
 	_release_pursuit()
+	_pressing_fence = null   # a new pursuit re-earns PRESSING via its own wedge
 	_target = human
 	if human != null:
 		_game_manager().add_pursuit(human)
@@ -87,6 +100,7 @@ func current_target() -> Human:
 func clear() -> void:
 	_release_pursuit()
 	_target = null
+	_pressing_fence = null
 	_end_siege()
 
 
@@ -145,7 +159,24 @@ func tick(delta: float) -> Result:
 			if wedge_door != null:
 				_begin_door_siege(wedge_door)
 				return Result.PURSUING
-		if _check_failsafe(delta):
+			# No door in reach — an intact FENCE under us means the pursuit is
+			# wedged on wire (fences spec §A6.2): enter PRESSING. The target is
+			# KEPT, so the chase resumes the instant the fence folds.
+			_pressing_fence = Fence.strip_at(_owner)
+		# PRESSING upkeep: the flag drops when the fence folds or we leave the
+		# strip (peel and retarget clear it via set_target/clear).
+		if _pressing_fence != null and (not is_instance_valid(_pressing_fence) \
+				or not _pressing_fence.is_intact() \
+				or not _pressing_fence.in_press_strip(_owner.global_position)):
+			_pressing_fence = null
+		if _pressing_fence != null and _pressing_fence.is_filling():
+			# THRESHOLD-GATED exemption (Ben's amendment 2026-08-02): the give-up
+			# clock holds ONLY while the fence is actually folding. Re-baselining
+			# each tick means a press that dips below threshold restarts a clean
+			# failsafe window rather than inheriting a nearly-expired one.
+			_progress_ref_dist = _owner.global_position.distance_to(_target.global_position)
+			_progress_timer = GameConfig.failsafe_window
+		elif _check_failsafe(delta):
 			# Standing in a door's arc at the give-up moment converts rather than
 			# abandoning the hunt (the wedge bucket may have just re-baselined) —
 			# a feral never walks away from prey it can still smell through a door.

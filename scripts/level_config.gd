@@ -145,6 +145,18 @@ class_name LevelConfig
 ## Delay (s) before a door re-admits humans after its arc clears of ferals (0 = instant).
 @export var door_unlock_hysteresis: float = 0.0
 
+# === FENCES ===
+## Press-strip depth (px) on EACH side of the wire — how deep a crowd counts as pressing (40 ≈ contact + first rank).
+@export var fence_press_depth: float = 40.0
+## Seconds of at-or-above-threshold press to fold a fence, from an empty meter.
+@export var fence_fold_time: float = 2.0
+## Fold-meter drain rate below the threshold, × the fill rate (drain, not reset).
+@export var fence_relax_factor: float = 1.0
+## Default bodies-at-once needed to fold a fence. Per-fence tuning via the Fence node's threshold_override.
+@export var fence_press_threshold: int = 8
+## Max midpoint bow (px) of a pressed fence span — presentation only.
+@export var fence_sag_max: float = 14.0
+
 
 ## On game start, push every value into the GameConfig autoload.
 ## Editor-only: do nothing (don't mutate the autoload while editing).
@@ -216,5 +228,11 @@ func _ready() -> void:
 	GameConfig.pound_damage = pound_damage
 	GameConfig.door_integrity = door_integrity
 	GameConfig.door_unlock_hysteresis = door_unlock_hysteresis
+
+	GameConfig.fence_press_depth = fence_press_depth
+	GameConfig.fence_fold_time = fence_fold_time
+	GameConfig.fence_relax_factor = fence_relax_factor
+	GameConfig.fence_press_threshold = fence_press_threshold
+	GameConfig.fence_sag_max = fence_sag_max
 
 	print("✅ LevelConfig: pushed per-level tunables into GameConfig")

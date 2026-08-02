@@ -505,6 +505,17 @@ func handle_command(_screen_pos: Vector2) -> void:
 			(f as Zombie).queue_finish_move(world_pos)
 		_order_breach_at_door(clicked_door, calm_zombies)
 		return
+	# ORDERED PRESS (fences spec §A7): RMB on an intact fence = a plain calm
+	# move order with slots spread ALONG the span's near side, so the crew
+	# arrives across the strip instead of funnelling into one point. Not a new
+	# verb and not a commitment — any later order cancels it, selection kept.
+	# Release-on-fence does not exist: release is for prey, orders are for terrain.
+	var clicked_fence := _fence_at(world_pos)
+	if clicked_fence != null and not calm_zombies.is_empty():
+		for f in finishers:
+			(f as Zombie).queue_finish_move(world_pos)
+		_order_press_at_fence(clicked_fence, calm_zombies)
+		return
 	var movers: Array[Unit] = calm_zombies + finishers
 	if not movers.is_empty():
 		var slots := FormationPlanner.plan(world_pos, movers, _next_order_salt())
@@ -620,6 +631,44 @@ func _order_breach_at_door(door: Node2D, calm_zombies: Array[Unit]) -> void:
 		z.order_breach(door)
 
 
+## ORDERED PRESS (fences spec §A7): an ordinary move order per crew member, to
+## slots spread evenly along the fence's near side (unit_uid order — same shape
+## as _order_breach_at_door). The crew stays CALM, stays selected, and presses
+## by simply jamming on the barrier; leaving is one click away.
+func _order_press_at_fence(fence: Node2D, calm_zombies: Array[Unit]) -> void:
+	var crew: Array[Zombie] = []
+	for u in calm_zombies:
+		if is_instance_valid(u) and u is Zombie and (u as Zombie).can_receive_command() \
+				and not (u as Zombie).is_special:
+			crew.append(u)
+	crew.sort_custom(func(a: Zombie, b: Zombie) -> bool: return a.unit_uid < b.unit_uid)
+	if crew.is_empty():
+		return
+	# Approach side = the crew's centroid (deterministic: same members, same side).
+	var centroid := Vector2.ZERO
+	for z in crew:
+		centroid += z.global_position
+	centroid /= float(crew.size())
+	var slots: Array[Vector2] = fence.press_slots(crew.size(), centroid)
+	for i in range(crew.size()):
+		crew[i].set_move_target(slots[i])
+		crew[i].queued_attack = null
+
+
+## The intact fence under `pos`, or null. Fences are static per level — cached once.
+var _fences_cache: Array = []
+var _fences_cached: bool = false
+
+func _fence_at(pos: Vector2) -> Node2D:
+	if not _fences_cached:
+		_fences_cached = true
+		_fences_cache = get_tree().get_nodes_in_group("fences")
+	for f in _fences_cache:
+		if is_instance_valid(f) and f.is_intact() and f.click_hit(pos):
+			return f
+	return null
+
+
 ## The intact door under/near `pos` (within its half-width + a small pad), or
 ## null. Doors are static per level — cached once.
 var _doors_cache: Array = []
@@ -665,6 +714,7 @@ func _update_release_hover() -> void:
 	var target: Human = null
 	var target_building: Node2D = null
 	var target_door: Node2D = null
+	var target_fence: Node2D = null
 	if _selection_has_releasable():
 		var gm := _game_manager()
 		if gm != null:
@@ -674,6 +724,8 @@ func _update_release_hover() -> void:
 				target_building = _shelter_building_at(mouse)
 			if target == null and target_building == null:
 				target_door = _door_at(mouse)   # gates + empty buildings' doors (§5.1 telegraph)
+			if target == null and target_building == null and target_door == null:
+				target_fence = _fence_at(mouse)   # the ordered-press telegraph (fences §A7)
 	if target != _hovered_human:
 		if _hovered_human != null and is_instance_valid(_hovered_human):
 			_hovered_human.set_hover_highlighted(false)
@@ -692,11 +744,18 @@ func _update_release_hover() -> void:
 		_hovered_door = target_door
 		if _hovered_door != null:
 			_hovered_door.set_hover_highlighted(true)
+	if target_fence != _hovered_fence:
+		if _hovered_fence != null and is_instance_valid(_hovered_fence):
+			_hovered_fence.set_hover_highlighted(false)
+		_hovered_fence = target_fence
+		if _hovered_fence != null:
+			_hovered_fence.set_hover_highlighted(true)
 
 
-## The building / door currently showing the release-telegraph outline.
+## The building / door / fence currently showing the release-telegraph outline.
 var _hovered_building: Node2D = null
 var _hovered_door: Node2D = null
+var _hovered_fence: Node2D = null
 
 
 ## True if any selected unit is a calm zombie (so a release is possible).

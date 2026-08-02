@@ -196,6 +196,55 @@ func _process(_delta: float) -> void:
 		queue_redraw()
 
 
+## IDLE LOD state (PERF_REVIEW.md F2). Cold = no zombie within lod_wake_radius
+## at the last check; while cold the dispatcher early-returns. The check runs
+## every lod_check_interval, DetHash-staggered so the crowd never checks on one
+## tick; the query early-stops at the FIRST zombie found (max_results = 1).
+const LOD_SALT := 10501
+var _lod_cold: bool = false
+var _lod_timer: float = 0.0
+var _lod_primed: bool = false
+
+
+## One frame of the LOD clock. Returns true while COLD (caller skips the tick).
+## Deterministic: sim-time cadence + uid stagger, no wall clock (§10).
+func _lod_tick(delta: float) -> bool:
+	if not _lod_eligible():
+		_lod_cold = false
+		return false
+	if not _lod_primed:
+		# Primed on first use, not in _ready — unit_uid isn't assigned until
+		# registration (the FearDetector stagger lesson).
+		_lod_primed = true
+		_lod_timer = DetHash.hash01(unit_uid, LOD_SALT) * GameConfig.lod_check_interval
+	_lod_timer -= delta
+	if _lod_timer <= 0.0:
+		_lod_timer += GameConfig.lod_check_interval
+		var gm := _get_game_manager()
+		var was_cold := _lod_cold
+		_lod_cold = gm != null and gm.neighbours_within(
+			global_position, GameConfig.lod_wake_radius, &"zombies", null, false, 1).is_empty()
+		# Going cold with residual fill state would freeze the debug line on
+		# screen mid-decay; a cold front is a cold front — reset it.
+		if _lod_cold and not was_cold and _fill_front != null:
+			_fill_front.cancel()
+	if _lod_cold:
+		velocity = Vector2.ZERO
+	return _lod_cold
+
+
+## Cold is only legal in states where the brain is purely REACTIVE to nearby
+## zombies: defending while stationary, or safely sheltered at rest. Everything
+## with its own agenda (patrol routes, the fear beat, fleeing, a mid-walk
+## shelter entrant, occupants of a BREACHED building) must keep ticking.
+func _lod_eligible() -> bool:
+	if current_state == State.IDLE or current_state == State.SENTRY:
+		return not is_patrolling and not _is_breaking()
+	if current_state == State.SHELTERED:
+		return is_safely_sheltered() and at_shelter_spot()
+	return false
+
+
 ## Per-physics-frame dispatcher (V2 skeleton): DEAD handling → patrol → base unit.
 ## @param delta: Physics timestep in seconds.
 func _physics_process(delta: float) -> void:
@@ -222,6 +271,17 @@ func _physics_process(delta: float) -> void:
 		# pushes THEM off the cowerer (it stays in the registry). Trade-off: two humans
 		# cowering at the same spot may overlap — acceptable (§4.4 "huddle together").
 		velocity = Vector2.ZERO
+		return
+
+	# IDLE LOD (PERF_REVIEW.md F2, 2026-08-02): with no zombie inside the wake
+	# radius there is nothing this human's brain can legally do — fear and fill
+	# can't perceive past awareness range, and awareness sits well inside the
+	# wake ring — so the whole tick is skipped. This is the idle-floor fix: the
+	# measured baseline showed ~460 standing humans consuming ~14ms/tick of the
+	# 16.7ms budget before a single feral existed. The cowerer precedent covers
+	# the physics side (no boid while cold; neighbours' own separation flows
+	# around us). take_damage/die are signal-driven and unaffected.
+	if _lod_tick(delta):
 		return
 
 	if current_state == State.SHELTERED:

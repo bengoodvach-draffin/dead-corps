@@ -71,6 +71,13 @@ func _ready() -> void:
 	hud.name = "ComboHUD"
 	add_child(hud)
 
+	# The perf sampler (Tier 3.6) — loaded by path (no class_name, no editor
+	# class-cache dependency), gated at runtime by GameConfig.perf_log.
+	var sampler: Node = load("res://scripts/perf_sampler.gd").new()
+	sampler.name = "PerfSampler"
+	add_child(sampler)
+	sampler.setup(self)
+
 	# CRITICAL FIX: Register manually placed units
 	# When users manually place zombies/humans in the editor, they need to be tracked.
 	# PHYSICS frame, not process frame: a render frame holds time_scale-many physics
@@ -94,6 +101,9 @@ func _process(delta: float) -> void:
 ## every R-restart a different phase (§10: a restart must reproduce the run).
 var sim_tick: int = 0
 
+## One-shot latch for the perf auto-frenzy (see _physics_process).
+var _auto_frenzy_fired: bool = false
+
 
 func _physics_process(delta: float) -> void:
 	sim_tick += 1
@@ -102,6 +112,36 @@ func _physics_process(delta: float) -> void:
 	# below: this lands before any unit ticks, so queries see a clean roster.
 	_compact_registry()
 	_rebuild_grids()
+	# AUTONOMOUS LOAD TEST (Tier 3.6): at the configured tick, ignite every calm
+	# zombie — a full frenzy with nobody at the keyboard. Specials excluded as
+	# everywhere. sim_tick-based so two runs of the same scenario ignite on the
+	# identical tick (§10 — this is also what the boot-twice determinism diff runs on).
+	if GameConfig.perf_auto_frenzy_delay > 0.0 and not _auto_frenzy_fired \
+			and sim_tick >= int(GameConfig.perf_auto_frenzy_delay * 60.0):
+		_auto_frenzy_fired = true
+		# SEEDED like a release, not contagion-style: a targetless ignite retargets
+		# from the local scan radius, and a quiet-boot layout (zombies deliberately
+		# out of awareness range) means no candidates → every feral calms the same
+		# tick it ignited (the first baseline run's silent no-op). Each zombie
+		# instead targets its nearest living unsheltered human MAP-WIDE.
+		# Deterministic: zombies and humans iterate in uid order, strict nearest.
+		var humans := living_humans()
+		var ignited := 0
+		for z in living_zombies():
+			if z.is_special or z.current_state != Zombie.State.CALM:
+				continue
+			var best: Human = null
+			var best_sq := INF
+			for h in humans:
+				if h.is_safely_sheltered():
+					continue
+				var d_sq := z.global_position.distance_squared_to(h.global_position)
+				if d_sq < best_sq:
+					best_sq = d_sq
+					best = h
+			z.ignite_feral(best)   # null-safe: no prey at all → calms, as designed
+			ignited += 1
+		print("⏱️ PERF AUTO-FRENZY: ignited %d zombies at tick %d" % [ignited, sim_tick])
 	# Nav-map sync per PHYSICS TICK. Godot syncs the NavigationServer once per
 	# RENDER frame by default, so under fast-forward (3 ticks/frame) agents path
 	# against maps up to 3 ticks stale — enough micro-divergence to flip a level's

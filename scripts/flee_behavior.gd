@@ -41,6 +41,17 @@ var _has_escape: bool = false
 ## clear of the footprint, and it would turn round and go back in.
 var _forbidden_shelter: Node2D = null
 
+## THE FENCE BUMP (fences spec §A9.2) — the latch generalised from "written-off
+## shelters" to "written-off exits": a FLEEING human whose blocking collision is
+## fence wire writes its committed exit off permanently (this human only) and
+## re-picks at once. A panicked civilian hitting the wire, turning, and running
+## elsewhere — reactive on purpose; perfect avoidance would look worse. NEVER
+## cleared, even after the fence folds (ruling 2, provisional): a folded gap has
+## your horde standing in it anyway, and exit_block_radius already refuses those.
+## The §A9.3 upgrade, if playtests want it, is clearing entries on Fence.folded.
+## Keys are exit NODES (zones included — a fence can cut off a street exit too).
+var _written_off_exits: Dictionary = {}
+
 ## Cower detector (3.5, §4.4): the anchor we measure net displacement from, and how long
 ## we've stayed within cower_min_displacement of it. A full cower_window without escaping
 ## that radius means we're cornered → cower.
@@ -212,10 +223,12 @@ func _exit_blocked(exit: Node2D) -> bool:
 	return false
 
 
-## The exit set minus anything this runner has written off (see _forbidden_shelter).
+## The exit set minus anything this runner has written off (the shelter latch
+## AND the per-exit fence bumps).
 func _available_exits() -> Array:
 	var exits := _owner.get_exit_set()
-	if _forbidden_shelter == null or not is_instance_valid(_forbidden_shelter):
+	var no_shelter_ban := _forbidden_shelter == null or not is_instance_valid(_forbidden_shelter)
+	if no_shelter_ban and _written_off_exits.is_empty():
 		return exits
 	var result: Array = []
 	for e in exits:
@@ -224,9 +237,13 @@ func _available_exits() -> Array:
 	return result
 
 
-## True if `exit` is a shelter door inside the written-off footprint. Escape zones
-## are never written off — the street is always an option.
+## True if this runner has written `exit` off: bumped into a fence heading for it
+## (any exit type), or it's a shelter door inside the no-return footprint. The
+## shelter latch never bans escape zones — the street is always an option; a
+## fence bump CAN, because the wire physically was the street route.
 func _is_written_off(exit: Node2D) -> bool:
+	if _written_off_exits.has(exit):
+		return true
 	if _forbidden_shelter == null or not is_instance_valid(_forbidden_shelter):
 		return false
 	if not _is_shelter_door(exit):
@@ -403,6 +420,18 @@ func tick(delta: float) -> void:
 		if _cower_elapsed >= GameConfig.cower_window:
 			_owner.start_cowering()
 			return
+
+	# THE FENCE BUMP (fences spec §A9.2): our blocking collision last move was
+	# fence wire → the committed exit is written off for good and we re-pick NOW.
+	# Read from the existing move result — no second physics query. Group test,
+	# not name matching (the HumanBarrier body joins "fence_barriers" at build).
+	if _has_escape and _escape_exit != null:
+		var bump := _owner.get_last_slide_collision()
+		if bump != null:
+			var blocker := bump.get_collider() as Node
+			if blocker != null and blocker.is_in_group("fence_barriers"):
+				_written_off_exits[_escape_exit] = true
+				_commit_exit()
 
 	# Exit-set churn (§9): the committed exit dropped out (door locked by a feral
 	# in its arc, or its building breached) → re-path via the same threat-aware

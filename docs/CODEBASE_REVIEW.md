@@ -181,6 +181,12 @@ big bang.
 
 ## Performance & Scaling (deep dive)
 
+> **⚠️ SUPERSEDED (2026-08-02) by `docs/PERF_REVIEW.md`** — the measured, v2-era
+> review. This section's predictions largely came true and several fixes are now
+> built (the spatial hash IS Fix A; cadences cover Fix B/D; prints are gated per
+> Fix E); PERF_REVIEW §3 has the full status table. The text below is v1-era
+> (morale, health bars, 3D framing) — reference only, do not act on it.
+
 **Target scale (decided):** ~150–500 active units on screen at peak. This section
 plans for that tier specifically. It supersedes the brief perf notes in Findings §2.
 

@@ -36,6 +36,30 @@ extends Node
 ## this is a developer switch, not a per-level gameplay tunable.
 var debug_logs: bool = false
 
+## The perf sampler (perf_sampler.gd): one ⏱️ PERF line to the console/log every
+## 5s — frame avg/worst, physics time, node count, unit census. Independent of
+## debug_logs (it's the measuring instrument, and 1 line/5s is noise-free).
+var perf_log: bool = true
+
+## AUTONOMOUS LOAD TEST (Tier 3.6): > 0 = this many seconds after boot, every
+## calm zombie auto-ignites FERAL (the contagion path — needs no mouse), so a
+## full-frenzy load test runs from a headless boot with nobody at the keyboard:
+## boot → frenzy on the timer → the sampler logs the curve → read godot.log.
+## Timed on sim_tick, not wall clock, so runs are §10-comparable. 0 = off
+## (normal play). Not mirrored in LevelConfig.
+var perf_auto_frenzy_delay: float = 0.0
+
+## IDLE LOD (PERF_REVIEW.md F2, 2026-08-02): a defending/sheltered human with no
+## zombie inside lod_wake_radius goes COLD — its entire per-tick brain (fear,
+## fill, boid, clamp, facing) is skipped; it only re-checks for zombies every
+## lod_check_interval (DetHash-staggered). The radius deliberately exceeds the
+## largest awareness (550) by a margin bigger than any zombie covers in one
+## check interval (140px/s × 0.5s = 70px < 150px), so a cold human always wakes
+## BEFORE anything enters perception range — cold is unobservable in play.
+## Not mirrored in LevelConfig (perf knobs, not level design).
+var lod_wake_radius: float = 700.0
+var lod_check_interval: float = 0.5
+
 # === MOVEMENT ===
 ## Docks baseline (was the spec's 200) — the pace the chase actually reads at.
 var zombie_speed: float = 140.0
@@ -207,3 +231,24 @@ var door_integrity: float = 600.0
 ## Delay (s) before a door re-admits humans after its arc clears of ferals.
 ## v0: 0 (tuning option only — raise if boundary-hovering ferals flicker the lock).
 var door_unlock_hysteresis: float = 0.0
+
+# === FENCES (fences spec §A12, v0 defaults) ===
+## Press-strip depth (px) on EACH side of the wire. Tightened 60 → 40 (Ben,
+## 2026-08-02): at 60 a zombie visibly hovering near the wire still counted,
+## which broke the read that BODIES ON THE WIRE fold it. 40 ≈ contact plus the
+## first shoving rank; note it also halves the §A11 capacity model to ~1 rank
+## per side, so long spans matter more for big thresholds.
+var fence_press_depth: float = 40.0
+## Seconds of at-or-above-threshold press to fold a fence, from an empty meter.
+var fence_fold_time: float = 2.0
+## Fold-meter drain rate below the threshold, × the fill rate. Drain, not reset
+## (§A4): one body squeezed out for 0.3s must not zero 1.7s of progress.
+var fence_relax_factor: float = 1.0
+## Global default press threshold (bodies at once). Real tuning is per-fence via
+## Fence.threshold_override, against each level's horde size.
+var fence_press_threshold: int = 8
+## Max midpoint bow (px) of a pressed span — presentation only, never simulation.
+var fence_sag_max: float = 14.0
+## SLICE 3 ONLY (§B9, post-PoC): seconds between kills on an electrified fence.
+## Declared for the LevelConfig/spec knob table; UNREAD until slice 3 builds.
+var fence_shock_interval: float = 1.5
