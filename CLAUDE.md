@@ -1,6 +1,6 @@
 # Dead Corps — Claude Code Project Memory
 
-**Current version:** v0.47.0 · **Engine:** Godot 4.6 / GDScript · **Perspective:** 2D isometric — **final. The 3D migration is CANCELLED** (Ben, 2026-07-12; reaffirmed 2026-07-27). See `docs/ISO_MIGRATION_PLAN.md`.
+**Current version:** v0.49.1 · **Engine:** Godot 4.7.1 / GDScript (upgraded from 4.6 on 2026-08-03, validated by the perf harness; 4.6 binary retained as rollback) · **Perspective:** 2D isometric — **final. The 3D migration is CANCELLED** (Ben, 2026-07-12; reaffirmed 2026-07-27). See `docs/ISO_MIGRATION_PLAN.md`.
 
 This file is loaded into every Claude Code session. It is the lean orchestrator: working rules, design pillars, and pointers. Detailed reference lives in `docs/` and is read on demand — do not assume those files are in context until you've read them.
 
@@ -105,7 +105,7 @@ This describes the codebase **as it exists now on `v2-poc` (v0.47.0) — the M1 
 
 ## GDScript / Godot conventions & gotchas
 
-- Godot **4.6**. Type hints everywhere (`var distance: float`); explicit nullability (`var target: Node2D = null`). Comments explain *why*, not *what*.
+- Godot **4.7.1**. Type hints everywhere (`var distance: float`); explicit nullability (`var target: Node2D = null`). Comments explain *why*, not *what*.
 - **On `v2-poc`: `docs/ARCHITECTURE_GUIDELINES.md` governs all new/rebuilt scripts** (component ownership, ~400-line/~40-line tripwires, dispatcher `_physics_process`, signals-up-calls-down, registry-only discovery). `docs/V2_IMPLEMENTER_GUIDE.md` has the invariants checklist for any build-plan work.
 - **Always use `global_position`** for cross-unit calculations — nested scenes break local `position` (notably escape zones).
 - **Waypoint ordering uses `naturalnocasecmp_to()`** so `Waypoint2` sorts before `Waypoint10`.
@@ -120,7 +120,7 @@ This describes the codebase **as it exists now on `v2-poc` (v0.47.0) — the M1 
 
 ## Running & testing
 
-- Open in Godot 4.6; run `scenes/main.tscn` with **F5**. **F1** toggles the debug overlay.
+- Open in Godot 4.7.1; run `scenes/main.tscn` with **F5**. ⚠️ The Godot MCP may still launch an older binary — check the boot header says `v4.7.1.stable`; if not, the MCP's configured Godot path needs updating (Claude can bypass by launching the console exe directly and reading `godot.log`). **F1** toggles the debug overlay.
 - Sandbox scenes for focused testing: `scenes/sandbox_level_1.tscn`, `scenes/sandbox_level_human_testing.tscn`.
 - To hand-build a level, uncheck **Enabled** on the `Initializer` node (otherwise it auto-spawns the test scenario), then place units/buildings/escape zones from `scenes/`.
 - There is **no automated test suite** — testing is manual play sessions plus debug-print output. After implementing, print explicit test steps for Ben to run.

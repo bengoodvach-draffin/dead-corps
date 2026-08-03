@@ -35,7 +35,9 @@ if ($Godot -eq "") {
         $Godot = $env:GODOT_BIN
     }
     else {
-        $Godot = "C:\Users\bengo\Documents\Godot\Godot_v4.6-stable_win64.exe\Godot_v4.6-stable_win64_console.exe"
+        # 4.7.1 since the 2026-08-03 engine upgrade; the 4.6 binary stays installed
+        # alongside as the rollback (pass -Godot or set GODOT_BIN to use it).
+        $Godot = "C:\Users\bengo\Documents\Godot\Godot_v4.7.1-stable_win64.exe\Godot_v4.7.1-stable_win64_console.exe"
     }
 }
 
