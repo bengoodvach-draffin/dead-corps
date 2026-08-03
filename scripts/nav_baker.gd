@@ -19,6 +19,23 @@ class_name NavBaker
 ##
 ## get_nav_footprint() returns a Dictionary in GLOBAL coordinates:
 ##   { "obstruction": Array[PackedVector2Array], "traversable": Array[PackedVector2Array] }
+##
+## TWO MESHES (fences/hazards spec §B3, slice 1a): one geometry scan, two bakes —
+##   RECKLESS (this node, navigation_layers 1): all humans + FERAL zombies.
+##     Exactly the pre-slice mesh, unchanged.
+##   CAREFUL (a server-direct region RID, navigation_layers 2): CALM zombies.
+##     Additionally carves zombie-lethal visible hazards (stake beds), so the
+##     controlled reserve routes around what would kill it while the frenzy
+##     runs straight through.
+## Which meshes a footprint carves is the nav_carve_layers() protocol: owners
+## without the method carve BOTH (3) — every pre-hazard obstacle is unchanged,
+## and with no hazards in a level the two meshes are identical (provable no-op).
+## The careful region is a raw NavigationServer2D RID, NOT a child
+## NavigationRegion2D node: the §B3.2 prototype found runtime-created region
+## NODES failing to commit their polygon to the map, while server-direct regions
+## sync reliably (and GameManager's per-tick map_force_update keeps both regions
+## on the deterministic tick stream). Fences and Mines define no footprint at
+## all — a fence is in NOBODY'S mesh on purpose (§A9.1).
 
 # === EXPORTED PROPERTIES ===
 
@@ -42,6 +59,11 @@ class_name NavBaker
 			rebake()
 
 
+## The CAREFUL mesh's server-direct region (runtime only; editor previews show
+## the reckless mesh on this node). Freed on exit — R restarts included.
+var _careful_region: RID = RID()
+
+
 func _ready() -> void:
 	# In the editor we only bake on demand (the button); auto-bake at runtime.
 	if Engine.is_editor_hint():
@@ -51,6 +73,12 @@ func _ready() -> void:
 	# frame, so under fast-forward the navmesh would appear time_scale-many ticks
 	# later — a boot-time divergence (§10). One physics tick is one physics tick.
 	_rebake_next_tick()
+
+
+func _exit_tree() -> void:
+	if _careful_region.is_valid():
+		NavigationServer2D.free_rid(_careful_region)
+		_careful_region = RID()
 
 
 func _rebake_next_tick() -> void:
@@ -79,8 +107,9 @@ func rebake() -> void:
 		push_warning("NavBaker: no LevelBounds in the scene — cannot bake.")
 		return
 
-	var source := NavigationMeshSourceGeometryData2D.new()
-	# Baked polygon lives in this region's local space; convert globals into it.
+	var source_reckless := NavigationMeshSourceGeometryData2D.new()
+	var source_careful := NavigationMeshSourceGeometryData2D.new()
+	# Baked polygons live in this region's local space; convert globals into it.
 	var to_region := global_transform.affine_inverse()
 
 	# 1. Walkable area = the LevelBounds rectangle (in its own global space).
@@ -93,24 +122,56 @@ func rebake() -> void:
 		to_region * (bt * b_max),
 		to_region * (bt * Vector2(b_min.x, b_max.y)),
 	])
-	source.add_traversable_outline(walkable)
+	source_reckless.add_traversable_outline(walkable)
+	source_careful.add_traversable_outline(walkable)
 
-	# 2. Each obstacle carves its own footprint.
+	# 2. Each obstacle carves its own footprint — into the meshes its carve-layer
+	#    mask names (§B3.1 protocol; no method = both, so pre-hazard obstacles are
+	#    untouched). Bit 1 = reckless, bit 2 = careful.
 	for node in nodes:
 		if not node.has_method("get_nav_footprint"):
 			continue
+		var carve := 3
+		if node.has_method("nav_carve_layers"):
+			carve = node.nav_carve_layers()
 		var footprint: Dictionary = node.get_nav_footprint()
 		for outline in footprint.get("obstruction", []):
-			source.add_obstruction_outline(_to_region_space(to_region, outline))
+			var pts := _to_region_space(to_region, outline)
+			if carve & 1:
+				source_reckless.add_obstruction_outline(pts)
+			if carve & 2:
+				source_careful.add_obstruction_outline(pts)
 		for outline in footprint.get("traversable", []):
-			source.add_traversable_outline(_to_region_space(to_region, outline))
+			var pts := _to_region_space(to_region, outline)
+			if carve & 1:
+				source_reckless.add_traversable_outline(pts)
+			if carve & 2:
+				source_careful.add_traversable_outline(pts)
 
-	# 3. Bake into a fresh NavigationPolygon and apply it.
+	# 3. RECKLESS bake → this node (layer 1: humans + ferals — today's mesh).
+	navigation_layers = 1
+	navigation_polygon = _bake(source_reckless)
+
+	# 4. CAREFUL bake → the server-direct region (layer 2: calm zombies).
+	#    Runtime only: the editor preview button shows the reckless mesh, and
+	#    editor-created server RIDs would leak into the editing session.
+	if Engine.is_editor_hint():
+		return
+	if not _careful_region.is_valid():
+		_careful_region = NavigationServer2D.region_create()
+		NavigationServer2D.region_set_map(_careful_region, get_world_2d().navigation_map)
+		NavigationServer2D.region_set_navigation_layers(_careful_region, 2)
+	NavigationServer2D.region_set_transform(_careful_region, global_transform)
+	NavigationServer2D.region_set_navigation_polygon(_careful_region, _bake(source_careful))
+
+
+## One bake with this baker's settings.
+func _bake(source: NavigationMeshSourceGeometryData2D) -> NavigationPolygon:
 	var poly := NavigationPolygon.new()
 	poly.agent_radius = agent_radius
 	poly.cell_size = bake_cell_size
 	NavigationServer2D.bake_from_source_geometry_data(poly, source)
-	navigation_polygon = poly
+	return poly
 
 
 ## Resolves the scene root to scan, working in both game and editor.

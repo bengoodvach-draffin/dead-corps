@@ -43,13 +43,18 @@ func _process(delta: float) -> void:
 
 	var avg_ms := _elapsed / _frames * 1000.0
 	var worst_ms := _worst_frame * 1000.0
-	# Engine monitors: physics step time and total node count — the two numbers
-	# the hand-profiling sessions kept needing alongside script time.
+	# Engine monitors. TIME_* are last-frame times: physics includes the bundled
+	# catch-up ticks (divide by ticks-per-frame for per-tick cost), process is
+	# the _process scripts, nav is the NavigationServer sync. draw_calls tells
+	# the render side's story — frame minus the three TIME_* is render+engine.
 	var phys_ms := Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
+	var proc_ms := Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
+	var nav_ms := Performance.get_monitor(Performance.TIME_NAVIGATION_PROCESS) * 1000.0
+	var draws := int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))
 	var nodes := int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT))
 
-	print("⏱️ PERF t=%ds | frame avg %.1fms worst %.1fms (%d frames) | physics %.1fms | nodes %d | %s" % [
-		int(_uptime), avg_ms, worst_ms, _frames, phys_ms, nodes, _census()])
+	print("⏱️ PERF t=%ds | frame avg %.1fms worst %.1fms (%d frames) | physics %.1fms proc %.1fms nav %.1fms | draws %d | nodes %d | %s" % [
+		int(_uptime), avg_ms, worst_ms, _frames, phys_ms, proc_ms, nav_ms, draws, nodes, _census()])
 
 	_elapsed = 0.0
 	_frames = 0

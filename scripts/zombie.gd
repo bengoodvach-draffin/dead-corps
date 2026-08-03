@@ -67,6 +67,13 @@ func _ready() -> void:
 	team = Team.ZOMBIES
 	super._ready()
 
+	# TWO-MESH NAV (fences/hazards spec §B3): calm zombies path on the CAREFUL
+	# mesh (layer 2 — zombie-lethal hazards carved out); ferals switch to the
+	# RECKLESS mesh (layer 1) at ignite and back at calm. Born calm → careful.
+	# Risers rise calm, so fresh bodies never re-walk the minefield that made them.
+	if nav_agent != null:
+		nav_agent.navigation_layers = 2
+
 	# Behavior components — created at runtime, ticked by this shell's dispatcher,
 	# so none has its own _physics_process (single dispatcher, rule 4).
 	_shamble = ShambleBehavior.new()
@@ -234,6 +241,8 @@ func ignite_feral(target: Human = null) -> void:
 	move_queue.clear()      # released is released — drop any queued route (#8)
 	queued_attack = null    # and any deferred attack
 	_breach.cancel()        # and any calm breach — the hunt owns the door rules now
+	if nav_agent != null:
+		nav_agent.navigation_layers = 1   # the frenzy paths RECKLESS (§B3)
 	_feral.set_target(target)
 	modulate = FERAL_TINT
 
@@ -249,6 +258,8 @@ func ignite_feral_at_building(building: Node2D) -> void:
 	move_queue.clear()
 	queued_attack = null
 	_breach.cancel()
+	if nav_agent != null:
+		nav_agent.navigation_layers = 1   # the frenzy paths RECKLESS (§B3)
 	_feral.set_siege(building)
 	modulate = FERAL_TINT
 
@@ -286,6 +297,8 @@ func _set_calm() -> void:
 	current_state = State.CALM
 	_feral.clear()
 	modulate = CALM_TINT
+	if nav_agent != null:
+		nav_agent.navigation_layers = 2   # back under control → CAREFUL mesh (§B3)
 	_shamble.set_anchor(global_position)
 	if _has_pending_calm_move:
 		_has_pending_calm_move = false

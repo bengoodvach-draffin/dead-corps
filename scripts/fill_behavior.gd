@@ -50,10 +50,6 @@ var _reached: bool = false
 ## The front grows freely during it — this is only the close-range rate floor.
 var _cooldown: float = 0.0
 
-## Tracks whether the debug line was drawn last frame, so we issue exactly one extra
-## redraw when it clears (and avoid redrawing idle humans every frame).
-var _was_drawing: bool = false
-
 ## Civilian reaction clock (build-plan 3.2): seconds a clear-lane zombie has been
 ## visible. At civilian_reaction it triggers the flee. Resets when sight is lost.
 var _civ_clock: float = 0.0
@@ -97,12 +93,8 @@ func tick(delta: float) -> void:
 		_tick_armed(delta, nearest_visible)
 	else:
 		_tick_civilian(delta, nearest_visible)
-
-	# Debug-line redraw: only while there's something to draw, plus one frame after.
-	var drawing := _fill > 0.0 or _target != null
-	if drawing or _was_drawing:
-		_owner.queue_redraw()
-	_was_drawing = drawing
+	# (The old per-frame debug-line redraw is gone — VisionRenderer redraws
+	# itself every frame and reads this component's accessors, F4.)
 
 
 ## Armed fill front: grow toward / fire at the nearest CLEAR-LANE zombie; cool when none
@@ -214,7 +206,6 @@ func cancel() -> void:
 	_civ_clock = 0.0
 	_watching = false
 	_cached_visible = null   # a cold front re-acquires fresh on its next scan
-	_owner.queue_redraw()
 
 
 ## Selects the door-watch point (§7.1): the nearest ENGAGED door of the owner's

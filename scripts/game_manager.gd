@@ -78,6 +78,11 @@ func _ready() -> void:
 	add_child(sampler)
 	sampler.setup(self)
 
+	# Since F4 the units carry no presentation of their own — a level without a
+	# VisionRenderer node would have no selection boxes at all. Spawn one if the
+	# scene didn't (deferred: scene-authored renderers register in their _ready).
+	_ensure_vision_renderer.call_deferred()
+
 	# CRITICAL FIX: Register manually placed units
 	# When users manually place zombies/humans in the editor, they need to be tracked.
 	# PHYSICS frame, not process frame: a render frame holds time_scale-many physics
@@ -101,8 +106,8 @@ func _process(delta: float) -> void:
 ## every R-restart a different phase (§10: a restart must reproduce the run).
 var sim_tick: int = 0
 
-## One-shot latch for the perf auto-frenzy (see _physics_process).
-var _auto_frenzy_fired: bool = false
+## Next sim_tick the repeating perf auto-frenzy fires at (see _physics_process).
+var _next_auto_frenzy_tick: int = 0
 
 
 func _physics_process(delta: float) -> void:
@@ -116,9 +121,14 @@ func _physics_process(delta: float) -> void:
 	# zombie — a full frenzy with nobody at the keyboard. Specials excluded as
 	# everywhere. sim_tick-based so two runs of the same scenario ignite on the
 	# identical tick (§10 — this is also what the boot-twice determinism diff runs on).
-	if GameConfig.perf_auto_frenzy_delay > 0.0 and not _auto_frenzy_fired \
+	# REPEATING since 2026-08-03: re-fires every interval rather than once, so a
+	# load test sustains a mass-feral frenzy (Ben's captured chug had 325
+	# simultaneous ferals — a single ignite wave resolves back to calm and never
+	# reproduces that census headlessly).
+	if GameConfig.perf_auto_frenzy_delay > 0.0 \
+			and sim_tick >= _next_auto_frenzy_tick \
 			and sim_tick >= int(GameConfig.perf_auto_frenzy_delay * 60.0):
-		_auto_frenzy_fired = true
+		_next_auto_frenzy_tick = sim_tick + int(GameConfig.perf_auto_frenzy_delay * 60.0)
 		# SEEDED like a release, not contagion-style: a targetless ignite retargets
 		# from the local scan radius, and a quiet-boot layout (zombies deliberately
 		# out of awareness range) means no candidates → every feral calms the same
@@ -378,6 +388,14 @@ func get_all_zombies() -> Array[Zombie]:
 
 func get_all_humans() -> Array[Human]:
 	return all_humans
+
+
+## Spawns the readability layer if the scene didn't author one (F4 fallback).
+func _ensure_vision_renderer() -> void:
+	if get_tree().get_first_node_in_group("vision_renderer") == null:
+		var vr := VisionRenderer.new()
+		vr.name = "VisionRenderer"
+		add_child(vr)
 
 
 ## Drops freed references from both rosters. Called once per physics tick from

@@ -187,8 +187,6 @@ func _ready() -> void:
 		add_child(_fear)
 		_fear.setup(self)
 
-		_add_class_label()
-
 
 ## Editor-only redraw so patrol-path visuals update while placing waypoints.
 func _process(_delta: float) -> void:
@@ -448,27 +446,29 @@ func separation_cadence() -> int:
 	return 1 if current_state == State.FLEEING else 3
 
 
-## Stamps a class letter on the unit so the roster reads at a glance: M/P/G for the
-## armed classes; civilians stay blank (they're the bulk). Runtime only.
-func _add_class_label() -> void:
-	var letter := ""
+## The class letter the roster reads at a glance — M/P/G for the armed classes,
+## blank for civilians (they're the bulk). Was a per-unit Label; since F4 the
+## VisionRenderer draws it from this accessor.
+func class_letter() -> String:
 	match defender_class:
 		DefenderClass.MILITIA:
-			letter = "M"
+			return "M"
 		DefenderClass.POLICE:
-			letter = "P"
+			return "P"
 		DefenderClass.GI:
-			letter = "G"
-	if letter == "":
-		return
-	var label := Label.new()
-	label.text = letter
-	label.add_theme_font_size_override("font_size", 16)
-	label.add_theme_color_override("font_color", Color.WHITE)
-	label.position = Vector2(-5.0, -11.0)   # roughly centred on the ~24px unit
-	label.z_index = 10                       # above the body
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE   # don't eat selection clicks
-	add_child(label)
+			return "G"
+	return ""
+
+
+## F4: extend the base strip — the three AudioStreamPlayer2Ds in human.tscn are
+## v1 vestiges with no script references (the June review's "3 players × 500
+## units" finding); at 447 humans that's ~1,300 dead nodes.
+func _strip_presentation_nodes() -> void:
+	super._strip_presentation_nodes()
+	for player_name in ["AimSoundPlayer", "GunshotSoundPlayer", "WhistleSoundPlayer"]:
+		var n := get_node_or_null(player_name)
+		if n != null:
+			n.queue_free()
 
 
 # === LINE OF SIGHT (buildings + intact doors block) ===
@@ -526,7 +526,6 @@ func start_fleeing() -> void:
 	has_target = false
 	if _flee != null:
 		_flee.begin()
-	queue_redraw()   # drop the fill-line debug viz
 
 
 ## Cancels the fill front (called by the fear break, 3.3, the instant it commits, so
@@ -565,7 +564,6 @@ func start_cowering() -> void:
 	# separation is registry-based, so neither depends on this.
 	collision_layer = 0
 	modulate = COWER_TINT
-	queue_redraw()   # drop the fill-line debug viz
 
 
 ## Live check: is this human currently cowering? Used by FeralBrain to keep cowering
@@ -599,7 +597,6 @@ func enter_shelter(building: Node2D, door: Node2D) -> void:
 		_flee.begin_sheltered(spot)
 	if GameConfig.debug_logs:
 		print("🔍 SHELTER: %s entered %s via %s → spot %s" % [name, building.name, door.name, spot])
-	queue_redraw()   # drop any lingering line viz
 
 
 ## Level-start adoption (Ben's ruling 2026-07-26): a human PLACED inside an
@@ -628,7 +625,6 @@ func adopt_into_shelter(building: Node2D) -> void:
 		_flee.begin_sheltered(global_position)
 	if GameConfig.debug_logs:
 		print("🔍 SHELTER: %s adopted by %s (holds placed position)" % [name, building.name])
-	queue_redraw()
 
 
 ## Live check: is this human in the SHELTERED state (regardless of whether the
@@ -665,7 +661,6 @@ func at_shelter_spot() -> bool:
 ## Called by GameManager when the kill is queued into the riser pipeline.
 func mark_pending_rise() -> void:
 	is_pending_rise = true
-	queue_redraw()
 
 
 ## True while this is a selectable corpse: dead AND still counting down to rise. Selection
@@ -679,7 +674,6 @@ func is_selectable_corpse() -> bool:
 ## entry in GameManager). Called from GameManager.set_rise_route / queue_rise_waypoint. (#8)
 func set_queued_route(route: Array) -> void:
 	_queued_route = route.duplicate()
-	queue_redraw()
 
 
 # === DEATH / CONVERSION ===
@@ -725,48 +719,43 @@ func is_pounce_claimed() -> bool:
 # === READABILITY HIGHLIGHTS (build-plan 2.4) ===
 
 ## Toggled by the GameManager hunt pool when the first/last feral starts/stops
-## pursuing me — the "targeted" ring.
+## pursuing me — the "targeted" ring (drawn by VisionRenderer since F4).
 func set_hunted(value: bool) -> void:
-	if _hunted == value:
-		return
 	_hunted = value
-	queue_redraw()
+
+
+func is_hunted() -> bool:
+	return _hunted
 
 
 ## Toggled by the SelectionManager when the cursor hovers me with releasable zombies
-## selected — the "release here" ring (misclick defense).
+## selected — the "release here" ring (misclick defense; VisionRenderer draws it).
 func set_hover_highlighted(value: bool) -> void:
-	if _hover_highlighted == value:
-		return
 	_hover_highlighted = value
-	queue_redraw()
+
+
+func is_hover_highlighted() -> bool:
+	return _hover_highlighted
+
+
+## The fill-front component, for the VisionRenderer's fill line (rendering
+## accessor — gameplay code must keep going through the shell's methods).
+func fill_front() -> FillBehavior:
+	return _fill_front
+
+
+## The mirrored queued-rise route (rendering accessor for the corpse cue).
+func queued_route() -> Array:
+	return _queued_route
 
 
 # === VISUALS ===
 
-## "Targeted" ring — amber/red, drawn while a feral is hunting this human. Kept low-
-## alpha so a crowd full of them reads as ambient state, not an in-your-face overlay.
-const HUNTED_RING_RADIUS := 20.0
-const HUNTED_RING_COLOR := Color(0.95, 0.35, 0.15, 0.35)
-## "Release here" ring — white, opaque, drawn under the cursor (slightly larger so it
-## reads concentric when the hovered human is already hunted). This is the active
-## cursor telegraph, so it stays prominent.
-const HOVER_RING_RADIUS := 24.0
-const HOVER_RING_COLOR := Color(1.0, 1.0, 1.0, 0.95)
-
-
-## Runtime: the readability rings (alive humans only — corpses show nothing). In the
-## editor: the patrol-path visuals instead (units don't run AI there).
+## EDITOR-ONLY since F4: every runtime visual (hunted/hover rings, fill line,
+## corpse cues) moved to VisionRenderer, drawn in one batched canvas item. Only
+## the editor patrol-path viz remains here (the renderer doesn't run in-editor).
 func _draw() -> void:
 	if not Engine.is_editor_hint():
-		if is_alive:
-			if _hunted:
-				draw_arc(Vector2.ZERO, HUNTED_RING_RADIUS, 0.0, TAU, 48, HUNTED_RING_COLOR, 2.0, true)
-			if _hover_highlighted:
-				draw_arc(Vector2.ZERO, HOVER_RING_RADIUS, 0.0, TAU, 48, HOVER_RING_COLOR, 2.0, true)
-			_draw_fill_line()
-		elif is_selectable_corpse():
-			_draw_corpse_cues()
 		return
 
 	# --- Editor patrol-path visuals (waypoint dots + connecting lines). Sentry
@@ -792,47 +781,5 @@ func _draw() -> void:
 			draw_line(current_wp, next_wp, path_color, 2.0)
 
 
-## Debug fill-line rendering (build-plan 3.1 — the front can't be tuned blind; interim
-## home, moves to vision_renderer in 5.1). A line from the human toward the zombie the
-## front is on, length = the current fill progress (clamped to the target's distance).
-## Orange while filling; red once the front has reached the target (rotating to fire).
-func _draw_fill_line() -> void:
-	# Defenders and sheltered garrisons draw it; a fleeing human has no front.
-	if current_state != State.IDLE and current_state != State.SENTRY and current_state != State.SHELTERED:
-		return
-	if _fill_front == null:
-		return
-	var end_g: Vector2
-	var t := _fill_front.current_target()
-	if t != null and is_instance_valid(t):
-		end_g = t.global_position
-	elif _fill_front.watching():
-		end_g = _fill_front.watch_pos()   # the door-watch line, pinned at the door (§10)
-	else:
-		return
-	var length := _fill_front.fill_length()
-	if length <= 0.0:
-		return
-	var to := end_g - global_position   # local delta (the node is unrotated)
-	if to == Vector2.ZERO:
-		return
-	var seg_len := minf(length, to.length())
-	# Half-transparent so a field of fill lines reads as ambient, not in-your-face.
-	var col := Color(1.0, 0.3, 0.2, 0.5) if _fill_front.is_reached() else Color(1.0, 0.85, 0.2, 0.5)
-	draw_line(Vector2.ZERO, to.normalized() * seg_len, col, 2.0)
-
-
-## Interim corpse-command cue (build-plan 6a; → vision_renderer 5.1): a faint line to the
-## queued destination. The persistent "commandable" marker RING was removed — under the
-## corpse's red modulate it rendered as a red circle around every corpse. Selection still
-## shows the base Unit selection_indicator; proper corpse readability is the Phase 5 pass.
-const CORPSE_CUE_COLOR := Color(0.55, 0.9, 0.4, 0.55)
-
-func _draw_corpse_cues() -> void:
-	if _queued_route.is_empty():
-		return
-	var prev := Vector2.ZERO
-	for p in _queued_route:
-		var lp: Vector2 = (p as Vector2) - global_position
-		draw_line(prev, lp, CORPSE_CUE_COLOR, 1.5)
-		prev = lp
+# _draw_fill_line and _draw_corpse_cues moved to VisionRenderer (F4) — the
+# logic is verbatim there, reading through fill_front() / queued_route().

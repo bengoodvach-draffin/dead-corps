@@ -97,6 +97,22 @@ func _ready() -> void:
 	if Engine.is_editor_hint():
 		return
 	clamp_position_to_bounds()
+	_strip_presentation_nodes()
+
+
+## F4 (PERF_REVIEW, 2026-08-03): the per-unit presentation/vestige nodes are
+## freed at RUNTIME — selection boxes, group numbers and the rest are drawn by
+## the single VisionRenderer layer now, and the HealthBar is v1 dead weight
+## with no script references. Freeing here rather than editing the .tscn files
+## keeps the scenes untouched (no editor churn, no clobber risk while they're
+## open) and the editor view unchanged; ~2-5 nodes fewer per unit at runtime.
+## Subclasses extend this (Human also drops its vestigial audio players).
+func _strip_presentation_nodes() -> void:
+	for n in [selection_indicator, control_group_label, get_node_or_null("HealthBar")]:
+		if n != null:
+			n.queue_free()
+	selection_indicator = null
+	control_group_label = null
 
 
 ## Per physics frame: BOID forces, then movement, then bounds.

@@ -2065,14 +2065,14 @@ metadata/_custom_type_script = "uid://bgnbocmyabj1m"
 [node name="Walls and doors" type="Node2D" parent="TestLevel/Shopping" unique_id=1564966858]
 
 [node name="Wall7" type="Polygon2D" parent="TestLevel/Shopping/Walls and doors" unique_id=1778180833]
-position = Vector2(-3739, -200)
+position = Vector2(-3736, -200)
 color = Color(0.4, 0.4, 0.4, 1)
 polygon = PackedVector2Array(-112, -1272, -104, -1272, -104, 128, -112, 128)
 script = ExtResource("9_irb5a")
 metadata/_custom_type_script = "uid://cvde25j0ujcg"
 
 [node name="Wall8" type="Polygon2D" parent="TestLevel/Shopping/Walls and doors" unique_id=2038509145]
-position = Vector2(-3739, -384)
+position = Vector2(-3736, -384)
 color = Color(0.4, 0.4, 0.4, 1)
 polygon = PackedVector2Array(-112, -1272, -104, -1272, -104, -1216, -112, -1216)
 script = ExtResource("9_irb5a")
@@ -2120,6 +2120,20 @@ polygon = PackedVector2Array(-112, -440, -104, -440, -104, 128, -112, 128)
 script = ExtResource("9_irb5a")
 metadata/_custom_type_script = "uid://cvde25j0ujcg"
 
+[node name="Door" type="Node2D" parent="TestLevel/Offices/Walls and Doors" unique_id=2027094532]
+position = Vector2(-3496, -1540)
+script = ExtResource("12_2h14b")
+integrity_override = 20.0
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Door2" type="Node2D" parent="TestLevel/Offices/Walls and Doors" unique_id=1561787882]
+position = Vector2(-3296, -1540)
+script = ExtResource("12_2h14b")
+integrity_override = 20.0
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
 [node name="Label2" type="Label" parent="TestLevel/Offices" unique_id=165018559]
 offset_left = -3368.0002
 offset_top = -1920.0002
@@ -2136,6 +2150,149 @@ polygon = PackedVector2Array(-15, -96, 1702, -96, 1702, 480, -15, 480)
 script = ExtResource("11_ss5kf")
 wall_thickness = 8.0
 metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="ShelterBuilding" type="Polygon2D" parent="TestLevel/Offices/ShelterBuilding" unique_id=1949393692]
+position = Vector2(127, 196)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(-142, -100, 42, -100, 42, 148, -142, 148)
+script = ExtResource("11_ss5kf")
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="Door" type="Node2D" parent="TestLevel/Offices/ShelterBuilding/ShelterBuilding" unique_id=658503170]
+position = Vector2(42, 24.000015)
+rotation = 1.5707964
+script = ExtResource("12_2h14b")
+integrity_override = 50.0
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="ShelterBuilding3" type="Polygon2D" parent="TestLevel/Offices/ShelterBuilding" unique_id=570715576]
+position = Vector2(379, 192)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(-138, -96, 686, -96, 686, 288, -138, 288)
+script = ExtResource("11_ss5kf")
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="Door" type="Node2D" parent="TestLevel/Offices/ShelterBuilding/ShelterBuilding3" unique_id=1998260127]
+position = Vector2(-138, 28)
+rotation = -1.5707964
+script = ExtResource("12_2h14b")
+integrity_override = 50.0
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Door3" type="Node2D" parent="TestLevel/Offices/ShelterBuilding/ShelterBuilding3" unique_id=1240229645]
+position = Vector2(-46, -96)
+script = ExtResource("12_2h14b")
+integrity_override = 50.0
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Door4" type="Node2D" parent="TestLevel/Offices/ShelterBuilding/ShelterBuilding3" unique_id=1881466456]
+position = Vector2(242, -96)
+script = ExtResource("12_2h14b")
+integrity_override = 50.0
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Door5" type="Node2D" parent="TestLevel/Offices/ShelterBuilding/ShelterBuilding3" unique_id=1192739109]
+position = Vector2(594, -96)
+script = ExtResource("12_2h14b")
+integrity_override = 50.0
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Door6" type="Node2D" parent="TestLevel/Offices/ShelterBuilding/ShelterBuilding3" unique_id=1267469347]
+position = Vector2(686, 28)
+rotation = 1.5707964
+script = ExtResource("12_2h14b")
+integrity_override = 50.0
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Door7" type="Node2D" parent="TestLevel/Offices/ShelterBuilding/ShelterBuilding3" unique_id=1779536075]
+position = Vector2(686, 220)
+rotation = 1.5707964
+script = ExtResource("12_2h14b")
+integrity_override = 50.0
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Door2" type="Node2D" parent="TestLevel/Offices/ShelterBuilding/ShelterBuilding3" unique_id=849771298]
+position = Vector2(-138, 219)
+rotation = -1.5707964
+script = ExtResource("12_2h14b")
+integrity_override = 50.0
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="ShelterBuilding2" type="Polygon2D" parent="TestLevel/Offices/ShelterBuilding" unique_id=2025200358]
+position = Vector2(123, 328)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(-138, 16, 46, 16, 46, 152, -138, 152)
+script = ExtResource("11_ss5kf")
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="Door" type="Node2D" parent="TestLevel/Offices/ShelterBuilding/ShelterBuilding2" unique_id=612145892]
+position = Vector2(46, 79.94667)
+rotation = 1.5707964
+script = ExtResource("12_2h14b")
+integrity_override = 50.0
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Wall" type="Polygon2D" parent="TestLevel/Offices/ShelterBuilding" unique_id=1389222978]
+position = Vector2(264, 6)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-98.85205, -98.331055, -90.85205, -98.331055, -91, 22, -99, 22)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall4" type="Polygon2D" parent="TestLevel/Offices/ShelterBuilding" unique_id=1197726883]
+position = Vector2(392, 6)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-98.85205, -98.331055, -90.85205, -98.331055, -91, 14, -99, 14)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall5" type="Polygon2D" parent="TestLevel/Offices/ShelterBuilding" unique_id=1882158813]
+position = Vector2(520, 6)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-98.85205, -98.331055, -90.85205, -98.331055, -91, 22, -99, 22)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall3" type="Polygon2D" parent="TestLevel/Offices/ShelterBuilding" unique_id=1979642210]
+position = Vector2(259, 119)
+rotation = 1.5707964
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-99, -114, -91, -114, -91, 38, -99, 38)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall2" type="Polygon2D" parent="TestLevel/Offices/ShelterBuilding" unique_id=1889226331]
+position = Vector2(208, 6)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-98.85205, -98.331055, -83, -98, -83, 22, -99, 22)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Door" type="Node2D" parent="TestLevel/Offices/ShelterBuilding" unique_id=337632023]
+position = Vector2(-15, -4)
+rotation = -1.5707964
+script = ExtResource("12_2h14b")
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Door2" type="Node2D" parent="TestLevel/Offices/ShelterBuilding" unique_id=1524487194]
+position = Vector2(-15, 60)
+rotation = -1.5707964
+script = ExtResource("12_2h14b")
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
 
 [node name="Container Yard" type="Node2D" parent="TestLevel" unique_id=598393402]
 

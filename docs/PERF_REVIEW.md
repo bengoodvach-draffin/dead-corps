@@ -88,7 +88,29 @@ the brain/bookkeeping tick, which F2's cold return now removes wholesale.
 ## 5. Recommended sequence
 
 1. ~~F2 + F5~~ ✅ **DONE 2026-08-02** — idle floor 14 → 6–9 ms; locked 60fps through the full standard load test.
-2. **Phase 5 readability = F4** — one workstream, two goals. NOW THE NEXT PERF STEP.
+2. ✅ **F4 — BUILT 2026-08-03** (the VisionRenderer migration): all per-unit
+   presentation (selection boxes, group numbers, class letters, hunted/hover
+   rings, fill lines, corpse cues) now draws in ONE camera-culled canvas item;
+   the per-unit Labels/indicators plus the vestigial v1 HealthBars and 3-per-
+   human audio players are freed at runtime (scenes untouched). Nodes 8,552 →
+   5,229. Pixel-parity pass — the Phase 5 design iteration happens ON this
+   scaffold. NOTE: F4 did NOT fix the mass-frenzy chug — see the open
+   investigation below.
+
+### ⚠️ OPEN INVESTIGATION (2026-08-03, resume here): the 133ms frame lock
+During a sustained mass-feral frenzy (repeating auto-frenzy, 300-450 ferals)
+the frame pins at EXACTLY 133.3ms (8 × 16.67) while every workload monitor
+stays small: physics 20-45ms bundled (~5ms/tick), _process 3-4ms, nav monitor
+0.0, draw calls ~140-300. ~90ms/frame is invisible to all monitors. RULED OUT
+by experiment: per-unit canvas items (F4 removed 3,300 nodes — no change),
+vsync pacing (locked identically with vsync_mode=0; idle ran at 4.6ms frames),
+draw-call volume. NEXT SUSPECT, test interrupted mid-run: the per-tick
+`NavigationServer2D.map_force_update` in GameManager._physics_process (~450
+agents force-synced 60×/s; the §10 fast-forward sync — its cost may be
+invisible to TIME_PHYSICS_PROCESS). Rerun the harness with it disabled (one
+commented line, marked TEMP) and compare the plateau. Sampler now logs the
+full split (physics/proc/nav/draws) and the auto-frenzy REPEATS every interval
+to sustain the mass-feral census that reproduces this.
 3. **F1** after Ben rules on the guidelines amendment.
 4. Re-baseline at 2–5× units on `level_testing`; only then decide if F3 leaves the car park.
 
