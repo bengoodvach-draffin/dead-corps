@@ -43,11 +43,6 @@ bounds_max = Vector2(10000, 5000)
 [node name="LevelConfig" type="Node2D" parent="." unique_id=1080841229]
 position = Vector2(-3, 3)
 script = ExtResource("3_2h14b")
-fence_press_depth = null
-fence_fold_time = null
-fence_relax_factor = null
-fence_press_threshold = null
-fence_sag_max = null
 metadata/_custom_type_script = "uid://dlqe4p8ushalq"
 
 [node name="Initializer" type="Node" parent="." unique_id=1515215272]
@@ -2114,7 +2109,7 @@ metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
 position = Vector2(-3715, -976)
 rotation = 1.5707964
 color = Color(0.4, 0.4, 0.4, 1)
-polygon = PackedVector2Array(-112.00006, -1728, -104.00006, -1728, -104, 128, -112, 128)
+polygon = PackedVector2Array(-112.00006, -10, -104.00006, -10, -104, 128, -112, 128)
 script = ExtResource("9_irb5a")
 metadata/_custom_type_script = "uid://cvde25j0ujcg"
 
@@ -2133,6 +2128,14 @@ offset_bottom = -1895.5522
 scale = Vector2(10.069238, 10.144005)
 text = "Offices"
 uppercase = true
+
+[node name="ShelterBuilding" type="Polygon2D" parent="TestLevel/Offices" unique_id=1898119006]
+position = Vector2(-3693, -1564)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(-15, -96, 1702, -96, 1702, 480, -15, 480)
+script = ExtResource("11_ss5kf")
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
 
 [node name="Container Yard" type="Node2D" parent="TestLevel" unique_id=598393402]
 
@@ -3225,7 +3228,7 @@ bake_cell_size = 6.0
 visible = false
 
 [node name="Fence" type="Node2D" parent="." unique_id=1766959974]
-position = Vector2(-2432, -1328)
+position = Vector2(-1208, -1336)
 rotation = 1.5707964
 script = ExtResource("17_0yd0l")
 fence_length = 287.0
@@ -3233,40 +3236,40 @@ threshold_override = 10
 metadata/_custom_type_script = "uid://r5lsjim5frr5"
 
 [node name="Zombie" parent="." unique_id=1452430945 instance=ExtResource("6_se283")]
-position = Vector2(-2920, -1304)
+position = Vector2(-1696, -1312)
 
 [node name="Zombie2" parent="." unique_id=2027564768 instance=ExtResource("6_se283")]
-position = Vector2(-2896, -1304)
+position = Vector2(-1672, -1312)
 
 [node name="Zombie3" parent="." unique_id=1349611930 instance=ExtResource("6_se283")]
-position = Vector2(-2864, -1312)
+position = Vector2(-1640, -1320)
 
 [node name="Zombie4" parent="." unique_id=237457993 instance=ExtResource("6_se283")]
-position = Vector2(-2880, -1344)
+position = Vector2(-1656, -1352)
 
 [node name="Zombie5" parent="." unique_id=39309546 instance=ExtResource("6_se283")]
-position = Vector2(-2912, -1376)
+position = Vector2(-1688, -1384)
 
 [node name="Zombie6" parent="." unique_id=714489003 instance=ExtResource("6_se283")]
-position = Vector2(-2816, -1360)
+position = Vector2(-1592, -1368)
 
 [node name="Zombie7" parent="." unique_id=1387968666 instance=ExtResource("6_se283")]
-position = Vector2(-2968, -1208)
+position = Vector2(-1744, -1216)
 
 [node name="Zombie8" parent="." unique_id=216079294 instance=ExtResource("6_se283")]
-position = Vector2(-2944, -1208)
+position = Vector2(-1720, -1216)
 
 [node name="Zombie9" parent="." unique_id=1339607421 instance=ExtResource("6_se283")]
-position = Vector2(-2912, -1216)
+position = Vector2(-1688, -1224)
 
 [node name="Zombie10" parent="." unique_id=2058827371 instance=ExtResource("6_se283")]
-position = Vector2(-2928, -1248)
+position = Vector2(-1704, -1256)
 
 [node name="Zombie11" parent="." unique_id=873445204 instance=ExtResource("6_se283")]
-position = Vector2(-2960, -1280)
+position = Vector2(-1736, -1288)
 
 [node name="Zombie12" parent="." unique_id=700374671 instance=ExtResource("6_se283")]
-position = Vector2(-2864, -1264)
+position = Vector2(-1640, -1272)
 
 [node name="Human" parent="." unique_id=293742506 instance=ExtResource("7_davh7")]
-position = Vector2(-2184, -1344)
+position = Vector2(-960, -1352)
