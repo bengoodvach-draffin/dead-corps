@@ -118,6 +118,13 @@ func is_finishing_kill() -> bool:
 	return current_state == State.FERAL and _pounce != null and _pounce.is_recovering()
 
 
+## True while the pounce is in flight/landing — HazardField reads it: a lunge
+## is ballistic, so stakes can't impale it mid-air (§B6.4). Mines still can
+## (pressure, not points — Ben's ruling 2026-08-03).
+func is_mid_pounce() -> bool:
+	return _pounce != null and _pounce.is_active()
+
+
 ## True while this CALM zombie is pounding a door that blocks its ordered move
 ## (calm auto-breach). Stays selectable and commandable throughout — this is
 ## terrain clearing, not a siege. Readability / debug hook.
@@ -350,14 +357,16 @@ func nav_move_toward(point: Vector2, speed: float, arrive_dist: float = 5.0) -> 
 		if step_toward(point, speed, 2.0):
 			return true
 		var progressed := before_d - global_position.distance_to(point)
-		if progressed < speed * get_physics_process_delta_time() * 0.25:
+		# Blocked-test against the EFFECTIVE speed: a hazard-slowed unit making
+		# its honest (slow) progress must not read as "blocked" and end early.
+		if progressed < speed * terrain_speed_factor * get_physics_process_delta_time() * 0.25:
 			return _nav_path_ready and nav_agent.is_navigation_finished()
 		return false
 
 	var dir := nav_agent.get_next_path_position() - global_position
 	if dir.length() > 0.01:
 		_nav_path_ready = true
-		velocity = dir.normalized() * speed
+		velocity = dir.normalized() * speed * terrain_speed_factor
 		move_and_slide()
 	else:
 		velocity = Vector2.ZERO   # path not ready — wait, don't straight-line into terrain

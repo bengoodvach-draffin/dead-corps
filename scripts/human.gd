@@ -188,10 +188,40 @@ func _ready() -> void:
 		_fear.setup(self)
 
 
-## Editor-only redraw so patrol-path visuals update while placing waypoints.
+## Editor-only redraw so patrol-path visuals update while placing waypoints,
+## plus the editor class letter (kept in sync every frame, so an inspector
+## defender_class change re-letters the unit live).
 func _process(_delta: float) -> void:
 	if Engine.is_editor_hint():
 		queue_redraw()
+		_ensure_editor_class_label()
+		_editor_class_label.text = class_letter()
+
+
+## EDITOR-ONLY class letter (Ben's request 2026-08-05): the runtime M/P/G comes
+## from VisionRenderer, which doesn't run in-editor — placing a level meant
+## guessing who's who. An INTERNAL child (the Wall pattern: not saved into the
+## scene, survives script reloads) mirroring the old runtime label's look —
+## z 10 so it draws above the Body ColorRect, which buries anything the parent
+## draws itself. Civilians stay blank, same as runtime.
+var _editor_class_label: Label = null
+
+func _ensure_editor_class_label() -> void:
+	if _editor_class_label != null and is_instance_valid(_editor_class_label):
+		return
+	for child in get_children(true):   # true = include internal children
+		if child.name == "_EditorClassLabel":
+			_editor_class_label = child
+			return
+	_editor_class_label = Label.new()
+	_editor_class_label.name = "_EditorClassLabel"
+	_editor_class_label.add_theme_font_size_override("font_size", 16)
+	_editor_class_label.add_theme_color_override("font_color", Color.WHITE)
+	_editor_class_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	_editor_class_label.add_theme_constant_override("outline_size", 3)
+	_editor_class_label.position = Vector2(-5.0, -11.0)   # the old runtime label's spot
+	_editor_class_label.z_index = 10
+	add_child(_editor_class_label, false, Node.INTERNAL_MODE_FRONT)
 
 
 ## IDLE LOD state (PERF_REVIEW.md F2). Cold = no zombie within lod_wake_radius
@@ -757,6 +787,11 @@ func queued_route() -> Array:
 func _draw() -> void:
 	if not Engine.is_editor_hint():
 		return
+
+	# The editor class letter is NOT drawn here: _draw paints under the Body
+	# ColorRect child (children render on top of the parent's canvas item), so a
+	# drawn letter is invisible. It lives on the z-10 internal label instead —
+	# see _ensure_editor_class_label.
 
 	# --- Editor patrol-path visuals (waypoint dots + connecting lines). Sentry
 	# facing arrow and swing arc visuals are deleted (§11). ---

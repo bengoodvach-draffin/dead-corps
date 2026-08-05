@@ -306,11 +306,16 @@ static func strip_at(zombie: Node2D) -> Fence:
 	return null
 
 
-## `count` move slots spread evenly along the span on the side nearest
-## `from_pos`, offset half the press depth out from the band — the explicit
-## RMB-on-fence order arrives ACROSS the strip instead of funnelling into one
-## point (§A7). Below ~one body width of spacing the overflow wraps into a
-## second rank deeper out. Deterministic and stateless.
+## `count` move targets spread evenly along the span — on the FAR side of the
+## wire from `from_pos`, half a press depth beyond the band, so every target is
+## UNREACHABLE until the fence folds. The crew paths to its spread positions,
+## jams on the barrier, and keeps shoving — the same continuous press a click
+## beyond the fence produces (Ben's ruling 2026-08-05: the two orders must feel
+## identical; near-side slots had the crew arriving politely and stopping at
+## slot spacing, a visibly gentler crush than the beyond-click pile-up).
+## The spread is what the fence click still adds over a beyond-click: bodies
+## distributed across the whole span instead of knotting at one point. On fold
+## they walk through and settle just past the wire. Deterministic and stateless.
 func press_slots(count: int, from_pos: Vector2) -> Array[Vector2]:
 	var slots: Array[Vector2] = []
 	if count <= 0:
@@ -318,18 +323,10 @@ func press_slots(count: int, from_pos: Vector2) -> Array[Vector2]:
 	var side := signf(to_local(from_pos).y)
 	if side == 0.0:
 		side = 1.0
-	var depth: float = GameConfig.fence_press_depth
-	var rank_cap := maxi(1, int(floorf(fence_length / BODY_WIDTH)))
-	var n1 := mini(count, rank_cap)
-	var n2 := count - n1
-	var y1 := side * (fence_thickness * 0.5 + depth * 0.5)
-	var y2 := side * (fence_thickness * 0.5 + depth * 0.9)
-	for i in n1:
-		var x := -fence_length * 0.5 + fence_length * (float(i) + 0.5) / float(n1)
-		slots.append(to_global(Vector2(x, y1)))
-	for i in n2:
-		var x := -fence_length * 0.5 + fence_length * (float(i) + 0.5) / float(n2)
-		slots.append(to_global(Vector2(x, y2)))
+	var y := -side * (fence_thickness * 0.5 + GameConfig.fence_press_depth * 0.5)
+	for i in count:
+		var x := -fence_length * 0.5 + fence_length * (float(i) + 0.5) / float(count)
+		slots.append(to_global(Vector2(x, y)))
 	return slots
 
 

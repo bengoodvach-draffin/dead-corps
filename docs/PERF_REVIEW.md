@@ -97,7 +97,30 @@ the brain/bookkeeping tick, which F2's cold return now removes wholesale.
    scaffold. NOTE: F4 did NOT fix the mass-frenzy chug — see the open
    investigation below.
 
-### ⚠️ OPEN INVESTIGATION (2026-08-03, resume here): the 133ms frame lock
+### ✅ RESOLVED (2026-08-05): the 133ms frame lock
+Measured ground truth via GM tick-gap stamps (the sampler's `ticks / wall`
+fields): at 300–410 moving ferals a COMPLETE physics tick costs **17–22ms wall**
+— the TIME_* monitors under-report it (~4–6ms), which is what made ~100ms/frame
+look "invisible". Once tick cost exceeds the 16.7ms budget, the engine enters
+max catch-up (8 ticks/frame cap): frame = 8 × ~17ms = **exactly 133.3ms**,
+render drops to 7.5fps, and the SIM STAYS PERFECT REALTIME (measured 60.8
+ticks/s throughout). No pathology — every "eliminated suspect" (labels, vsync,
+draw calls, nav force-sync, presentation) was innocent because the cost is the
+whole engine step at mass-feral scale, mismeasured. Reproduces identically
+headless.
+
+**The decision this leaves (Ben's call):** at 400 ferals you cannot have 60fps
+AND realtime sim until the tick gets under ~16ms. Levers, combinable:
+  (a) OPTIMIZE the mass-feral tick further — F1 (components→RefCounted),
+      F3 (flow fields), boid/physics work; needs ~25–50% off at 5× ambitions;
+  (b) LOWER Engine.max_physics_steps_per_frame (e.g. 2–3): under load the game
+      renders smoothly and the SIM slows down instead — "the horde moves in
+      dread slow-motion" may be a feature, and §10 determinism is untouched
+      (tick count and content identical, just paced slower);
+  (c) design-side feral cap.
+The old open-investigation notes below are superseded by this resolution.
+
+### ~~⚠️ OPEN INVESTIGATION (2026-08-03, resume here): the 133ms frame lock~~
 During a sustained mass-feral frenzy (repeating auto-frenzy, 300-450 ferals)
 the frame pins at EXACTLY 133.3ms (8 × 16.67) while every workload monitor
 stays small: physics 20-45ms bundled (~5ms/tick), _process 3-4ms, nav monitor

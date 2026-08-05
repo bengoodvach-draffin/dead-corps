@@ -26,6 +26,7 @@ var combo: ComboSystem = null
 var _hunt: HuntPool = null
 var _violence: ViolencePipeline = null
 var _mark: MarkSystem = null
+var _hazard_field: HazardField = null
 
 ## Monotonic source for unit_uid. Assigned in registration order and never
 ## reused — this is what makes the registry's query results stable-ordered (§10).
@@ -62,6 +63,10 @@ func _ready() -> void:
 	_mark.name = "MarkSystem"
 	add_child(_mark)
 	_mark.setup(self)
+	_hazard_field = HazardField.new()
+	_hazard_field.name = "HazardField"
+	add_child(_hazard_field)
+	_hazard_field.setup(self)
 
 	# Scoring (4.2): the combo system + its runtime HUD. Combo first so the HUD finds it.
 	combo = ComboSystem.new()
@@ -110,7 +115,32 @@ var sim_tick: int = 0
 var _next_auto_frenzy_tick: int = 0
 
 
+## True only on the dedicated test level — the auto-frenzy's hard gate.
+func _is_perf_test_level() -> bool:
+	var scene := get_tree().current_scene
+	return scene != null and scene.scene_file_path.ends_with("level_testing.tscn")
+
+
+## TRUE per-tick wall time (the 133ms-lock hunt): consecutive GM tick stamps.
+## Within a catch-up bundle the gap between two GM ticks is one COMPLETE tick's
+## wall cost — scripts, physics server, nav server, everything, including work
+## invisible to TIME_PHYSICS_PROCESS. The MIN gap in a window is the purest
+## sample (no render between bundle ticks); read+reset by the sampler.
+var tick_gap_min_us: int = 0
+var tick_gap_sum_us: int = 0
+var tick_gap_samples: int = 0
+var _last_tick_us: int = 0
+
+
 func _physics_process(delta: float) -> void:
+	var now_us := Time.get_ticks_usec()
+	if _last_tick_us > 0:
+		var gap := now_us - _last_tick_us
+		if tick_gap_min_us == 0 or gap < tick_gap_min_us:
+			tick_gap_min_us = gap
+		tick_gap_sum_us += gap
+		tick_gap_samples += 1
+	_last_tick_us = now_us
 	sim_tick += 1
 	# Roster compaction, once per tick — it used to run inside every registry
 	# query (see _compact_registry). Same tree-order guarantee as the nav sync
@@ -125,7 +155,12 @@ func _physics_process(delta: float) -> void:
 	# load test sustains a mass-feral frenzy (Ben's captured chug had 325
 	# simultaneous ferals — a single ignite wave resolves back to calm and never
 	# reproduces that census headlessly).
+	# HARD-GATED to level_testing (Ben's ruling 2026-08-05): the flag leaked into
+	# a live docks session once (zombies "going feral for no reason") — whatever
+	# the config or env vars say, the auto-frenzy can only ever fire on the
+	# dedicated perf/mechanics test level.
 	if GameConfig.perf_auto_frenzy_delay > 0.0 \
+			and _is_perf_test_level() \
 			and sim_tick >= _next_auto_frenzy_tick \
 			and sim_tick >= int(GameConfig.perf_auto_frenzy_delay * 60.0):
 		_next_auto_frenzy_tick = sim_tick + int(GameConfig.perf_auto_frenzy_delay * 60.0)
@@ -163,6 +198,7 @@ func _physics_process(delta: float) -> void:
 	# Riser countdowns tick on the physics step (fixed timestep → deterministic).
 	if not game_ended:
 		_violence.tick(delta)
+		_hazard_field.tick(delta)   # hazard sweep (mines etc.) — after risers, same gate
 
 func spawn_zombie(pos: Vector2) -> Zombie:
 	if not zombie_scene:
@@ -237,6 +273,10 @@ func _on_zombie_killed_human(human: Human, zombie: Zombie) -> void:
 
 func report_gunfire_kill(zombie: Zombie, shooter: Human) -> void:
 	_violence.report_gunfire_kill(zombie, shooter)
+
+
+func report_hazard_kill(zombie: Zombie, hazard: Node) -> void:
+	_violence.report_hazard_kill(zombie, hazard)
 
 
 func rising_corpses() -> Array:

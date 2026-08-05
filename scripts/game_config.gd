@@ -46,8 +46,26 @@ var perf_log: bool = true
 ## full-frenzy load test runs from a headless boot with nobody at the keyboard:
 ## boot → frenzy on the timer → the sampler logs the curve → read godot.log.
 ## Timed on sim_tick, not wall clock, so runs are §10-comparable. 0 = off
-## (normal play). Not mirrored in LevelConfig.
+## (normal play). Not mirrored in LevelConfig. HARD-GATED in GameManager to
+## level_testing.tscn only (Ben's ruling 2026-08-05) — on any other level this
+## flag does nothing, however it gets set.
 var perf_auto_frenzy_delay: float = 0.0
+
+
+## PER-PROCESS HARNESS OVERRIDES (2026-08-05). Claude's load tests used to flip
+## the two flags above by editing this file — which leaked test behavior into
+## Ben's own editor runs happening at the same time (an auto-frenzy fired inside
+## a live hazard-testing session). The harness now passes environment variables
+## to ITS process only; this file never changes for a test again.
+##   DC_AUTO_FRENZY=<seconds>  DC_DEBUG_LOGS=1
+func _ready() -> void:
+	var env_frenzy := OS.get_environment("DC_AUTO_FRENZY")
+	if env_frenzy != "":
+		perf_auto_frenzy_delay = float(env_frenzy)
+		print("⏱️ PERF: auto-frenzy %ss (env override, this process only)" % env_frenzy)
+	if OS.get_environment("DC_DEBUG_LOGS") == "1":
+		debug_logs = true
+		print("⏱️ PERF: debug_logs on (env override, this process only)")
 
 ## IDLE LOD (PERF_REVIEW.md F2, 2026-08-02): a defending/sheltered human with no
 ## zombie inside lod_wake_radius goes COLD — its entire per-tick brain (fear,
@@ -252,3 +270,10 @@ var fence_sag_max: float = 14.0
 ## SLICE 3 ONLY (§B9, post-PoC): seconds between kills on an electrified fence.
 ## Declared for the LevelConfig/spec knob table; UNREAD until slice 3 builds.
 var fence_shock_interval: float = 1.5
+
+# === HAZARDS (fences/hazards spec §B12, v0 defaults) ===
+## HazardField sweep cadence (s): mine triggers, and (stakes/wire step) IMPALE
+## kills + speed factors. 0.1s = 14px of zombie travel per sample — precise
+## enough for a 14px mine, cheap enough to ignore (§B8). Not mirrored in
+## LevelConfig: a sim-precision knob, not a level-design one.
+var hazard_scan_interval: float = 0.1

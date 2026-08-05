@@ -25,6 +25,8 @@ var _frames: int = 0
 var _worst_frame: float = 0.0
 ## Wall-clock seconds since boot, for the t= stamp (display only, not sim time).
 var _uptime: float = 0.0
+## sim_tick at the last report, for the ticks-per-window delta.
+var _last_sim_tick: int = 0
 
 
 func setup(gm: Node) -> void:
@@ -53,8 +55,23 @@ func _process(delta: float) -> void:
 	var draws := int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))
 	var nodes := int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT))
 
-	print("⏱️ PERF t=%ds | frame avg %.1fms worst %.1fms (%d frames) | physics %.1fms proc %.1fms nav %.1fms | draws %d | nodes %d | %s" % [
-		int(_uptime), avg_ms, worst_ms, _frames, phys_ms, proc_ms, nav_ms, draws, nodes, _census()])
+	# True per-tick wall cost from the GM tick stamps (133ms-lock hunt): ticks
+	# actually run this window, and the min/avg gap between consecutive ticks.
+	var ticks := 0
+	var tick_min := 0.0
+	var tick_avg := 0.0
+	if _gm != null and is_instance_valid(_gm):
+		ticks = int(_gm.sim_tick) - _last_sim_tick
+		_last_sim_tick = int(_gm.sim_tick)
+		tick_min = _gm.tick_gap_min_us / 1000.0
+		if int(_gm.tick_gap_samples) > 0:
+			tick_avg = _gm.tick_gap_sum_us / 1000.0 / _gm.tick_gap_samples
+		_gm.tick_gap_min_us = 0
+		_gm.tick_gap_sum_us = 0
+		_gm.tick_gap_samples = 0
+
+	print("⏱️ PERF t=%ds | frame avg %.1fms worst %.1fms (%d frames) | physics %.1fms proc %.1fms nav %.1fms | ticks %d wall min %.1f avg %.1fms | draws %d | nodes %d | %s" % [
+		int(_uptime), avg_ms, worst_ms, _frames, phys_ms, proc_ms, nav_ms, ticks, tick_min, tick_avg, draws, nodes, _census()])
 
 	_elapsed = 0.0
 	_frames = 0

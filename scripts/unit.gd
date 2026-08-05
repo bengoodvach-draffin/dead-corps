@@ -39,6 +39,13 @@ enum Team {
 ## Movement speed in pixels per second.
 @export var move_speed: float = 100.0
 
+## Terrain speed multiplier (hazard SLOW / stake weave, fences/hazards spec
+## §B7.3). 1.0 = unaffected. Written ONLY by HazardField — never by hazard
+## nodes, never by behaviors. Applied at the velocity-setting sites
+## (step_toward / move_to_target / Zombie.nav_move_toward); deliberately NOT
+## applied to pounce flight — a lunge is ballistic (§B6.4).
+var terrain_speed_factor: float = 1.0
+
 ## Collision radius in pixels — used for boundary clamping (match the CollisionShape2D).
 @export var unit_radius: float = 12.0
 
@@ -132,7 +139,7 @@ func move_to_target(_delta: float) -> void:
 	var direction := (target_position - global_position).normalized()
 	var distance := global_position.distance_to(target_position)
 	if distance > 5.0:
-		velocity = direction * move_speed
+		velocity = direction * move_speed * terrain_speed_factor
 		move_and_slide()
 	else:
 		velocity = Vector2.ZERO
@@ -148,7 +155,7 @@ func step_toward(point: Vector2, speed: float, arrive_dist: float = 2.0) -> bool
 	if to_point.length() <= arrive_dist:
 		velocity = Vector2.ZERO
 		return true
-	velocity = to_point.normalized() * speed
+	velocity = to_point.normalized() * speed * terrain_speed_factor
 	move_and_slide()
 	return false
 

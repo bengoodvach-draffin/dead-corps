@@ -62,14 +62,28 @@ func apply_contagion(kill_pos: Vector2, killer: Zombie, seed_target: Human = nul
 
 ## A defender's fill front shot a zombie (spec §3.3 gunfire half): binary kill,
 ## contagion SEEDED at the shooter ("you shot us — we're coming for you"), and
-## the lose verdict judged at this death instant (A4/A5 — gunfire is the only
-## way a zombie dies in v2, so this is frame-exact and teardown-immune).
+## the lose verdict judged at this death instant (A4/A5 — one of the TWO
+## zombie-death sources, see report_hazard_kill; both judge the verdict at the
+## instant, so the check stays frame-exact and teardown-immune).
 func report_gunfire_kill(zombie: Zombie, shooter: Human) -> void:
 	if not is_instance_valid(zombie) or not zombie.is_alive:
 		return
 	var death_pos := zombie.global_position
 	zombie.take_damage(1.0)
 	apply_contagion(death_pos, null, shooter)
+	_gm.check_lose_condition()
+
+
+## The SECOND zombie-death source — hazard terrain (fences/hazards spec §B7.1).
+## Mirrors report_gunfire_kill's contract: the lose verdict is judged HERE, at
+## the death instant. NO contagion — terrain has no agency to charge at, and
+## igniting the reserve beside a minefield would take control away from the
+## player (Ben's ruling 2026-08-01, spec ruling 9). Unscored, no combo: a
+## hazard death costs you a body and nothing else.
+func report_hazard_kill(zombie: Zombie, _hazard: Node) -> void:
+	if not is_instance_valid(zombie) or not zombie.is_alive:
+		return
+	zombie.take_damage(1.0)
 	_gm.check_lose_condition()
 
 
