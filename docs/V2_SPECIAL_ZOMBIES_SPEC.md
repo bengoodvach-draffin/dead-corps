@@ -1,8 +1,8 @@
 # DEAD CORPS — V2 SPECIAL ZOMBIES SPEC: Special Humans & the Costume Zombie
 
-**Version:** 1.0-draft1
+**Version:** 1.0
 **Date:** 2026-08-06 (design session, Ben + Claude — all rulings below are Ben's, 2026-08-06)
-**Status:** Design spec — **no code exists for any of this yet.** Ruled and ready for a build proposal (rule 1 applies to every implementation step). The Costume Zombie special is **approved for inclusion in the PoC slice** (amends direction spec §12's "no specials").
+**Status:** **APPROVED by Ben 2026-08-06** (draft reviewed same day, no corrections; the §9 soft flags stand as chosen defaults pending playtest). Design spec — **no code exists for any of this yet**; next step is a build proposal (rule 1 applies to every implementation step). The Costume Zombie special is **approved for inclusion in the PoC slice** (amends direction spec §12's "no specials").
 **Supersedes:**
 - GDD §7.1/§7.2 (the building-transformation creation system) — **superseded as the creation grammar for specials.** Buildings no longer transform zombies; specials are earned by killing special humans. ("For now" — Ben; revisit only if this model fails in play.)
 - GDD §5.7 (Costume Zombie v1) — the v1 ability text was written against systems the pivot deleted (vision cones, morale, alerts, grapple). §3 below is the v2 replacement.
