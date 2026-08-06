@@ -174,6 +174,9 @@ func _feral_in_arc() -> bool:
 
 ## True if ANY living zombie (calm or feral) stands in the INSIDE half of the
 ## engagement arc. _inside_sign 0 (standalone door, no building) disables this.
+## COSTUMED specials are exempt (specials spec §3.3): "the door closes behind
+## them" — without this, walking the infiltrator in would burst open every
+## door it entered. Post-break it bursts doors like anyone.
 func _zombie_inside_arc() -> bool:
 	if _inside_sign == 0.0:
 		return false
@@ -182,6 +185,8 @@ func _zombie_inside_arc() -> bool:
 		return false
 	var reach := door_width * 0.5 + ARC_SIDE_MARGIN + thickness * 0.5 + GameConfig.door_engagement_depth
 	for u in gm.neighbours_within(global_position, reach, &"zombies"):
+		if u.is_perception_hidden():
+			continue
 		if not in_engagement_arc(u.global_position):
 			continue
 		if signf(to_local(u.global_position).y) == _inside_sign:
@@ -308,6 +313,14 @@ func integrity_fraction() -> float:
 ## sentence: an engaged door admits no one. A breached door has no lock.
 func is_locked() -> bool:
 	return _locked and not _breached
+
+
+## The zombie-blocking barrier body, or null once breached. The costumed
+## special's door transit (specials spec §3.3) grants itself a per-body
+## collision exception with exactly this — doors admit it while escape zones
+## and fences (the same physics layer) still block.
+func zombie_barrier() -> StaticBody2D:
+	return _zombie_barrier
 
 
 ## The owning ShelterBuilding (duck-typed), or null for a standalone door.

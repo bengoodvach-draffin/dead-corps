@@ -1,0 +1,7 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" uid="uid://c8yqh3jvpxn3w" path="res://scenes/zombie.tscn" id="1"]
+[ext_resource type="Script" path="res://scripts/costume_zombie.gd" id="2"]
+
+[node name="CostumeZombie" instance=ExtResource("1")]
+script = ExtResource("2")

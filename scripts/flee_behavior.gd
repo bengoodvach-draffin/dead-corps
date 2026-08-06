@@ -155,7 +155,12 @@ func _exit_valid(exit: Node2D) -> bool:
 	if _is_written_off(exit):
 		return false   # the no-return latch closed on it mid-route
 	var building: Node = exit.building()
-	return building != null and building.is_shelter and not building.is_breached()
+	# COMPROMISED buildings drop out of the exit set while a revealed zombie is
+	# inside (specials spec §3.5, §9.3 soft default) — "safe shelter" is the
+	# criterion and a wolf in the fold fails it. Predicate-driven like the lock
+	# churn: it re-enters the picks the moment the interior clears.
+	return building != null and building.is_shelter and not building.is_breached() \
+		and not building.is_compromised()
 
 
 ## Chooses the exit to flee to, from THE unified exit set (escape zones ∪ open
@@ -218,7 +223,9 @@ func _exit_blocked(exit: Node2D) -> bool:
 	# Measured at the point the runner would actually head for, not a big zone's centre.
 	var point := _exit_point(exit, _owner.global_position)
 	for z in gm.neighbours_within(point, GameConfig.exit_block_radius, &"zombies"):
-		if z != null and z.is_alive:
+		# A COSTUMED special never strikes an exit off the list (specials spec
+		# §3.2) — humans flee straight past it, so it cannot close a door.
+		if z != null and z.is_alive and not z.is_perception_hidden():
 			return true
 	return false
 
@@ -274,12 +281,18 @@ func _threat_direction() -> Vector2:
 	var count := 0
 	if _inside_breached_shelter(origin):
 		for u in gm.living_zombies():
+			# COSTUMED specials radiate no threat (specials spec §3.2) — a
+			# runner's "away from danger" ignores them entirely, both branches.
+			if u.is_perception_hidden():
+				continue
 			if _owner.has_line_of_sight_to(u):
 				sum += u.global_position
 				count += 1
 	else:
 		var awareness: float = GameConfig.awareness[_owner.defender_class]
 		for u in gm.neighbours_within(origin, awareness, &"zombies"):
+			if u.is_perception_hidden():
+				continue
 			sum += u.global_position
 			count += 1
 	if count == 0:
@@ -389,9 +402,11 @@ func tick(delta: float) -> void:
 		if door.is_intact() and not door.is_locked() and door.contains_point(_owner.global_position):
 			var building: Node = door.building()
 			# Only true shelters convert (terrain kit): gates have no building,
-			# dumb boxes don't shelter, and a breached building shelters nobody
-			# even through its intact doors (§9).
-			if building == null or not building.is_shelter or building.is_breached():
+			# dumb boxes don't shelter, a breached building shelters nobody
+			# even through its intact doors (§9) — and neither does a
+			# COMPROMISED one (specials §3.5: no diving in with the wolf).
+			if building == null or not building.is_shelter or building.is_breached() \
+					or building.is_compromised():
 				continue
 			# The no-return latch bites HERE too, not just at exit selection: entry
 			# is geometric, so a runner heading for the street would otherwise be
@@ -556,6 +571,10 @@ func _zombie_repulsion(origin: Vector2) -> Vector2:
 	var radius := GameConfig.flee_repel_radius
 	var repel := Vector2.ZERO
 	for u in gm.neighbours_within(origin, radius, &"zombies", null, false):
+		# COSTUMED specials bend no routes (specials spec §3.2): runners flee
+		# straight past — even through — the disguise. No herding power.
+		if u.is_perception_hidden():
+			continue
 		var away: Vector2 = origin - u.global_position
 		var d := away.length()
 		if d > 0.01:

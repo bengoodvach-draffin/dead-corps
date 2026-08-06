@@ -17,6 +17,18 @@ extends RefCounted
 const BEHIND_PENALTY := 100000.0
 
 
+## path_score with the THREAT WEIGHT applied (Ben, 2026-08-06): armed humans
+## (M/P/G) score × feral_threat_weight, so shooters out-bid civilians at equal
+## geometry and the horde stops filing past a firing GI. For the feral's
+## AUTONOMOUS choices only (FeralBrain peel/retarget/off-door) — release seeding
+## keeps calling path_score raw, because the player's aim is not up for bias.
+static func threat_score(origin: Vector2, heading: Vector2, h: Human) -> float:
+	var s := path_score(origin, heading, h.global_position)
+	if h.is_armed():
+		s *= GameConfig.feral_threat_weight
+	return s
+
+
 static func path_score(origin: Vector2, heading: Vector2, point: Vector2) -> float:
 	var to_point := point - origin
 	if heading == Vector2.ZERO:

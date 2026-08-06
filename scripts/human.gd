@@ -59,6 +59,17 @@ signal human_died(human: Human)
 ## (awareness, fill speed, fear threshold) built in Phase 3.
 @export var defender_class: DefenderClass = DefenderClass.CIVILIAN
 
+## SPECIAL HUMANS (specials spec §2.1): the roster of earnable specials. A
+## special human is COMPLETELY NORMAL in every mechanical respect — it fills,
+## fears, flees, shelters, and cowers by its class's rules, counts toward the
+## win condition, and scores as a normal kill. What special_type changes:
+## (1) the at-a-glance read (pink ring + ★, §5 — locate means find WHERE it
+## is, never WHICH one it is; no hidden information), and (2) its riser — a
+## pounce kill rises as the mapped special zombie instead of a standard one
+## (§2.3). Escaping loses the special for the run (§2.4).
+enum SpecialType { NONE, COSTUME }
+@export var special_type: SpecialType = SpecialType.NONE
+
 # === PATROL ===
 @export_group("Patrol")
 
@@ -196,6 +207,10 @@ func _process(_delta: float) -> void:
 		queue_redraw()
 		_ensure_editor_class_label()
 		_editor_class_label.text = class_letter()
+		# ★ = special human (specials spec §5) — pink and small, the same
+		# subtle read the game shows (the ring was too loud — Ben, 2026-08-06).
+		_editor_star_label.text = "★" if is_special_human() else ""
+		_editor_star_label.position.x = -5.0 + (10.0 if class_letter() != "" else 0.0)
 
 
 ## EDITOR-ONLY class letter (Ben's request 2026-08-05): the runtime M/P/G comes
@@ -205,23 +220,31 @@ func _process(_delta: float) -> void:
 ## z 10 so it draws above the Body ColorRect, which buries anything the parent
 ## draws itself. Civilians stay blank, same as runtime.
 var _editor_class_label: Label = null
+## The pink ★ beside the letter for a special human (own label so it can carry
+## its own colour — the class letter stays white).
+var _editor_star_label: Label = null
 
 func _ensure_editor_class_label() -> void:
-	if _editor_class_label != null and is_instance_valid(_editor_class_label):
-		return
+	if _editor_class_label == null or not is_instance_valid(_editor_class_label):
+		_editor_class_label = _find_or_make_editor_label("_EditorClassLabel", Color.WHITE, Vector2(-5.0, -11.0))
+	if _editor_star_label == null or not is_instance_valid(_editor_star_label):
+		_editor_star_label = _find_or_make_editor_label("_EditorStarLabel", Color(1.0, 0.4, 0.8), Vector2(5.0, -11.0))
+
+
+func _find_or_make_editor_label(label_name: String, col: Color, at: Vector2) -> Label:
 	for child in get_children(true):   # true = include internal children
-		if child.name == "_EditorClassLabel":
-			_editor_class_label = child
-			return
-	_editor_class_label = Label.new()
-	_editor_class_label.name = "_EditorClassLabel"
-	_editor_class_label.add_theme_font_size_override("font_size", 16)
-	_editor_class_label.add_theme_color_override("font_color", Color.WHITE)
-	_editor_class_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
-	_editor_class_label.add_theme_constant_override("outline_size", 3)
-	_editor_class_label.position = Vector2(-5.0, -11.0)   # the old runtime label's spot
-	_editor_class_label.z_index = 10
-	add_child(_editor_class_label, false, Node.INTERNAL_MODE_FRONT)
+		if child.name == label_name:
+			return child
+	var label := Label.new()
+	label.name = label_name
+	label.add_theme_font_size_override("font_size", 16)
+	label.add_theme_color_override("font_color", col)
+	label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	label.add_theme_constant_override("outline_size", 3)
+	label.position = at   # the old runtime label's spot
+	label.z_index = 10
+	add_child(label, false, Node.INTERNAL_MODE_FRONT)
+	return label
 
 
 ## IDLE LOD state (PERF_REVIEW.md F2). Cold = no zombie within lod_wake_radius
@@ -327,7 +350,12 @@ func _physics_process(delta: float) -> void:
 		# the occupancy, out through whatever exit remains (the breached building
 		# left the set). Armed humans are the LAST STAND (§7.2): fear stays
 		# suspended forever — they hold their spots and fire until killed.
-		if not is_armed() and not is_safely_sheltered() and _fear != null:
+		# THE COMPROMISED RULE (specials spec §3.5): a revealed zombie INSIDE an
+		# intact shelter re-arms civilian fear exactly like a breach — panic by
+		# sight through the floor plan while the shell stays whole. Armed
+		# occupants stay the last stand either way.
+		if not is_armed() and _fear != null \
+				and (not is_safely_sheltered() or shelter_is_compromised()):
 			_fear.tick(delta)
 		if _is_breaking():
 			velocity = Vector2.ZERO
@@ -339,7 +367,9 @@ func _physics_process(delta: float) -> void:
 		# lines at zombies outside (Ben's step-7 catch). Once the breach opens
 		# real lanes it runs anywhere. A phantom picked up in the gap is dropped.
 		if is_armed() and _fill_front != null:
-			if at_shelter_spot() or not is_safely_sheltered():
+			# A COMPROMISED interior (specials §3.5) opens normal fill rules
+			# against the threat inside, spot or no spot — the last stand fires.
+			if at_shelter_spot() or not is_safely_sheltered() or shelter_is_compromised():
 				_fill_front.tick(delta)
 			elif _fill_front.fill_length() > 0.0 or _fill_front.current_target() != null:
 				_fill_front.cancel()
@@ -479,6 +509,12 @@ func separation_cadence() -> int:
 ## The class letter the roster reads at a glance — M/P/G for the armed classes,
 ## blank for civilians (they're the bulk). Was a per-unit Label; since F4 the
 ## VisionRenderer draws it from this accessor.
+## True if this human carries a special (the VisionRenderer ring/★ read + the
+## riser branch key on it).
+func is_special_human() -> bool:
+	return special_type != SpecialType.NONE
+
+
 func class_letter() -> String:
 	match defender_class:
 		DefenderClass.MILITIA:
@@ -551,6 +587,12 @@ func start_fleeing() -> void:
 	if current_state == State.SHELTERED and _shelter_building != null:
 		_shelter_building.release_occupant(self)
 		_shelter_building = null
+	# Reset the fill front on EVERY entry into the rout, not just the fear break
+	# (FearDetector cancels at break commit, but the civilian reaction clock
+	# didn't) — otherwise the stale target/fill rides FLEEING (line hidden) into
+	# SHELTERED, where the renderer draws it again and nothing ever clears it:
+	# a frozen line from inside the building tracking a zombie through walls.
+	cancel_fill()
 	current_state = State.FLEEING
 	is_patrolling = false
 	has_target = false
@@ -672,6 +714,17 @@ func is_safely_sheltered() -> bool:
 		return false
 	return _shelter_building != null and is_instance_valid(_shelter_building) \
 		and not _shelter_building.is_breached()
+
+
+## True while the occupied shelter holds a REVEALED living zombie (specials
+## spec §3.5 — the wolf in the fold). Deliberately separate from
+## is_safely_sheltered: a compromised building's occupants panic and fight, but
+## the WALLS still protect them from the outside (exterior ferals still besiege
+## rather than target through intact walls).
+func shelter_is_compromised() -> bool:
+	return _shelter_building != null and is_instance_valid(_shelter_building) \
+		and _shelter_building.has_method("is_compromised") \
+		and _shelter_building.is_compromised()
 
 
 ## The occupied building, or null (the siege prey-proxy, read by FeralBrain).

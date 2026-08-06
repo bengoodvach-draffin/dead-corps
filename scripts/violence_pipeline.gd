@@ -37,6 +37,9 @@ func register_pounce_kill(human: Human, zombie: Zombie) -> void:
 		"corpse": human,
 		"pos": human.global_position,
 		"time_left": GameConfig.rise_time,
+		# SPECIALS (specials spec §2.3): a special human's riser rises as the
+		# mapped special zombie. Captured NOW — the corpse may be freed by rise.
+		"special_type": human.special_type,
 		# Corpse commands (6a/#8): a queued ROUTE, re-resolved (release-or-move on
 		# the FIRST waypoint) when it rises; [] = no order.
 		"queued_route": [],
@@ -123,7 +126,13 @@ func _raise(entry: Dictionary) -> void:
 		# Diagnostic (rule 2): a corpse freed before it could rise — log the spot
 		# to tell an escape-rim race (pos AT an exit) from a benign scene reset.
 		push_warning("⚠️ _raise: corpse already freed before rise at %s (escape-rim race?)" % entry.pos)
-	var zombie: Zombie = _gm.spawn_zombie(entry.pos)
+	# THE SPECIALS BRANCH (specials spec §2.3): the mapped special scene instead
+	# of a standard zombie — the whole creation pipeline in one fork.
+	var zombie: Zombie
+	if int(entry.get("special_type", Human.SpecialType.NONE)) != Human.SpecialType.NONE:
+		zombie = _gm.spawn_special(entry.pos, int(entry.special_type))
+	else:
+		zombie = _gm.spawn_zombie(entry.pos)
 	# 6a: replay the queued click (release-or-move) on the fresh zombie.
 	if zombie != null and sel != null:
 		sel.apply_rise_order(zombie, entry, was_selected)

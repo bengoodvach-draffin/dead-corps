@@ -46,6 +46,16 @@ enum Team {
 ## applied to pounce flight — a lunge is ballistic (§B6.4).
 var terrain_speed_factor: float = 1.0
 
+
+## COSTUMED SPECIAL (specials spec §3.2): true while this unit is absent from
+## every HUMAN-PERCEPTION query — the fill front / civilian clock, the fear
+## count, herding repulsion, the exit-block filter, threat direction. Physical
+## and player-side queries (selection, BOID, barriers, hazards, the lose count)
+## ignore this entirely. Duck-typed on the costume latch so Unit carries no
+## CostumeZombie dependency; false for everything that isn't a costumed special.
+func is_perception_hidden() -> bool:
+	return get("is_costumed") == true
+
 ## Collision radius in pixels — used for boundary clamping (match the CollisionShape2D).
 @export var unit_radius: float = 12.0
 

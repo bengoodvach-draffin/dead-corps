@@ -35,6 +35,9 @@ const FILL_REACHED_COLOR := Color(1.0, 0.3, 0.2, 0.5)
 const FILL_WIDTH := 2.0
 # — Corpse route cue —
 const CORPSE_CUE_COLOR := Color(0.55, 0.9, 0.4, 0.55)
+# — Special human (specials spec §5): the pink locate read. Toned down from a
+#   ring to a pink ★ beside the class stamp (Ben, 2026-08-06 — "a bit much"). —
+const SPECIAL_STAR_COLOR := Color(1.0, 0.4, 0.8, 1.0)
 # — Text: the old ControlGroupLabel (14px white, 2px black outline, offset
 #   right-and-above) and the class letter (16px white, roughly centred). Label
 #   rects positioned by top-left; draw_string draws at BASELINE, so the offsets
@@ -97,6 +100,12 @@ func _draw() -> void:
 		if letter != "":
 			draw_string(_font, pos + CLASS_OFFSET, letter,
 				HORIZONTAL_ALIGNMENT_LEFT, -1, CLASS_FONT_SIZE, Color.WHITE)
+		# SPECIAL HUMAN (specials spec §5): a pink ★ beside the class stamp —
+		# the subtle locate read (the ring was too loud — Ben, 2026-08-06).
+		if h.is_special_human():
+			var star_at := pos + CLASS_OFFSET + (Vector2(10.0, 0.0) if letter != "" else Vector2.ZERO)
+			draw_string(_font, star_at, "★",
+				HORIZONTAL_ALIGNMENT_LEFT, -1, CLASS_FONT_SIZE, SPECIAL_STAR_COLOR)
 		if h.control_group_number > 0:
 			_draw_group_number(pos, h.control_group_number)
 
@@ -143,6 +152,10 @@ func _draw_group_number(pos: Vector2, number: int) -> void:
 func _draw_fill_line(h: Human, pos: Vector2) -> void:
 	if h.current_state != Human.State.IDLE and h.current_state != Human.State.SENTRY \
 			and h.current_state != Human.State.SHELTERED:
+		return
+	# Sheltered lines are ARMED-ONLY (Ben, 2026-08-06): a sheltered civilian never
+	# ticks its fill front, so anything it could show is stale state, not a lane.
+	if h.current_state == Human.State.SHELTERED and not h.is_armed():
 		return
 	var front: FillBehavior = h.fill_front()
 	if front == null:

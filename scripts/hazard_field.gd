@@ -94,8 +94,15 @@ func _impale_kills(zone: HazardZone) -> void:
 		var z := u as Zombie
 		if z == null or not z.is_alive or z.is_mid_pounce():
 			continue
-		if z.velocity.dot(facing) >= -zone.impale_min_speed:
+		var against := -z.velocity.dot(facing)
+		if against <= zone.impale_min_speed:
 			continue   # stationary, brushing, or moving WITH the points — safe
+		# The angle gate (Ben's amendment 2026-08-06): only a heading
+		# predominantly INTO the points kills (against > kill_dot × speed).
+		# Component-only proved no fun — at walk speed anything ~8° past
+		# perpendicular died, so a zombie inside the bed couldn't move sideways.
+		if against < z.velocity.length() * zone.impale_kill_dot:
+			continue
 		if not zone.contains(z.global_position):
 			continue
 		if GameConfig.debug_logs:

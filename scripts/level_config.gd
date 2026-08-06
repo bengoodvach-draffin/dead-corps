@@ -68,6 +68,10 @@ class_name LevelConfig
 @export var feral_divert_hysteresis: float = 0.8
 ## Bullet-vs-splay: how strongly targeting prefers humans along the swarm's path. 0 = splay across the front rank; higher = drive up the centre.
 @export var feral_offaxis_penalty: float = 1.5
+## Threat priority: armed humans' path score × this in feral peel/retarget (lower score = better). 0.5 = an armed human "looks" half its distance; 1.0 = off.
+@export var feral_threat_weight: float = 0.5
+## Max distance (px) at which a retargeting feral considers pooled prey (pursued/fleeing humans). Beyond it, ferals calm instead of marching cross-map.
+@export var hunt_pool_radius: float = 800.0
 
 # === POUNCE ===
 ## Distance (px) at which a feral lunges into a pounce.
@@ -190,6 +194,8 @@ func _ready() -> void:
 	GameConfig.feral_divert_interval = feral_divert_interval
 	GameConfig.feral_divert_hysteresis = feral_divert_hysteresis
 	GameConfig.feral_offaxis_penalty = feral_offaxis_penalty
+	GameConfig.feral_threat_weight = feral_threat_weight
+	GameConfig.hunt_pool_radius = hunt_pool_radius
 
 	GameConfig.pounce_range = pounce_range
 	GameConfig.pounce_recovery = pounce_recovery

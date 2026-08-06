@@ -35,6 +35,11 @@ var _next_unit_uid: int = 0
 ## Counter for humans that successfully escaped to the safe zone
 var escaped_humans: int = 0
 
+## SPECIALS DENIAL (specials spec §2.4): names of specials lost to escapes —
+## an escaped special human is that special gone for the run, no second
+## chance. The end screen calls it out.
+var lost_specials: Array[String] = []
+
 ## Timer tracking how long the game has been running (in seconds)
 var game_time: float = 0.0
 
@@ -214,6 +219,24 @@ func spawn_zombie(pos: Vector2) -> Zombie:
 	_register_zombie(zombie)
 	return zombie
 
+
+## SPECIALS (specials spec §2.3): spawn the special zombie mapped to
+## `special_type` — the riser pipeline's one fork. Mapped by scene, not by roll
+## (§4 determinism); the enum grows with the roster.
+func spawn_special(pos: Vector2, special_type: int) -> Zombie:
+	var scene: PackedScene = null
+	match special_type:
+		Human.SpecialType.COSTUME:
+			scene = load("res://scenes/costume_zombie.tscn")
+	if scene == null:
+		push_error("spawn_special: no scene mapped for special_type %d — spawning a standard zombie" % special_type)
+		return spawn_zombie(pos)
+	var zombie: Zombie = scene.instantiate()
+	zombie.position = units_parent.to_local(pos)   # world→parent frame; see spawn_zombie
+	units_parent.add_child(zombie)
+	_register_zombie(zombie)
+	return zombie
+
 func spawn_human(pos: Vector2) -> Human:
 	if not human_scene:
 		push_error("Human scene not set in GameManager!")
@@ -336,6 +359,12 @@ func _on_zombie_removed(zombie: Zombie) -> void:
 ## Increments the escaped counter and removes the human from tracking
 func on_human_escaped(human: Human) -> void:
 	escaped_humans += 1
+	# DENIAL (specials spec §2.4): the special it carried is lost for the run.
+	# Always printed — a lost special is a verdict-grade event, not debug noise.
+	if human.is_special_human():
+		var special_name: String = str(Human.SpecialType.keys()[human.special_type]).capitalize()
+		lost_specials.append(special_name)
+		print("⚠️ SPECIAL LOST: the %s human escaped — that special is gone for the run" % special_name)
 	all_humans.erase(human)
 	# A fleeing human can be mid-pursuit when it reaches the exit (3.2+) — drop its
 	# hunt-pool entry so the freed instance doesn't linger as a stale pursuit key.

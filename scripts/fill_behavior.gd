@@ -187,7 +187,12 @@ func _nearest_visible_zombie(gm: Node) -> Zombie:
 	var best_d := INF
 	for u in in_range:
 		var z := u as Zombie
-		if z == null or not _has_clear_lane(z):
+		# COSTUMED specials are invisible to human perception (specials spec
+		# §3.2). This one skip covers the whole fill surface: never a fill
+		# target, never shot, never holds a gun hot, never gates decay — and
+		# the civilian reaction clock shares this scan, so it never trips that
+		# either. Checked before the lane ray to save the physics query.
+		if z == null or z.is_perception_hidden() or not _has_clear_lane(z):
 			continue
 		var d := _owner.global_position.distance_to(z.global_position)
 		if d < best_d:

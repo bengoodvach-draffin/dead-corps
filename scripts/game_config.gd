@@ -166,6 +166,21 @@ var feral_divert_hysteresis: float = 0.8
 ## only once the central column is taken).
 ## Docks baseline: 1.5 (was 2.0) — a slightly less bullet-like, wider front.
 var feral_offaxis_penalty: float = 1.5
+## Threat priority (Ben, 2026-08-06): armed humans' (M/P/G) path score is
+## multiplied by this in a feral's AUTONOMOUS choices — peel, retarget, off-door
+## prey. Lower score = better target, so 0.5 makes an armed human at 300px as
+## attractive as a civilian at 150px; 1.0 = off (pure geometry). Paired with the
+## pack-pile-on rule (armed humans are exempt from the one-feral-per-straggler
+## peel gate) so the horde converges on a shooter instead of filing past it.
+## Release seeding is untouched — where the player aims is the player's call.
+var feral_threat_weight: float = 0.5
+## Hunt-pool reach (Ben, 2026-08-06): a retargeting feral only considers pooled
+## prey (pursued ∪ fleeing humans) within this radius. The pool had NO distance
+## limit — invisible on small maps, but on a big one every idle feral marched
+## cross-map after any fleeing human, and never calmed back into the reserve.
+## Local scan (chain_scan_radius) is unaffected. Out of range of everything →
+## the feral calms and returns to player control.
+var hunt_pool_radius: float = 800.0
 
 # === POUNCE ===
 var pounce_range: float = 40.0

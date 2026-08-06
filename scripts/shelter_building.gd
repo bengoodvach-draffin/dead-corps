@@ -137,6 +137,43 @@ func is_breached() -> bool:
 	return false
 
 
+## THE COMPROMISED RULE (specials spec §3.5): true while a REVEALED living
+## zombie stands inside this intact building's footprint — the wolf in the
+## fold. Occupants then run breached-interior rules (fear sight-gated and
+## uncapped, fill against interior threats, breakers flush out) while the
+## physical shell — barriers, door integrity, adoption — stays intact; and the
+## building drops out of the flee exit set (§9.3 soft default). A merely
+## COSTUMED infiltrator compromises nothing: infiltrate early, wait, reveal at
+## the moment of maximum harvest.
+##
+## Memoized per sim_tick: callers hit this per-human on scan cadences, and one
+## registry sweep per building per tick is plenty (deterministic — same tick,
+## same answer).
+var _compromised_memo_tick: int = -1
+var _compromised_memo: bool = false
+
+func is_compromised() -> bool:
+	var gm := get_tree().get_first_node_in_group("game_manager")
+	if gm == null:
+		return false
+	if int(gm.sim_tick) == _compromised_memo_tick:
+		return _compromised_memo
+	_compromised_memo_tick = int(gm.sim_tick)
+	_compromised_memo = false
+	if polygon.is_empty() or is_breached():
+		return false   # a breached building is past "compromised" — the real rules apply
+	# Bounding-circle registry query, then the exact footprint test.
+	var c := _footprint_centre()
+	var reach := 0.0
+	for p in polygon:
+		reach = maxf(reach, c.distance_to(global_transform * p))
+	for u in gm.neighbours_within(c, reach + 16.0, &"zombies"):
+		if u.is_alive and not u.is_perception_hidden() and contains_point(u.global_position):
+			_compromised_memo = true
+			break
+	return _compromised_memo
+
+
 ## True if `point` (global) is inside the drawn footprint — the release-at-the-
 ## building click test (step 3).
 func contains_point(point: Vector2) -> bool:

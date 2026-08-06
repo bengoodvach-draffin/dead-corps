@@ -44,6 +44,8 @@ bounds_max = Vector2(10000, 5000)
 [node name="LevelConfig" type="Node2D" parent="." unique_id=1080841229]
 position = Vector2(-3, 3)
 script = ExtResource("3_2h14b")
+feral_threat_weight = null
+hunt_pool_radius = null
 metadata/_custom_type_script = "uid://dlqe4p8ushalq"
 
 [node name="Initializer" type="Node" parent="." unique_id=1515215272]
@@ -1044,89 +1046,115 @@ metadata/_custom_type_script = "uid://cvde25j0ujcg"
 
 [node name="Human" parent="TestLevel/Carpark/Units" unique_id=1346925049 instance=ExtResource("7_davh7")]
 position = Vector2(-5435, 104)
+special_type = null
 
 [node name="Human2" parent="TestLevel/Carpark/Units" unique_id=1619039707 instance=ExtResource("7_davh7")]
 position = Vector2(-5443, -40)
+special_type = null
 
 [node name="Human4" parent="TestLevel/Carpark/Units" unique_id=815498009 instance=ExtResource("7_davh7")]
 position = Vector2(-5225, 469)
+special_type = null
 
 [node name="Human5" parent="TestLevel/Carpark/Units" unique_id=1627518790 instance=ExtResource("7_davh7")]
 position = Vector2(-4395, 192)
+special_type = null
 
 [node name="Human14" parent="TestLevel/Carpark/Units" unique_id=319379838 instance=ExtResource("7_davh7")]
 position = Vector2(-2930, -21)
+special_type = null
 
 [node name="Human15" parent="TestLevel/Carpark/Units" unique_id=941852200 instance=ExtResource("7_davh7")]
 position = Vector2(-2930, 36)
+special_type = null
 
 [node name="Human16" parent="TestLevel/Carpark/Units" unique_id=527312474 instance=ExtResource("7_davh7")]
 position = Vector2(-2987, -24)
+special_type = null
 
 [node name="Human6" parent="TestLevel/Carpark/Units" unique_id=1576156424 instance=ExtResource("7_davh7")]
 position = Vector2(-4315, 484)
+special_type = null
 
 [node name="Human24" parent="TestLevel/Carpark/Units" unique_id=1532003380 instance=ExtResource("7_davh7")]
 position = Vector2(-4717, 567)
+special_type = null
 
 [node name="Human19" parent="TestLevel/Carpark/Units" unique_id=437592305 instance=ExtResource("7_davh7")]
 position = Vector2(-3611, 540)
+special_type = null
 
 [node name="Human20" parent="TestLevel/Carpark/Units" unique_id=1017790461 instance=ExtResource("7_davh7")]
 position = Vector2(-3379, 713)
+special_type = null
 
 [node name="Human21" parent="TestLevel/Carpark/Units" unique_id=49671717 instance=ExtResource("7_davh7")]
 position = Vector2(-3419, 676)
+special_type = null
 
 [node name="Human22" parent="TestLevel/Carpark/Units" unique_id=905764314 instance=ExtResource("7_davh7")]
 position = Vector2(-3443, 720)
+special_type = null
 
 [node name="Human23" parent="TestLevel/Carpark/Units" unique_id=120414023 instance=ExtResource("7_davh7")]
 position = Vector2(-3611, 56)
+special_type = null
 
 [node name="Human7" parent="TestLevel/Carpark/Units" unique_id=2052990905 instance=ExtResource("7_davh7")]
 position = Vector2(-4917, 673)
+special_type = null
 
 [node name="Human12" parent="TestLevel/Carpark/Units" unique_id=3427804 instance=ExtResource("7_davh7")]
 position = Vector2(-2915, 665)
 defender_class = 2
+special_type = null
 
 [node name="Human17" parent="TestLevel/Carpark/Units" unique_id=1414543909 instance=ExtResource("7_davh7")]
 position = Vector2(-4643, -48)
 defender_class = 2
+special_type = null
 
 [node name="Human18" parent="TestLevel/Carpark/Units" unique_id=860514497 instance=ExtResource("7_davh7")]
 position = Vector2(-4571, -48)
 defender_class = 2
+special_type = null
 
 [node name="Human25" parent="TestLevel/Carpark/Units" unique_id=1354518218 instance=ExtResource("7_davh7")]
 position = Vector2(-4427, -96)
 defender_class = 3
+special_type = null
 
 [node name="Human26" parent="TestLevel/Carpark/Units" unique_id=127226378 instance=ExtResource("7_davh7")]
 position = Vector2(-4723, -96)
 defender_class = 3
+special_type = null
 
 [node name="Human13" parent="TestLevel/Carpark/Units" unique_id=1699394413 instance=ExtResource("7_davh7")]
 position = Vector2(-2915, 848)
 defender_class = 2
+special_type = null
 
 [node name="Human10" parent="TestLevel/Carpark/Units" unique_id=532706345 instance=ExtResource("7_davh7")]
 position = Vector2(-4893, 725)
+special_type = null
 
 [node name="Human11" parent="TestLevel/Carpark/Units" unique_id=799045135 instance=ExtResource("7_davh7")]
 position = Vector2(-4371, 697)
 defender_class = 1
+special_type = null
 
 [node name="Human8" parent="TestLevel/Carpark/Units" unique_id=1683586847 instance=ExtResource("7_davh7")]
 position = Vector2(-4899, 85)
+special_type = null
 
 [node name="Human9" parent="TestLevel/Carpark/Units" unique_id=2118814345 instance=ExtResource("7_davh7")]
 position = Vector2(-4933, 721)
+special_type = null
 
 [node name="Human3" parent="TestLevel/Carpark/Units" unique_id=2020236646 instance=ExtResource("7_davh7")]
 position = Vector2(-5371, 104)
 defender_class = 2
+special_type = null
 
 [node name="Zombie" parent="TestLevel/Carpark/Units" unique_id=1394228517 instance=ExtResource("6_se283")]
 position = Vector2(-5249, 827)
@@ -1340,231 +1368,299 @@ metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
 
 [node name="Units" type="Node2D" parent="TestLevel/Shopping" unique_id=1403319639]
 
-[node name="Zombie" parent="TestLevel/Shopping/Units" unique_id=2135780446 instance=ExtResource("6_se283")]
-position = Vector2(-5435, -304)
-
 [node name="Human" parent="TestLevel/Shopping/Units" unique_id=1322780828 instance=ExtResource("7_davh7")]
 position = Vector2(-4707, -704)
+special_type = null
 
 [node name="Human43" parent="TestLevel/Shopping/Units" unique_id=289267830 instance=ExtResource("7_davh7")]
 position = Vector2(-4747, -576)
+special_type = null
 
 [node name="Human44" parent="TestLevel/Shopping/Units" unique_id=1584627525 instance=ExtResource("7_davh7")]
 position = Vector2(-4907, -360)
+special_type = null
 
 [node name="Human45" parent="TestLevel/Shopping/Units" unique_id=524976510 instance=ExtResource("7_davh7")]
 position = Vector2(-4931, -888)
+special_type = null
 
 [node name="Human46" parent="TestLevel/Shopping/Units" unique_id=1471123464 instance=ExtResource("7_davh7")]
 position = Vector2(-5227, -1032)
+special_type = null
 
 [node name="Human47" parent="TestLevel/Shopping/Units" unique_id=891054161 instance=ExtResource("7_davh7")]
 position = Vector2(-5219, -1168)
+special_type = null
 
 [node name="Human48" parent="TestLevel/Shopping/Units" unique_id=1458882296 instance=ExtResource("7_davh7")]
 position = Vector2(-5219, -1304)
+special_type = null
 
 [node name="Human49" parent="TestLevel/Shopping/Units" unique_id=720191849 instance=ExtResource("7_davh7")]
 position = Vector2(-5219, -1384)
+special_type = null
 
 [node name="Human50" parent="TestLevel/Shopping/Units" unique_id=1404723873 instance=ExtResource("7_davh7")]
 position = Vector2(-4747, -1240)
+special_type = null
 
 [node name="Human51" parent="TestLevel/Shopping/Units" unique_id=1302777546 instance=ExtResource("7_davh7")]
 position = Vector2(-5179, -1248)
+special_type = null
 
 [node name="Human52" parent="TestLevel/Shopping/Units" unique_id=1764280360 instance=ExtResource("7_davh7")]
 position = Vector2(-5179, -984)
+special_type = null
 
 [node name="Human53" parent="TestLevel/Shopping/Units" unique_id=284356820 instance=ExtResource("7_davh7")]
 position = Vector2(-5227, -464)
+special_type = null
 
 [node name="Human54" parent="TestLevel/Shopping/Units" unique_id=1980175850 instance=ExtResource("7_davh7")]
 position = Vector2(-5235, -272)
+special_type = null
 
 [node name="Human55" parent="TestLevel/Shopping/Units" unique_id=1562203572 instance=ExtResource("7_davh7")]
 position = Vector2(-5219, -632)
+special_type = null
 
 [node name="Human56" parent="TestLevel/Shopping/Units" unique_id=818983569 instance=ExtResource("7_davh7")]
 position = Vector2(-5171, -696)
+special_type = null
 
 [node name="Human57" parent="TestLevel/Shopping/Units" unique_id=1868805605 instance=ExtResource("7_davh7")]
 position = Vector2(-5035, -416)
+special_type = null
 
 [node name="Human58" parent="TestLevel/Shopping/Units" unique_id=891373484 instance=ExtResource("7_davh7")]
 position = Vector2(-5195, -792)
+special_type = null
 
 [node name="Human59" parent="TestLevel/Shopping/Units" unique_id=543548035 instance=ExtResource("7_davh7")]
 position = Vector2(-5163, -392)
+special_type = null
 
 [node name="Human60" parent="TestLevel/Shopping/Units" unique_id=474308635 instance=ExtResource("7_davh7")]
 position = Vector2(-4747, -1144)
+special_type = null
 
 [node name="Human66" parent="TestLevel/Shopping/Units" unique_id=1130401744 instance=ExtResource("7_davh7")]
 position = Vector2(-4848, -1016)
 defender_class = 2
+special_type = null
 
 [node name="Human67" parent="TestLevel/Shopping/Units" unique_id=68637983 instance=ExtResource("7_davh7")]
 position = Vector2(-4904, -1056)
 defender_class = 2
+special_type = null
 
 [node name="Human68" parent="TestLevel/Shopping/Units" unique_id=972673356 instance=ExtResource("7_davh7")]
 position = Vector2(-4987, -1056)
 defender_class = 2
+special_type = null
 
 [node name="Human69" parent="TestLevel/Shopping/Units" unique_id=387914383 instance=ExtResource("7_davh7")]
 position = Vector2(-5067, -1232)
+special_type = null
 
 [node name="Human70" parent="TestLevel/Shopping/Units" unique_id=758748741 instance=ExtResource("7_davh7")]
 position = Vector2(-5083, -1272)
+special_type = null
 
 [node name="Human71" parent="TestLevel/Shopping/Units" unique_id=1880583403 instance=ExtResource("7_davh7")]
 position = Vector2(-5107, -1152)
 defender_class = 2
+special_type = null
 
 [node name="Human61" parent="TestLevel/Shopping/Units" unique_id=1882554665 instance=ExtResource("7_davh7")]
 position = Vector2(-5011, -1440)
+special_type = null
 
 [node name="Human62" parent="TestLevel/Shopping/Units" unique_id=558548555 instance=ExtResource("7_davh7")]
 position = Vector2(-4739, -1304)
+special_type = null
 
 [node name="Human63" parent="TestLevel/Shopping/Units" unique_id=2090034105 instance=ExtResource("7_davh7")]
 position = Vector2(-4779, -984)
 defender_class = 2
+special_type = null
 
 [node name="Human64" parent="TestLevel/Shopping/Units" unique_id=834436245 instance=ExtResource("7_davh7")]
 position = Vector2(-4883, -1440)
+special_type = null
 
 [node name="Human65" parent="TestLevel/Shopping/Units" unique_id=1956776888 instance=ExtResource("7_davh7")]
 position = Vector2(-4779, -808)
 defender_class = 2
+special_type = null
 
 [node name="Human2" parent="TestLevel/Shopping/Units" unique_id=1911483917 instance=ExtResource("7_davh7")]
 position = Vector2(-4379, -1152)
+special_type = null
 
 [node name="Human3" parent="TestLevel/Shopping/Units" unique_id=237316430 instance=ExtResource("7_davh7")]
 position = Vector2(-3995, -768)
+special_type = null
 
 [node name="Human4" parent="TestLevel/Shopping/Units" unique_id=702893533 instance=ExtResource("7_davh7")]
 position = Vector2(-4387, -376)
+special_type = null
 
 [node name="Human5" parent="TestLevel/Shopping/Units" unique_id=1307853166 instance=ExtResource("7_davh7")]
 position = Vector2(-4347, -400)
+special_type = null
 
 [node name="Human6" parent="TestLevel/Shopping/Units" unique_id=339479574 instance=ExtResource("7_davh7")]
 position = Vector2(-4411, -400)
+special_type = null
 
 [node name="Human7" parent="TestLevel/Shopping/Units" unique_id=199356981 instance=ExtResource("7_davh7")]
 position = Vector2(-4035, -776)
+special_type = null
 
 [node name="Human8" parent="TestLevel/Shopping/Units" unique_id=865695175 instance=ExtResource("7_davh7")]
 position = Vector2(-4195, -728)
 defender_class = 1
+special_type = null
 
 [node name="Human13" parent="TestLevel/Shopping/Units" unique_id=1881957297 instance=ExtResource("7_davh7")]
 position = Vector2(-4019, -1152)
+special_type = null
 
 [node name="Human14" parent="TestLevel/Shopping/Units" unique_id=1609800570 instance=ExtResource("7_davh7")]
 position = Vector2(-4219, -400)
+special_type = null
 
 [node name="Human15" parent="TestLevel/Shopping/Units" unique_id=2002433690 instance=ExtResource("7_davh7")]
 position = Vector2(-4227, -608)
+special_type = null
 
 [node name="Human36" parent="TestLevel/Shopping/Units" unique_id=1010496644 instance=ExtResource("7_davh7")]
 position = Vector2(-3883, -680)
+special_type = null
 
 [node name="Human37" parent="TestLevel/Shopping/Units" unique_id=1794592556 instance=ExtResource("7_davh7")]
 position = Vector2(-4555, -376)
 defender_class = 1
+special_type = null
 
 [node name="Human16" parent="TestLevel/Shopping/Units" unique_id=34583713 instance=ExtResource("7_davh7")]
 position = Vector2(-4163, -872)
+special_type = null
 
 [node name="Human17" parent="TestLevel/Shopping/Units" unique_id=1681062969 instance=ExtResource("7_davh7")]
 position = Vector2(-4219, -984)
+special_type = null
 
 [node name="Human18" parent="TestLevel/Shopping/Units" unique_id=490211045 instance=ExtResource("7_davh7")]
 position = Vector2(-4163, -1048)
+special_type = null
 
 [node name="Human19" parent="TestLevel/Shopping/Units" unique_id=2008810067 instance=ExtResource("7_davh7")]
 position = Vector2(-4123, -952)
 defender_class = 1
+special_type = null
 
 [node name="Human20" parent="TestLevel/Shopping/Units" unique_id=1146326336 instance=ExtResource("7_davh7")]
 position = Vector2(-4235, -1208)
+special_type = null
 
 [node name="Human21" parent="TestLevel/Shopping/Units" unique_id=760486120 instance=ExtResource("7_davh7")]
 position = Vector2(-4147, -1344)
+special_type = null
 
 [node name="Human22" parent="TestLevel/Shopping/Units" unique_id=1877495442 instance=ExtResource("7_davh7")]
 position = Vector2(-4235, -1368)
 defender_class = 1
+special_type = null
 
 [node name="Human23" parent="TestLevel/Shopping/Units" unique_id=1218182741 instance=ExtResource("7_davh7")]
 position = Vector2(-4147, -1464)
+special_type = null
 
 [node name="Human24" parent="TestLevel/Shopping/Units" unique_id=404776507 instance=ExtResource("7_davh7")]
 position = Vector2(-4243, -1560)
+special_type = null
 
 [node name="Human25" parent="TestLevel/Shopping/Units" unique_id=242952591 instance=ExtResource("7_davh7")]
 position = Vector2(-4299, -1504)
+special_type = null
 
 [node name="Human26" parent="TestLevel/Shopping/Units" unique_id=1040598219 instance=ExtResource("7_davh7")]
 position = Vector2(-4427, -1560)
+special_type = null
 
 [node name="Human27" parent="TestLevel/Shopping/Units" unique_id=296423703 instance=ExtResource("7_davh7")]
 position = Vector2(-4147, -632)
+special_type = null
 
 [node name="Human9" parent="TestLevel/Shopping/Units" unique_id=495848405 instance=ExtResource("7_davh7")]
 position = Vector2(-4571, -232)
+special_type = null
 
 [node name="Human10" parent="TestLevel/Shopping/Units" unique_id=1461288972 instance=ExtResource("7_davh7")]
 position = Vector2(-4243, -1440)
+special_type = null
 
 [node name="Human11" parent="TestLevel/Shopping/Units" unique_id=1960426312 instance=ExtResource("7_davh7")]
 position = Vector2(-4147, -264)
+special_type = null
 
 [node name="Human12" parent="TestLevel/Shopping/Units" unique_id=1754300172 instance=ExtResource("7_davh7")]
 position = Vector2(-4179, -1144)
+special_type = null
 
 [node name="Human28" parent="TestLevel/Shopping/Units" unique_id=1572296087 instance=ExtResource("7_davh7")]
 position = Vector2(-4203, -504)
+special_type = null
 
 [node name="Human29" parent="TestLevel/Shopping/Units" unique_id=1402135000 instance=ExtResource("7_davh7")]
 position = Vector2(-4603, -456)
+special_type = null
 
 [node name="Human30" parent="TestLevel/Shopping/Units" unique_id=1510260457 instance=ExtResource("7_davh7")]
 position = Vector2(-4179, -456)
+special_type = null
 
 [node name="Human38" parent="TestLevel/Shopping/Units" unique_id=1950278608 instance=ExtResource("7_davh7")]
 position = Vector2(-3955, -200)
+special_type = null
 
 [node name="Human39" parent="TestLevel/Shopping/Units" unique_id=424805334 instance=ExtResource("7_davh7")]
 position = Vector2(-4211, -248)
+special_type = null
 
 [node name="Human40" parent="TestLevel/Shopping/Units" unique_id=1075298366 instance=ExtResource("7_davh7")]
 position = Vector2(-4051, -248)
+special_type = null
 
 [node name="Human41" parent="TestLevel/Shopping/Units" unique_id=665513934 instance=ExtResource("7_davh7")]
 position = Vector2(-4315, -256)
+special_type = null
 
 [node name="Human42" parent="TestLevel/Shopping/Units" unique_id=1804490174 instance=ExtResource("7_davh7")]
 position = Vector2(-4427, -232)
+special_type = null
 
 [node name="Human31" parent="TestLevel/Shopping/Units" unique_id=126543896 instance=ExtResource("7_davh7")]
 position = Vector2(-4227, -880)
+special_type = null
 
 [node name="Human32" parent="TestLevel/Shopping/Units" unique_id=963285644 instance=ExtResource("7_davh7")]
 position = Vector2(-4619, -600)
+special_type = null
 
 [node name="Human33" parent="TestLevel/Shopping/Units" unique_id=238107858 instance=ExtResource("7_davh7")]
 position = Vector2(-4219, -1272)
+special_type = null
 
 [node name="Human34" parent="TestLevel/Shopping/Units" unique_id=2053482506 instance=ExtResource("7_davh7")]
 position = Vector2(-4619, -1224)
+special_type = null
 
 [node name="Human35" parent="TestLevel/Shopping/Units" unique_id=1955960107 instance=ExtResource("7_davh7")]
 position = Vector2(-4563, -1000)
+special_type = null
 
 [node name="Market covered" type="Polygon2D" parent="TestLevel/Shopping" unique_id=1429394468]
 position = Vector2(-5307, -1552)
@@ -2602,189 +2698,257 @@ metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
 
 [node name="Human" parent="TestLevel/Offices/Units" unique_id=2057462603 instance=ExtResource("7_davh7")]
 position = Vector2(-3552, -1560)
+special_type = null
 
 [node name="Human2" parent="TestLevel/Offices/Units" unique_id=1594244096 instance=ExtResource("7_davh7")]
 position = Vector2(-3552, -1624)
+special_type = null
 
 [node name="Human6" parent="TestLevel/Offices/Units" unique_id=1023888294 instance=ExtResource("7_davh7")]
 position = Vector2(-3624, -1312)
+special_type = null
 
 [node name="Human7" parent="TestLevel/Offices/Units" unique_id=1244271855 instance=ExtResource("7_davh7")]
 position = Vector2(-3624, -1376)
+special_type = null
 
 [node name="Human11" parent="TestLevel/Offices/Units" unique_id=1165224523 instance=ExtResource("7_davh7")]
 position = Vector2(-3416, -1272)
+special_type = null
 
 [node name="Human12" parent="TestLevel/Offices/Units" unique_id=834873882 instance=ExtResource("7_davh7")]
 position = Vector2(-3288, -1376)
+special_type = null
 
 [node name="Human13" parent="TestLevel/Offices/Units" unique_id=1561406557 instance=ExtResource("7_davh7")]
 position = Vector2(-3232, -1312)
+special_type = null
 
 [node name="Human14" parent="TestLevel/Offices/Units" unique_id=784872761 instance=ExtResource("7_davh7")]
 position = Vector2(-3232, -1376)
+special_type = null
 
 [node name="Human15" parent="TestLevel/Offices/Units" unique_id=1049551672 instance=ExtResource("7_davh7")]
 position = Vector2(-3160, -1312)
+special_type = null
 
 [node name="Human16" parent="TestLevel/Offices/Units" unique_id=775345748 instance=ExtResource("7_davh7")]
 position = Vector2(-3160, -1376)
+special_type = null
 
 [node name="Human17" parent="TestLevel/Offices/Units" unique_id=1219271620 instance=ExtResource("7_davh7")]
 position = Vector2(-3104, -1312)
+special_type = null
 
 [node name="Human18" parent="TestLevel/Offices/Units" unique_id=1931394253 instance=ExtResource("7_davh7")]
 position = Vector2(-3104, -1376)
+special_type = null
 
 [node name="Human20" parent="TestLevel/Offices/Units" unique_id=249521410 instance=ExtResource("7_davh7")]
 position = Vector2(-3032, -1376)
+special_type = null
 
 [node name="Human21" parent="TestLevel/Offices/Units" unique_id=1182582364 instance=ExtResource("7_davh7")]
 position = Vector2(-2976, -1312)
+special_type = null
 
 [node name="Human22" parent="TestLevel/Offices/Units" unique_id=126424891 instance=ExtResource("7_davh7")]
 position = Vector2(-2976, -1376)
+special_type = null
 
 [node name="Human23" parent="TestLevel/Offices/Units" unique_id=440500464 instance=ExtResource("7_davh7")]
 position = Vector2(-2808, -1504)
+special_type = null
 
 [node name="Human51" parent="TestLevel/Offices/Units" unique_id=2018656977 instance=ExtResource("7_davh7")]
 position = Vector2(-2832, -1568)
+special_type = null
 
 [node name="Human52" parent="TestLevel/Offices/Units" unique_id=1938005589 instance=ExtResource("7_davh7")]
 position = Vector2(-3112, -1568)
+special_type = null
 
 [node name="Human53" parent="TestLevel/Offices/Units" unique_id=889866659 instance=ExtResource("7_davh7")]
 position = Vector2(-3112, -1632)
+special_type = null
 
 [node name="Human54" parent="TestLevel/Offices/Units" unique_id=1202265657 instance=ExtResource("7_davh7")]
 position = Vector2(-2728, -1600)
+special_type = null
 
 [node name="Human55" parent="TestLevel/Offices/Units" unique_id=100929903 instance=ExtResource("7_davh7")]
 position = Vector2(-2928, -1632)
+special_type = null
 
 [node name="Human24" parent="TestLevel/Offices/Units" unique_id=1423028963 instance=ExtResource("7_davh7")]
 position = Vector2(-2904, -1376)
+special_type = null
 
 [node name="Human25" parent="TestLevel/Offices/Units" unique_id=1482150299 instance=ExtResource("7_davh7")]
 position = Vector2(-2848, -1312)
+special_type = null
 
 [node name="Human26" parent="TestLevel/Offices/Units" unique_id=874747126 instance=ExtResource("7_davh7")]
 position = Vector2(-2848, -1376)
+special_type = null
 
 [node name="Human27" parent="TestLevel/Offices/Units" unique_id=1187696606 instance=ExtResource("7_davh7")]
 position = Vector2(-2776, -1312)
+special_type = null
 
 [node name="Human28" parent="TestLevel/Offices/Units" unique_id=135262570 instance=ExtResource("7_davh7")]
 position = Vector2(-2776, -1376)
+special_type = null
 
 [node name="Human29" parent="TestLevel/Offices/Units" unique_id=1054641199 instance=ExtResource("7_davh7")]
 position = Vector2(-2720, -1312)
+special_type = null
 
 [node name="Human30" parent="TestLevel/Offices/Units" unique_id=1305481864 instance=ExtResource("7_davh7")]
 position = Vector2(-2720, -1376)
+special_type = null
 
 [node name="Human56" parent="TestLevel/Offices/Units" unique_id=1608319936 instance=ExtResource("7_davh7")]
 position = Vector2(-2480, -1304)
+special_type = null
 
 [node name="Human58" parent="TestLevel/Offices/Units" unique_id=1735942937 instance=ExtResource("7_davh7")]
 position = Vector2(-2192, -1304)
+special_type = null
+
+[node name="Human63" parent="TestLevel/Offices/Units" unique_id=772983520 instance=ExtResource("7_davh7")]
+position = Vector2(-1240, -1464)
+special_type = 1
+
+[node name="Human64" parent="TestLevel/Offices/Units" unique_id=2031148281 instance=ExtResource("7_davh7")]
+position = Vector2(168, -1384)
 
 [node name="Human59" parent="TestLevel/Offices/Units" unique_id=392476861 instance=ExtResource("7_davh7")]
 position = Vector2(-2320, -1568)
+special_type = null
 
 [node name="Human60" parent="TestLevel/Offices/Units" unique_id=1750149927 instance=ExtResource("7_davh7")]
 position = Vector2(-2352, -1568)
+special_type = null
 
 [node name="Human61" parent="TestLevel/Offices/Units" unique_id=254471700 instance=ExtResource("7_davh7")]
 position = Vector2(-2352, -1632)
+special_type = null
 
 [node name="Human62" parent="TestLevel/Offices/Units" unique_id=445787686 instance=ExtResource("7_davh7")]
 position = Vector2(-2320, -1632)
+special_type = null
 
 [node name="Human57" parent="TestLevel/Offices/Units" unique_id=839379796 instance=ExtResource("7_davh7")]
 position = Vector2(-2480, -1240)
+special_type = null
 
 [node name="Human31" parent="TestLevel/Offices/Units" unique_id=1342909902 instance=ExtResource("7_davh7")]
 position = Vector2(-3288, -1184)
+special_type = null
 
 [node name="Human32" parent="TestLevel/Offices/Units" unique_id=825567444 instance=ExtResource("7_davh7")]
 position = Vector2(-3416, -1224)
+special_type = null
 
 [node name="Human33" parent="TestLevel/Offices/Units" unique_id=1847626380 instance=ExtResource("7_davh7")]
 position = Vector2(-3232, -1184)
+special_type = null
 
 [node name="Human34" parent="TestLevel/Offices/Units" unique_id=99788217 instance=ExtResource("7_davh7")]
 position = Vector2(-3232, -1248)
+special_type = null
 
 [node name="Human35" parent="TestLevel/Offices/Units" unique_id=21377208 instance=ExtResource("7_davh7")]
 position = Vector2(-3160, -1184)
+special_type = null
 
 [node name="Human36" parent="TestLevel/Offices/Units" unique_id=1906065116 instance=ExtResource("7_davh7")]
 position = Vector2(-3160, -1248)
+special_type = null
 
 [node name="Human37" parent="TestLevel/Offices/Units" unique_id=411600672 instance=ExtResource("7_davh7")]
 position = Vector2(-3104, -1184)
+special_type = null
 
 [node name="Human38" parent="TestLevel/Offices/Units" unique_id=1665891702 instance=ExtResource("7_davh7")]
 position = Vector2(-3104, -1248)
+special_type = null
 
 [node name="Human39" parent="TestLevel/Offices/Units" unique_id=993267969 instance=ExtResource("7_davh7")]
 position = Vector2(-3000, -1144)
+special_type = null
 
 [node name="Human40" parent="TestLevel/Offices/Units" unique_id=2094624509 instance=ExtResource("7_davh7")]
 position = Vector2(-3032, -1248)
+special_type = null
 
 [node name="Human41" parent="TestLevel/Offices/Units" unique_id=237084258 instance=ExtResource("7_davh7")]
 position = Vector2(-2976, -1184)
+special_type = null
 
 [node name="Human42" parent="TestLevel/Offices/Units" unique_id=1148225554 instance=ExtResource("7_davh7")]
 position = Vector2(-2976, -1248)
+special_type = null
 
 [node name="Human43" parent="TestLevel/Offices/Units" unique_id=715847594 instance=ExtResource("7_davh7")]
 position = Vector2(-2904, -1184)
+special_type = null
 
 [node name="Human44" parent="TestLevel/Offices/Units" unique_id=239170523 instance=ExtResource("7_davh7")]
 position = Vector2(-2904, -1248)
+special_type = null
 
 [node name="Human45" parent="TestLevel/Offices/Units" unique_id=771406969 instance=ExtResource("7_davh7")]
 position = Vector2(-2848, -1184)
+special_type = null
 
 [node name="Human46" parent="TestLevel/Offices/Units" unique_id=1650971601 instance=ExtResource("7_davh7")]
 position = Vector2(-2848, -1248)
+special_type = null
 
 [node name="Human47" parent="TestLevel/Offices/Units" unique_id=1872063133 instance=ExtResource("7_davh7")]
 position = Vector2(-2776, -1184)
+special_type = null
 
 [node name="Human48" parent="TestLevel/Offices/Units" unique_id=1594628075 instance=ExtResource("7_davh7")]
 position = Vector2(-2776, -1248)
+special_type = null
 
 [node name="Human49" parent="TestLevel/Offices/Units" unique_id=96595084 instance=ExtResource("7_davh7")]
 position = Vector2(-2720, -1184)
+special_type = null
 
 [node name="Human50" parent="TestLevel/Offices/Units" unique_id=2132089536 instance=ExtResource("7_davh7")]
 position = Vector2(-2720, -1248)
+special_type = null
 
 [node name="Human8" parent="TestLevel/Offices/Units" unique_id=1310174381 instance=ExtResource("7_davh7")]
 position = Vector2(-3656, -1120)
+special_type = null
 
 [node name="Human10" parent="TestLevel/Offices/Units" unique_id=160877776 instance=ExtResource("7_davh7")]
 position = Vector2(-3344, -1624)
+special_type = null
 
 [node name="Human9" parent="TestLevel/Offices/Units" unique_id=494718733 instance=ExtResource("7_davh7")]
 position = Vector2(-3656, -1184)
+special_type = null
 
 [node name="Human3" parent="TestLevel/Offices/Units" unique_id=610542213 instance=ExtResource("7_davh7")]
 position = Vector2(-3728, -1440)
 defender_class = 2
+special_type = null
 
 [node name="Human4" parent="TestLevel/Offices/Units" unique_id=169542866 instance=ExtResource("7_davh7")]
 position = Vector2(-3728, -1632)
 defender_class = 2
+special_type = null
 
 [node name="Human5" parent="TestLevel/Offices/Units" unique_id=420070295 instance=ExtResource("7_davh7")]
 position = Vector2(-3536, -1504)
 defender_class = 2
+special_type = null
 
 [node name="Container Yard" type="Node2D" parent="TestLevel" unique_id=598393402]
 
@@ -2805,10 +2969,63 @@ script = ExtResource("9_irb5a")
 metadata/_custom_type_script = "uid://cvde25j0ujcg"
 
 [node name="Fence" type="Node2D" parent="TestLevel/Container Yard/Walls and Doors" unique_id=1648204989]
-position = Vector2(-2240, -992)
+position = Vector2(-1880, -992)
 rotation = 1.5707964
 script = ExtResource("17_0yd0l")
 fence_length = 170.0
+metadata/_custom_type_script = "uid://r5lsjim5frr5"
+
+[node name="Mine" type="Node2D" parent="TestLevel/Container Yard/Walls and Doors" unique_id=1158402315]
+position = Vector2(-1921, -1048)
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine2" type="Node2D" parent="TestLevel/Container Yard/Walls and Doors" unique_id=1346690614]
+position = Vector2(-1922, -1010)
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine3" type="Node2D" parent="TestLevel/Container Yard/Walls and Doors" unique_id=2044756449]
+position = Vector2(-1921, -970)
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine4" type="Node2D" parent="TestLevel/Container Yard/Walls and Doors" unique_id=2018737972]
+position = Vector2(-1920, -934)
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine5" type="Node2D" parent="TestLevel/Container Yard/Walls and Doors" unique_id=1114306757]
+position = Vector2(-1952, -956)
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine6" type="Node2D" parent="TestLevel/Container Yard/Walls and Doors" unique_id=1064982290]
+position = Vector2(-1952, -991)
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine7" type="Node2D" parent="TestLevel/Container Yard/Walls and Doors" unique_id=1801771912]
+position = Vector2(-1952, -1026)
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine8" type="Node2D" parent="TestLevel/Container Yard/Walls and Doors" unique_id=915957479]
+position = Vector2(-1952, -1060)
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine9" type="Node2D" parent="TestLevel/Container Yard/Walls and Doors" unique_id=323934706]
+position = Vector2(-1952, -923)
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Fence2" type="Node2D" parent="TestLevel/Container Yard/Walls and Doors" unique_id=1279259892]
+position = Vector2(124, 512)
+rotation = 1.5707964
+script = ExtResource("17_0yd0l")
+fence_length = 130.0
+threshold_override = 10
 metadata/_custom_type_script = "uid://r5lsjim5frr5"
 
 [node name="Container aisles" type="Node2D" parent="TestLevel/Container Yard" unique_id=1369032311]
@@ -2953,7 +3170,7 @@ metadata/_custom_type_script = "uid://cvde25j0ujcg"
 position = Vector2(-2447, 832)
 rotation = 1.5707964
 color = Color(0.4, 0.4, 0.4, 1)
-polygon = PackedVector2Array(-112, -144, 16, -144, 16.00003, -78.96689, 512, -79, 512, 49, 16, 48, 16, 112, -112, 112)
+polygon = PackedVector2Array(-112, -144, 16, -144, 16.00003, -78.96689, 512, -79, 512, 49, 16, 49, 16, 113, -112, 112)
 script = ExtResource("9_irb5a")
 metadata/_custom_type_script = "uid://cvde25j0ujcg"
 
@@ -3800,8 +4017,144 @@ metadata/_custom_type_script = "uid://cvde25j0ujcg"
 [node name="Units" type="Node2D" parent="TestLevel/Container Yard" unique_id=1204367210]
 
 [node name="Human2" parent="TestLevel/Container Yard/Units" unique_id=2034464871 instance=ExtResource("7_davh7")]
-position = Vector2(-1984, -992)
-defender_class = 1
+position = Vector2(-2920, -280)
+defender_class = 2
+special_type = null
+
+[node name="Human6" parent="TestLevel/Container Yard/Units" unique_id=1111376525 instance=ExtResource("7_davh7")]
+position = Vector2(-1664, -1048)
+defender_class = 3
+
+[node name="Human7" parent="TestLevel/Container Yard/Units" unique_id=511234108 instance=ExtResource("7_davh7")]
+position = Vector2(-1664, -944)
+defender_class = 3
+
+[node name="Human8" parent="TestLevel/Container Yard/Units" unique_id=502397931 instance=ExtResource("7_davh7")]
+position = Vector2(-1696, -992)
+defender_class = 3
+
+[node name="Human3" parent="TestLevel/Container Yard/Units" unique_id=1378175771 instance=ExtResource("7_davh7")]
+position = Vector2(-2920, -104)
+defender_class = 2
+
+[node name="Human9" parent="TestLevel/Container Yard/Units" unique_id=1845913831 instance=ExtResource("7_davh7")]
+position = Vector2(-1472, -240)
+
+[node name="Human10" parent="TestLevel/Container Yard/Units" unique_id=1182346786 instance=ExtResource("7_davh7")]
+position = Vector2(-1488, -184)
+defender_class = 2
+
+[node name="Human11" parent="TestLevel/Container Yard/Units" unique_id=901307950 instance=ExtResource("7_davh7")]
+position = Vector2(-1440, -176)
+
+[node name="Human12" parent="TestLevel/Container Yard/Units" unique_id=774237927 instance=ExtResource("7_davh7")]
+position = Vector2(-1384, -240)
+
+[node name="Human13" parent="TestLevel/Container Yard/Units" unique_id=1181374046 instance=ExtResource("7_davh7")]
+position = Vector2(-1376, -184)
+
+[node name="Human14" parent="TestLevel/Container Yard/Units" unique_id=21757811 instance=ExtResource("7_davh7")]
+position = Vector2(-1312, -256)
+
+[node name="Human15" parent="TestLevel/Container Yard/Units" unique_id=442320567 instance=ExtResource("7_davh7")]
+position = Vector2(-1320, -168)
+
+[node name="Human16" parent="TestLevel/Container Yard/Units" unique_id=1032806348 instance=ExtResource("7_davh7")]
+position = Vector2(-1248, -208)
+
+[node name="Human17" parent="TestLevel/Container Yard/Units" unique_id=2066430848 instance=ExtResource("7_davh7")]
+position = Vector2(-1256, -160)
+
+[node name="Human41" parent="TestLevel/Container Yard/Units" unique_id=2098173098 instance=ExtResource("7_davh7")]
+position = Vector2(-8, -1024)
+
+[node name="Human42" parent="TestLevel/Container Yard/Units" unique_id=1166738238 instance=ExtResource("7_davh7")]
+position = Vector2(48, -752)
+
+[node name="Human43" parent="TestLevel/Container Yard/Units" unique_id=1228230917 instance=ExtResource("7_davh7")]
+position = Vector2(8, -952)
+
+[node name="Human44" parent="TestLevel/Container Yard/Units" unique_id=1738790342 instance=ExtResource("7_davh7")]
+position = Vector2(-16, -552)
+
+[node name="Human18" parent="TestLevel/Container Yard/Units" unique_id=1388000324 instance=ExtResource("7_davh7")]
+position = Vector2(-1304, -128)
+
+[node name="Human19" parent="TestLevel/Container Yard/Units" unique_id=276065541 instance=ExtResource("7_davh7")]
+position = Vector2(-1360, -104)
+
+[node name="Human20" parent="TestLevel/Container Yard/Units" unique_id=138243309 instance=ExtResource("7_davh7")]
+position = Vector2(-1408, -88)
+
+[node name="Human21" parent="TestLevel/Container Yard/Units" unique_id=1553160689 instance=ExtResource("7_davh7")]
+position = Vector2(-1464, -80)
+
+[node name="Human22" parent="TestLevel/Container Yard/Units" unique_id=850546284 instance=ExtResource("7_davh7")]
+position = Vector2(-1480, -128)
+
+[node name="Human31" parent="TestLevel/Container Yard/Units" unique_id=984500775 instance=ExtResource("7_davh7")]
+position = Vector2(-40, 440)
+
+[node name="Human32" parent="TestLevel/Container Yard/Units" unique_id=21442498 instance=ExtResource("7_davh7")]
+position = Vector2(-96, 456)
+
+[node name="Human33" parent="TestLevel/Container Yard/Units" unique_id=290984858 instance=ExtResource("7_davh7")]
+position = Vector2(16, 528)
+
+[node name="Human34" parent="TestLevel/Container Yard/Units" unique_id=1484583925 instance=ExtResource("7_davh7")]
+position = Vector2(16, 456)
+
+[node name="Human35" parent="TestLevel/Container Yard/Units" unique_id=1590422434 instance=ExtResource("7_davh7")]
+position = Vector2(96, 632)
+
+[node name="Human36" parent="TestLevel/Container Yard/Units" unique_id=682406340 instance=ExtResource("7_davh7")]
+position = Vector2(48, 584)
+
+[node name="Human37" parent="TestLevel/Container Yard/Units" unique_id=1734816203 instance=ExtResource("7_davh7")]
+position = Vector2(-32, 544)
+
+[node name="Human38" parent="TestLevel/Container Yard/Units" unique_id=2077450440 instance=ExtResource("7_davh7")]
+position = Vector2(-48, 496)
+
+[node name="Human39" parent="TestLevel/Container Yard/Units" unique_id=1956642270 instance=ExtResource("7_davh7")]
+position = Vector2(-184, 592)
+defender_class = 2
+
+[node name="Human40" parent="TestLevel/Container Yard/Units" unique_id=1965338859 instance=ExtResource("7_davh7")]
+position = Vector2(-16, 728)
+defender_class = 2
+
+[node name="Human23" parent="TestLevel/Container Yard/Units" unique_id=123772486 instance=ExtResource("7_davh7")]
+position = Vector2(-2144, 784)
+
+[node name="Human24" parent="TestLevel/Container Yard/Units" unique_id=66320129 instance=ExtResource("7_davh7")]
+position = Vector2(-2144, 824)
+
+[node name="Human25" parent="TestLevel/Container Yard/Units" unique_id=1002129989 instance=ExtResource("7_davh7")]
+position = Vector2(-2200, 832)
+
+[node name="Human26" parent="TestLevel/Container Yard/Units" unique_id=968645706 instance=ExtResource("7_davh7")]
+position = Vector2(-2216, 784)
+
+[node name="Human27" parent="TestLevel/Container Yard/Units" unique_id=285982448 instance=ExtResource("7_davh7")]
+position = Vector2(-600, 856)
+
+[node name="Human28" parent="TestLevel/Container Yard/Units" unique_id=546551967 instance=ExtResource("7_davh7")]
+position = Vector2(-848, 632)
+
+[node name="Human29" parent="TestLevel/Container Yard/Units" unique_id=529050240 instance=ExtResource("7_davh7")]
+position = Vector2(-544, 856)
+
+[node name="Human30" parent="TestLevel/Container Yard/Units" unique_id=279098557 instance=ExtResource("7_davh7")]
+position = Vector2(-792, 584)
+
+[node name="Human4" parent="TestLevel/Container Yard/Units" unique_id=1520712643 instance=ExtResource("7_davh7")]
+position = Vector2(-2920, -160)
+defender_class = 2
+
+[node name="Human5" parent="TestLevel/Container Yard/Units" unique_id=250382434 instance=ExtResource("7_davh7")]
+position = Vector2(-2920, -224)
+defender_class = 2
 
 [node name="Trainyard" type="Node2D" parent="TestLevel" unique_id=1023944432]
 
@@ -3827,18 +4180,165 @@ metadata/_custom_type_script = "uid://cvde25j0ujcg"
 [node name="Walls and Doors" type="Node2D" parent="TestLevel/Dry Dock" unique_id=1687520257]
 
 [node name="Wall14" type="Polygon2D" parent="TestLevel/Dry Dock/Walls and Doors" unique_id=2144085018]
-position = Vector2(2085, 376)
+position = Vector2(2085, 944)
 color = Color(0.4, 0.4, 0.4, 1)
-polygon = PackedVector2Array(-112, -1456, -104, -1456, -104, 8, -112, 8)
+polygon = PackedVector2Array(-109, -1456, -101, -1456, -101, -56, -109, -56)
 script = ExtResource("9_irb5a")
 metadata/_custom_type_script = "uid://cvde25j0ujcg"
 
 [node name="Wall15" type="Polygon2D" parent="TestLevel/Dry Dock/Walls and Doors" unique_id=1541812919]
-position = Vector2(2085, 768)
+position = Vector2(2088, -824)
 color = Color(0.4, 0.4, 0.4, 1)
-polygon = PackedVector2Array(-112, -256, -104, -256, -104, 128, -112, 128)
+polygon = PackedVector2Array(-112, -40, -104, -40, -104, 128, -112, 128)
 script = ExtResource("9_irb5a")
 metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Fence" type="Node2D" parent="TestLevel/Dry Dock/Walls and Doors" unique_id=1800466720]
+position = Vector2(1980, -604)
+rotation = 1.5707964
+script = ExtResource("17_0yd0l")
+fence_length = 190.0
+metadata/_custom_type_script = "uid://r5lsjim5frr5"
+
+[node name="Mine15" type="Node2D" parent="TestLevel/Dry Dock/Walls and Doors" unique_id=1484889484]
+position = Vector2(1952, -632)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine16" type="Node2D" parent="TestLevel/Dry Dock/Walls and Doors" unique_id=1133938003]
+position = Vector2(1952, -600)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine17" type="Node2D" parent="TestLevel/Dry Dock/Walls and Doors" unique_id=100089514]
+position = Vector2(1952, -568)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine18" type="Node2D" parent="TestLevel/Dry Dock/Walls and Doors" unique_id=1883133659]
+position = Vector2(1952, -536)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine19" type="Node2D" parent="TestLevel/Dry Dock/Walls and Doors" unique_id=1636749464]
+position = Vector2(1952, -504)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine20" type="Node2D" parent="TestLevel/Dry Dock/Walls and Doors" unique_id=753458939]
+position = Vector2(1952, -472)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine21" type="Node2D" parent="TestLevel/Dry Dock/Walls and Doors" unique_id=2121650837]
+position = Vector2(1919, -632)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine22" type="Node2D" parent="TestLevel/Dry Dock/Walls and Doors" unique_id=1929117603]
+position = Vector2(1919, -600)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine29" type="Node2D" parent="TestLevel/Dry Dock/Walls and Doors" unique_id=398811256]
+position = Vector2(1952, -696)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine30" type="Node2D" parent="TestLevel/Dry Dock/Walls and Doors" unique_id=2022934146]
+position = Vector2(1952, -664)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine31" type="Node2D" parent="TestLevel/Dry Dock/Walls and Doors" unique_id=1993156616]
+position = Vector2(1919, -696)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine32" type="Node2D" parent="TestLevel/Dry Dock/Walls and Doors" unique_id=99174025]
+position = Vector2(1919, -664)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine33" type="Node2D" parent="TestLevel/Dry Dock/Walls and Doors" unique_id=350968368]
+position = Vector2(1952, -760)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine34" type="Node2D" parent="TestLevel/Dry Dock/Walls and Doors" unique_id=130777900]
+position = Vector2(1952, -728)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine35" type="Node2D" parent="TestLevel/Dry Dock/Walls and Doors" unique_id=1182753595]
+position = Vector2(1919, -760)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine36" type="Node2D" parent="TestLevel/Dry Dock/Walls and Doors" unique_id=244827621]
+position = Vector2(1919, -728)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine23" type="Node2D" parent="TestLevel/Dry Dock/Walls and Doors" unique_id=980992416]
+position = Vector2(1919, -568)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine24" type="Node2D" parent="TestLevel/Dry Dock/Walls and Doors" unique_id=446483419]
+position = Vector2(1919, -536)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine25" type="Node2D" parent="TestLevel/Dry Dock/Walls and Doors" unique_id=1609192866]
+position = Vector2(1919, -504)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine26" type="Node2D" parent="TestLevel/Dry Dock/Walls and Doors" unique_id=1270753167]
+position = Vector2(1919, -472)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine27" type="Node2D" parent="TestLevel/Dry Dock/Walls and Doors" unique_id=817824681]
+position = Vector2(1952, -440)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine28" type="Node2D" parent="TestLevel/Dry Dock/Walls and Doors" unique_id=998563580]
+position = Vector2(1919, -440)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="HazardZone" type="Polygon2D" parent="TestLevel/Dry Dock/Walls and Doors" unique_id=3687474]
+position = Vector2(1527.9999, -736)
+rotation = -0.5491904
+color = Color(0.5525, 0.403, 0.097500004, 0.3)
+polygon = PackedVector2Array(-59.2583, -439.573, -11.493286, -410.3412, -2.0456543, 233.22913, -56.634277, 199.82135)
+script = ExtResource("19_davh7")
+metadata/_custom_type_script = "uid://b6udbq2hfomac"
 
 [node name="Boats" type="Node2D" parent="TestLevel/Dry Dock" unique_id=310532177]
 
@@ -3859,7 +4359,7 @@ script = ExtResource("9_irb5a")
 metadata/_custom_type_script = "uid://cvde25j0ujcg"
 
 [node name="Wall11" type="Polygon2D" parent="TestLevel/Dry Dock/Boats" unique_id=265276039]
-position = Vector2(1664.0001, -903.99994)
+position = Vector2(1696, 287.99994)
 rotation = 4.716058
 color = Color(0.4, 0.4, 0.4, 1)
 polygon = PackedVector2Array(-97, -103, -65, -231, -1, -295, 63, -231, 100, -100, 100, 100, 71, 153, -1, 233, -73, 153, -100, 100)
@@ -3867,8 +4367,9 @@ script = ExtResource("9_irb5a")
 metadata/_custom_type_script = "uid://cvde25j0ujcg"
 
 [node name="Wall12" type="Polygon2D" parent="TestLevel/Dry Dock/Boats" unique_id=3320196]
-position = Vector2(1672, -664)
-rotation = 4.716058
+position = Vector2(1704, 648)
+rotation = -1.5671276
+scale = Vector2(1.0000217, 1.005285)
 color = Color(0.4, 0.4, 0.4, 1)
 polygon = PackedVector2Array(-97, -103, -65, -231, -1, -295, 63, -231, 100, -100, 100, 100, 71, 153, -1, 233, -73, 153, -100, 100)
 script = ExtResource("9_irb5a")
@@ -3891,7 +4392,7 @@ script = ExtResource("9_irb5a")
 metadata/_custom_type_script = "uid://cvde25j0ujcg"
 
 [node name="Wall2" type="Polygon2D" parent="TestLevel/Dry Dock/Boats" unique_id=118111363]
-position = Vector2(496, 440.00006)
+position = Vector2(637.00006, 448.00003)
 rotation = 0.55956316
 scale = Vector2(2, 2)
 color = Color(0.4, 0.4, 0.4, 1)
@@ -3908,15 +4409,8 @@ script = ExtResource("9_irb5a")
 metadata/_custom_type_script = "uid://cvde25j0ujcg"
 
 [node name="Wall8" type="Polygon2D" parent="TestLevel/Dry Dock/Boats" unique_id=1145054996]
-position = Vector2(1248, 592)
-scale = Vector2(0.8, 0.8)
-color = Color(0.4, 0.4, 0.4, 1)
-polygon = PackedVector2Array(-97, -103, -65, -231, -1, -295, 63, -231, 100, -100, 100, 100, 71, 153, -1, 233, -73, 153, -100, 100)
-script = ExtResource("9_irb5a")
-metadata/_custom_type_script = "uid://cvde25j0ujcg"
-
-[node name="Wall9" type="Polygon2D" parent="TestLevel/Dry Dock/Boats" unique_id=2018814481]
-position = Vector2(1512, 592)
+position = Vector2(1311.9999, 504)
+rotation = 0.3628551
 scale = Vector2(0.8, 0.8)
 color = Color(0.4, 0.4, 0.4, 1)
 polygon = PackedVector2Array(-97, -103, -65, -231, -1, -295, 63, -231, 100, -100, 100, 100, 71, 153, -1, 233, -73, 153, -100, 100)
@@ -3935,14 +4429,6 @@ metadata/_custom_type_script = "uid://cvde25j0ujcg"
 [node name="Wall15" type="Polygon2D" parent="TestLevel/Dry Dock/Boats" unique_id=1134467191]
 position = Vector2(1687.9998, 8.000015)
 rotation = -1.5617441
-scale = Vector2(0.8, 0.8)
-color = Color(0.4, 0.4, 0.4, 1)
-polygon = PackedVector2Array(-97, -103, -65, -231, -1, -295, 63, -231, 100, -100, 100, 100, 71, 153, -1, 233, -73, 153, -100, 100)
-script = ExtResource("9_irb5a")
-metadata/_custom_type_script = "uid://cvde25j0ujcg"
-
-[node name="Wall10" type="Polygon2D" parent="TestLevel/Dry Dock/Boats" unique_id=2133961676]
-position = Vector2(1784, 592)
 scale = Vector2(0.8, 0.8)
 color = Color(0.4, 0.4, 0.4, 1)
 polygon = PackedVector2Array(-97, -103, -65, -231, -1, -295, 63, -231, 100, -100, 100, 100, 71, 153, -1, 233, -73, 153, -100, 100)
@@ -4012,19 +4498,263 @@ polygon = PackedVector2Array(-97, -103, -65, -231, -1, -295, 63, -231, 100, -100
 script = ExtResource("9_irb5a")
 metadata/_custom_type_script = "uid://cvde25j0ujcg"
 
+[node name="ShelterBuilding" type="Polygon2D" parent="TestLevel/Dry Dock" unique_id=1535062016]
+position = Vector2(1830, -984)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(-162, -100, 150, -100, 150, 140, -162, 140)
+script = ExtResource("11_ss5kf")
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="Door" type="Node2D" parent="TestLevel/Dry Dock/ShelterBuilding" unique_id=2065793874]
+position = Vector2(-162, -20.254028)
+rotation = -1.5707964
+script = ExtResource("12_2h14b")
+door_width = 64.0
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Door2" type="Node2D" parent="TestLevel/Dry Dock/ShelterBuilding" unique_id=120266131]
+position = Vector2(150, -8.000015)
+rotation = 1.5707964
+script = ExtResource("12_2h14b")
+door_width = 64.0
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Units" type="Node2D" parent="TestLevel/Dry Dock" unique_id=84958022]
+
+[node name="Human45" parent="TestLevel/Dry Dock/Units" unique_id=1893634881 instance=ExtResource("7_davh7")]
+position = Vector2(992, 256)
+
+[node name="Human51" parent="TestLevel/Dry Dock/Units" unique_id=1618276590 instance=ExtResource("7_davh7")]
+position = Vector2(1616, -992)
+defender_class = 3
+
+[node name="Human52" parent="TestLevel/Dry Dock/Units" unique_id=1193757183 instance=ExtResource("7_davh7")]
+position = Vector2(1816, -872)
+defender_class = 3
+
+[node name="Human53" parent="TestLevel/Dry Dock/Units" unique_id=576387928 instance=ExtResource("7_davh7")]
+position = Vector2(1888, -936)
+defender_class = 3
+
+[node name="Human54" parent="TestLevel/Dry Dock/Units" unique_id=1575341757 instance=ExtResource("7_davh7")]
+position = Vector2(1864, -1056)
+defender_class = 3
+
+[node name="Human56" parent="TestLevel/Dry Dock/Units" unique_id=310045687 instance=ExtResource("7_davh7")]
+position = Vector2(1752, -872)
+defender_class = 3
+
+[node name="Human57" parent="TestLevel/Dry Dock/Units" unique_id=1972760916 instance=ExtResource("7_davh7")]
+position = Vector2(1696, -896)
+defender_class = 3
+
+[node name="Human58" parent="TestLevel/Dry Dock/Units" unique_id=448339880 instance=ExtResource("7_davh7")]
+position = Vector2(1696, -1056)
+defender_class = 3
+
+[node name="Human55" parent="TestLevel/Dry Dock/Units" unique_id=1052662075 instance=ExtResource("7_davh7")]
+position = Vector2(1904, -872)
+defender_class = 3
+
+[node name="Human46" parent="TestLevel/Dry Dock/Units" unique_id=1617535243 instance=ExtResource("7_davh7")]
+position = Vector2(1048, 272)
+special_type = 1
+
+[node name="Human47" parent="TestLevel/Dry Dock/Units" unique_id=1663305926 instance=ExtResource("7_davh7")]
+position = Vector2(984, 312)
+
+[node name="Human49" parent="TestLevel/Dry Dock/Units" unique_id=347563710 instance=ExtResource("7_davh7")]
+position = Vector2(1096, 272)
+
+[node name="Human50" parent="TestLevel/Dry Dock/Units" unique_id=1815641363 instance=ExtResource("7_davh7")]
+position = Vector2(1088, 344)
+
+[node name="Human48" parent="TestLevel/Dry Dock/Units" unique_id=1463884936 instance=ExtResource("7_davh7")]
+position = Vector2(1032, 328)
+special_type = 1
+
 [node name="Military" type="Node2D" parent="TestLevel" unique_id=459375954]
 
 [node name="Walls and Doors" type="Node2D" parent="TestLevel/Military" unique_id=1530050933]
 
-[node name="Label7" type="Label" parent="TestLevel/Military" unique_id=1529964748]
-offset_left = 2228.9998
-offset_top = -808.00006
-offset_right = 2366.9998
-offset_bottom = -759.00006
-scale = Vector2(10.069238, 10.144005)
-text = "Military
-"
-uppercase = true
+[node name="Mine" type="Node2D" parent="TestLevel/Military/Walls and Doors" unique_id=946438292]
+position = Vector2(2512, -296)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine2" type="Node2D" parent="TestLevel/Military/Walls and Doors" unique_id=1170103504]
+position = Vector2(2512, -264)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine3" type="Node2D" parent="TestLevel/Military/Walls and Doors" unique_id=802393573]
+position = Vector2(2512, -232)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine4" type="Node2D" parent="TestLevel/Military/Walls and Doors" unique_id=8811148]
+position = Vector2(2512, -200)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine5" type="Node2D" parent="TestLevel/Military/Walls and Doors" unique_id=243002648]
+position = Vector2(2512, -168)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine6" type="Node2D" parent="TestLevel/Military/Walls and Doors" unique_id=1850611043]
+position = Vector2(2512, -136)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine7" type="Node2D" parent="TestLevel/Military/Walls and Doors" unique_id=1059464891]
+position = Vector2(2480, -296)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine8" type="Node2D" parent="TestLevel/Military/Walls and Doors" unique_id=1393916689]
+position = Vector2(2480, -264)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine9" type="Node2D" parent="TestLevel/Military/Walls and Doors" unique_id=629135324]
+position = Vector2(2480, -232)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine10" type="Node2D" parent="TestLevel/Military/Walls and Doors" unique_id=526361118]
+position = Vector2(2480, -200)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine11" type="Node2D" parent="TestLevel/Military/Walls and Doors" unique_id=1602026607]
+position = Vector2(2480, -168)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine12" type="Node2D" parent="TestLevel/Military/Walls and Doors" unique_id=1451898499]
+position = Vector2(2480, -136)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine13" type="Node2D" parent="TestLevel/Military/Walls and Doors" unique_id=2134775163]
+position = Vector2(2512, -104)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Mine14" type="Node2D" parent="TestLevel/Military/Walls and Doors" unique_id=413951516]
+position = Vector2(2480, -104)
+rotation = 1.5707964
+script = ExtResource("18_se283")
+metadata/_custom_type_script = "uid://ea8xfvkieft5"
+
+[node name="Wall" type="Polygon2D" parent="TestLevel/Military/Walls and Doors" unique_id=563579340]
+position = Vector2(2084, -672)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-100, -96, -36, -96, -36, -88, -100, -88)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Wall2" type="Polygon2D" parent="TestLevel/Military/Walls and Doors" unique_id=1071273085]
+position = Vector2(2212, -672)
+color = Color(0.4, 0.4, 0.4, 1)
+polygon = PackedVector2Array(-100, -96, -36, -96, -36, -88, -100, -88)
+script = ExtResource("9_irb5a")
+metadata/_custom_type_script = "uid://cvde25j0ujcg"
+
+[node name="Door" type="Node2D" parent="TestLevel/Military/Walls and Doors" unique_id=1600432142]
+position = Vector2(2079.3862, -763.6346)
+script = ExtResource("12_2h14b")
+door_width = 66.0
+integrity_override = 50.0
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Units" type="Node2D" parent="TestLevel/Military" unique_id=535006170]
+
+[node name="Human" parent="TestLevel/Military/Units" unique_id=1356187823 instance=ExtResource("7_davh7")]
+position = Vector2(2048, -688)
+defender_class = 3
+
+[node name="Human2" parent="TestLevel/Military/Units" unique_id=1014826627 instance=ExtResource("7_davh7")]
+position = Vector2(2048, -632)
+defender_class = 3
+
+[node name="Human3" parent="TestLevel/Military/Units" unique_id=1743459798 instance=ExtResource("7_davh7")]
+position = Vector2(2048, -576)
+defender_class = 3
+
+[node name="Human4" parent="TestLevel/Military/Units" unique_id=516025420 instance=ExtResource("7_davh7")]
+position = Vector2(2048, -520)
+defender_class = 3
+
+[node name="Human5" parent="TestLevel/Military/Units" unique_id=1848724233 instance=ExtResource("7_davh7")]
+position = Vector2(2008, -728)
+defender_class = 3
+
+[node name="Human6" parent="TestLevel/Military/Units" unique_id=476748654 instance=ExtResource("7_davh7")]
+position = Vector2(2086, -549)
+defender_class = 3
+
+[node name="Human9" parent="TestLevel/Military/Units" unique_id=1472187260 instance=ExtResource("7_davh7")]
+position = Vector2(2087, -603)
+defender_class = 3
+
+[node name="Human7" parent="TestLevel/Military/Units" unique_id=647219281 instance=ExtResource("7_davh7")]
+position = Vector2(2088, -656)
+defender_class = 3
+
+[node name="Human8" parent="TestLevel/Military/Units" unique_id=1454293577 instance=ExtResource("7_davh7")]
+position = Vector2(2000, -480)
+defender_class = 3
+
+[node name="ShelterBuilding" type="Polygon2D" parent="TestLevel/Military" unique_id=982893186]
+position = Vector2(2334, -988)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(-154, -96, 150, -96, 150, 224, -154, 224)
+script = ExtResource("11_ss5kf")
+wall_thickness = 8.0
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="Door" type="Node2D" parent="TestLevel/Military/ShelterBuilding" unique_id=127522160]
+position = Vector2(-154, -4)
+rotation = -1.5707964
+script = ExtResource("12_2h14b")
+door_width = 64.0
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Door2" type="Node2D" parent="TestLevel/Military/ShelterBuilding" unique_id=1117913166]
+position = Vector2(-62, 224)
+rotation = 3.1415927
+script = ExtResource("12_2h14b")
+door_width = 64.0
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Door3" type="Node2D" parent="TestLevel/Military/ShelterBuilding" unique_id=524287317]
+position = Vector2(150, 124)
+rotation = 1.5707964
+script = ExtResource("12_2h14b")
+door_width = 64.0
+thickness = 8.0
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
 
 [node name="SelectionManager" type="Node2D" parent="." unique_id=423906801 groups=["selection_manager"]]
 script = ExtResource("11_w841o")
@@ -4042,149 +4772,70 @@ visible = false
 [node name="EndGameOverlay" parent="." unique_id=2000451810 instance=ExtResource("14_lcafa")]
 visible = false
 
-[node name="Fence" type="Node2D" parent="." unique_id=1766959974]
-position = Vector2(-1208, -1336)
-rotation = 1.5707964
-script = ExtResource("17_0yd0l")
-fence_length = 287.0
-threshold_override = 10
-metadata/_custom_type_script = "uid://r5lsjim5frr5"
-
-[node name="Zombie" parent="." unique_id=1452430945 instance=ExtResource("6_se283")]
-position = Vector2(-1696, -1312)
-
-[node name="Zombie2" parent="." unique_id=2027564768 instance=ExtResource("6_se283")]
-position = Vector2(-1672, -1312)
-
-[node name="Zombie3" parent="." unique_id=1349611930 instance=ExtResource("6_se283")]
-position = Vector2(-1640, -1320)
-
-[node name="Zombie4" parent="." unique_id=237457993 instance=ExtResource("6_se283")]
-position = Vector2(-1656, -1352)
-
-[node name="Zombie5" parent="." unique_id=39309546 instance=ExtResource("6_se283")]
-position = Vector2(-1688, -1384)
-
-[node name="Zombie6" parent="." unique_id=714489003 instance=ExtResource("6_se283")]
-position = Vector2(-1592, -1368)
-
-[node name="Zombie7" parent="." unique_id=1387968666 instance=ExtResource("6_se283")]
-position = Vector2(-1744, -1216)
-
-[node name="Zombie8" parent="." unique_id=216079294 instance=ExtResource("6_se283")]
-position = Vector2(-1720, -1216)
-
-[node name="Zombie9" parent="." unique_id=1339607421 instance=ExtResource("6_se283")]
-position = Vector2(-1688, -1224)
-
-[node name="Zombie10" parent="." unique_id=2058827371 instance=ExtResource("6_se283")]
-position = Vector2(-1704, -1256)
-
-[node name="Zombie11" parent="." unique_id=873445204 instance=ExtResource("6_se283")]
-position = Vector2(-1736, -1288)
-
-[node name="Zombie13" parent="." unique_id=204405452 instance=ExtResource("6_se283")]
-position = Vector2(-2568, -952)
-
-[node name="Zombie14" parent="." unique_id=2028716678 instance=ExtResource("6_se283")]
-position = Vector2(-2544, -952)
-
-[node name="Zombie15" parent="." unique_id=2027167438 instance=ExtResource("6_se283")]
-position = Vector2(-2512, -960)
-
-[node name="Zombie16" parent="." unique_id=210160912 instance=ExtResource("6_se283")]
-position = Vector2(-2528, -992)
-
-[node name="Zombie17" parent="." unique_id=116319126 instance=ExtResource("6_se283")]
-position = Vector2(-2560, -1024)
-
-[node name="Zombie18" parent="." unique_id=1323177383 instance=ExtResource("6_se283")]
-position = Vector2(-2696, -952)
-
-[node name="Zombie19" parent="." unique_id=1884310917 instance=ExtResource("6_se283")]
-position = Vector2(-2672, -952)
-
-[node name="Zombie20" parent="." unique_id=320528242 instance=ExtResource("6_se283")]
-position = Vector2(-2640, -960)
-
-[node name="Zombie21" parent="." unique_id=1654715634 instance=ExtResource("6_se283")]
-position = Vector2(-2656, -992)
-
-[node name="Zombie22" parent="." unique_id=1852312000 instance=ExtResource("6_se283")]
-position = Vector2(-2688, -1024)
-
-[node name="Zombie23" parent="." unique_id=1675350120 instance=ExtResource("6_se283")]
-position = Vector2(-2808, -976)
-
-[node name="Zombie24" parent="." unique_id=1365752232 instance=ExtResource("6_se283")]
-position = Vector2(-2784, -976)
-
-[node name="Zombie25" parent="." unique_id=644289929 instance=ExtResource("6_se283")]
-position = Vector2(-2752, -984)
-
-[node name="Zombie26" parent="." unique_id=722335902 instance=ExtResource("6_se283")]
-position = Vector2(-2768, -1016)
-
-[node name="Zombie27" parent="." unique_id=1477227845 instance=ExtResource("6_se283")]
-position = Vector2(-2800, -1048)
-
-[node name="Zombie12" parent="." unique_id=700374671 instance=ExtResource("6_se283")]
-position = Vector2(-1640, -1272)
-
-[node name="Human" parent="." unique_id=293742506 instance=ExtResource("7_davh7")]
-position = Vector2(-1112, -1336)
-
-[node name="Mine" type="Node2D" parent="." unique_id=2021373374]
-position = Vector2(-1152, -1376)
-script = ExtResource("18_se283")
-affects_humans = true
-
-[node name="Mine2" type="Node2D" parent="." unique_id=1894538006]
-position = Vector2(-1152, -1328)
-script = ExtResource("18_se283")
-affects_humans = true
-
-[node name="Mine3" type="Node2D" parent="." unique_id=1786176717]
-position = Vector2(-1152, -1280)
-script = ExtResource("18_se283")
-affects_humans = true
-
-[node name="Mine4" type="Node2D" parent="." unique_id=2144803524]
-position = Vector2(-1072, -1376)
-script = ExtResource("18_se283")
-affects_humans = true
-
-[node name="Mine5" type="Node2D" parent="." unique_id=868222388]
-position = Vector2(-1072, -1336)
-script = ExtResource("18_se283")
-affects_humans = true
-
-[node name="Mine6" type="Node2D" parent="." unique_id=576083192]
-position = Vector2(-1072, -1288)
-script = ExtResource("18_se283")
-affects_humans = true
-
-[node name="HazardZone" type="Polygon2D" parent="." unique_id=115633588]
-position = Vector2(-1312, -1552)
-rotation = 1.5707964
-color = Color(0.55, 0.35, 0.15, 0.3)
-polygon = PackedVector2Array(-80, -16, 80, -16, 80, 0, -80, 0)
-script = ExtResource("19_davh7")
-metadata/_custom_type_script = "uid://b6udbq2hfomac"
-
-[node name="HazardZone2" type="Polygon2D" parent="." unique_id=1599265364]
-position = Vector2(-1200, -1568)
-rotation = -1.5705291
-color = Color(0.55, 0.35, 0.15, 0.38)
-polygon = PackedVector2Array(-80, -16, 80, -16, 80, 0, -80, 0)
-script = ExtResource("19_davh7")
-toll_mode = 1
-metadata/_custom_type_script = "uid://b6udbq2hfomac"
-
 [node name="HazardZone3" type="Polygon2D" parent="." unique_id=1326675514]
-position = Vector2(-2200, -992)
+position = Vector2(-1840, -992)
 rotation = 1.5707964
-color = Color(0.55, 0.35, 0.15, 0.3)
+color = Color(0.3575, 0.22749999, 0.097500004, 0.3)
 polygon = PackedVector2Array(-87.99994, -48, 88, -48, 88, 16, -87.99994, 16)
 script = ExtResource("19_davh7")
+impale_kill_dot = null
+hazard_color = Color(0.55, 0.35, 0.15, 1)
 metadata/_custom_type_script = "uid://b6udbq2hfomac"
+
+[node name="HazardZone4" type="Polygon2D" parent="." unique_id=1129293264]
+position = Vector2(-3000, -200)
+rotation = 1.5707964
+color = Color(0.3575, 0.22749999, 0.097500004, 0.3)
+polygon = PackedVector2Array(-120.000015, -48, 127.99999, -48, 127.99999, 32, -120.000015, 32)
+script = ExtResource("19_davh7")
+impale_kill_dot = null
+hazard_color = Color(0.55, 0.35, 0.15, 1)
+metadata/_custom_type_script = "uid://b6udbq2hfomac"
+
+[node name="HazardZone5" type="Polygon2D" parent="." unique_id=1794379367]
+position = Vector2(-1632, -192)
+rotation = 4.712389
+color = Color(0.3575, 0.22749999, 0.097500004, 0.38)
+polygon = PackedVector2Array(-120.000015, -48, 127.99999, -48, 127.99999, 32, -120.000015, 32)
+script = ExtResource("19_davh7")
+toll_mode = 1
+impale_kill_dot = null
+hazard_color = Color(0.55, 0.35, 0.15, 1)
+metadata/_custom_type_script = "uid://b6udbq2hfomac"
+
+[node name="HazardZone6" type="Polygon2D" parent="." unique_id=577948926]
+position = Vector2(-39.99997, 616)
+rotation = 3.7599354
+color = Color(0.3575, 0.22749999, 0.097500004, 0.38)
+polygon = PackedVector2Array(-223.12411, -37.624817, 210.21791, -21.918823, 131.99326, 33.731018, -181.38675, 21.043701)
+script = ExtResource("19_davh7")
+toll_mode = 1
+impale_kill_dot = null
+hazard_color = Color(0.55, 0.35, 0.15, 1)
+metadata/_custom_type_script = "uid://b6udbq2hfomac"
+
+[node name="Zombie" parent="." unique_id=1853975762 instance=ExtResource("6_se283")]
+position = Vector2(-1944, -1192)
+
+[node name="ShelterBuilding" type="Polygon2D" parent="." unique_id=176642139]
+position = Vector2(640, -1368)
+color = Color(0.16, 0.16, 0.2, 0.4)
+polygon = PackedVector2Array(-150, -100, 150, -100, 150, 100, -150, 100)
+script = ExtResource("11_ss5kf")
+metadata/_custom_type_script = "uid://bgnbocmyabj1m"
+
+[node name="Door" type="Node2D" parent="ShelterBuilding" unique_id=2134759458]
+position = Vector2(-150, 5.382202)
+rotation = -1.5707964
+script = ExtResource("12_2h14b")
+metadata/_custom_type_script = "uid://b5tktwtpd5hg5"
+
+[node name="Human65" parent="." unique_id=1738086535 instance=ExtResource("7_davh7")]
+position = Vector2(712, -1424)
+
+[node name="Human66" parent="." unique_id=2138251908 instance=ExtResource("7_davh7")]
+position = Vector2(752, -1408)
+
+[node name="Human67" parent="." unique_id=29859566 instance=ExtResource("7_davh7")]
+position = Vector2(712, -1328)
+defender_class = 2

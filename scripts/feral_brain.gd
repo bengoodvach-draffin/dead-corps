@@ -10,7 +10,8 @@ extends Node
 ##
 ## Retarget (§3.4): on a dead/lost target or a fired failsafe, take the NEAREST of
 ## { local scan: living humans within chain_scan_radius, LOS-gated }
-## ∪ { hunt pool: humans pursued by any feral, plus FLEEING humans (Phase 3) },
+## ∪ { hunt pool: humans pursued by any feral, plus FLEEING humans (Phase 3),
+##     capped at hunt_pool_radius },
 ## excluding humans under an in-flight pounce. Empty → NO_TARGET (shell calms).
 ##
 ## PHASE-3 SEAM: FLEEING and cowering humans don't exist yet, so the pool is
@@ -206,7 +207,7 @@ func tick(delta: float) -> Result:
 func _tick_breaching(delta: float) -> Result:
 	# 1. The continuous peel-off stays LIVE: on the normal cadence, any fresh
 	#    prey in scan+LOS pulls this feral off the door instantly. Ranked by
-	#    plain nearest — a pounder has no meaningful heading.
+	#    threat-weighted nearest — a pounder has no meaningful heading.
 	_divert_timer -= delta
 	if _divert_timer <= 0.0:
 		_divert_timer = GameConfig.feral_divert_interval
@@ -343,23 +344,30 @@ func _nav_distance(from_pos: Vector2, to_pos: Vector2) -> float:
 
 
 ## Fresh prey worth abandoning the door for (§5.2.1): alive, unclaimed,
-## un-pursued, in scan radius with LOS — plain nearest (no forward gate: the
-## farmhouse horde turns as one when the guy runs for the truck).
+## un-pursued (armed prey exempt — pack-per-shooter), in scan radius with LOS —
+## threat-weighted nearest (no forward gate: the farmhouse horde turns as one
+## when the guy runs for the truck).
 func _best_prey_off_door() -> Human:
 	var gm := _game_manager()
 	if gm == null:
 		return null
 	var best: Human = null
-	var best_dist := INF
+	var best_score := INF
 	for u in gm.neighbours_within(_owner.global_position, GameConfig.chain_scan_radius, &"humans"):
 		var h := u as Human
-		if not _is_candidate(h) or gm.is_pursued(h):
+		if not _is_candidate(h):
+			continue
+		# Pack-per-shooter (Ben, 2026-08-06): armed prey stays peelable while
+		# pursued — a besieger abandons its door for a shooter even mid-claim.
+		if gm.is_pursued(h) and not h.is_armed():
 			continue
 		if not _owner.has_line_of_sight_to(h):
 			continue
-		var d := _owner.global_position.distance_to(h.global_position)
-		if d < best_dist:
-			best_dist = d
+		# Distance-ranked (a pounder has no meaningful heading), threat-weighted:
+		# zero heading makes threat_score degrade to weighted plain distance.
+		var s := FeralTargeting.threat_score(_owner.global_position, Vector2.ZERO, h)
+		if s < best_score:
+			best_score = s
 			best = h
 	return best
 
@@ -416,22 +424,23 @@ func _maybe_divert(delta: float) -> void:
 		return
 	# Switch only if the candidate is a meaningfully better PATH target than the current
 	# one — so the feral keeps driving up its vector and eats front-to-back, rather than
-	# splaying onto whatever side human is merely nearest.
+	# splaying onto whatever side human is merely nearest. Threat-weighted on BOTH
+	# sides: an armed candidate out-bids a civilian pursuit, and a feral already on
+	# a shooter is sticky against civilian bait.
 	var heading := _heading()
-	var cur_score := FeralTargeting.path_score(_owner.global_position, heading, _target.global_position)
-	var cand_score := FeralTargeting.path_score(_owner.global_position, heading, candidate.global_position)
+	var cur_score := FeralTargeting.threat_score(_owner.global_position, heading, _target)
+	var cand_score := FeralTargeting.threat_score(_owner.global_position, heading, candidate)
 	if cand_score < cur_score * GameConfig.feral_divert_hysteresis:
 		set_target(candidate)
 
 
-## Nearest alive + unclaimed + UN-pursued + in-LOS human within chain_scan_radius, or
-## null. "Un-pursued" (no other feral already on it) is what makes the peel one-per-
-## straggler. Candidates arrive in unit_uid order so distance ties resolve
-## deterministically (§10).
 ## Best FRESH straggler to peel onto — alive, unclaimed, un-pursued, in-LOS, ahead of
-## our motion, within scan radius — ranked by path-score (on-axis-forward beats off-
-## axis), or null. Behind humans are HARD-skipped (not just penalised): if the only
+## our motion, within scan radius — ranked by threat-weighted path-score (on-axis-
+## forward beats off-axis; armed prey out-bids civilians), or null. "Un-pursued" is
+## what makes the peel one-per-straggler — ARMED humans are exempt (pack-per-shooter,
+## Ben 2026-08-06). Behind humans are HARD-skipped (not just penalised): if the only
 ## fresh prey is behind, we don't peel — we keep driving toward the current target.
+## Candidates arrive in unit_uid order so distance ties resolve deterministically (§10).
 func _best_fresh_human() -> Human:
 	var gm := _game_manager()
 	if gm == null:
@@ -441,13 +450,18 @@ func _best_fresh_human() -> Human:
 	var best_score := INF
 	for u in gm.neighbours_within(_owner.global_position, GameConfig.chain_scan_radius, &"humans"):
 		var h := u as Human
-		if not _is_candidate(h) or gm.is_pursued(h):
+		if not _is_candidate(h):
+			continue
+		# One feral per STRAGGLER — but the whole pack per SHOOTER (Ben,
+		# 2026-08-06): armed humans stay peelable even while pursued, so a firing
+		# GI draws converging ferals instead of thinning the column one at a time.
+		if gm.is_pursued(h) and not h.is_armed():
 			continue
 		if not _is_forward(h, heading):
 			continue   # behind the swarm's motion — don't peel backwards out of it
 		if not _owner.has_line_of_sight_to(h):
 			continue
-		var s := FeralTargeting.path_score(_owner.global_position, heading, h.global_position)
+		var s := FeralTargeting.threat_score(_owner.global_position, heading, h)
 		if s < best_score:
 			best_score = s
 			best = h
@@ -508,15 +522,20 @@ func _retarget(allow_mark_building: bool = true) -> bool:
 			seen[h] = true
 			candidates.append(h)
 
-	# Hunt pool — pursued ∪ fleeing, no LOS / no distance gate. Cowering humans are
-	# EXCLUDED here (§3.4/§4.4): a silent, still cowerer is found only by ferals that can
+	# Hunt pool — pursued ∪ fleeing, no LOS gate but capped at hunt_pool_radius
+	# (Ben, 2026-08-06: an unlimited pool sent every idle feral marching cross-map
+	# after any fleeing human on a big level — out of reach of everything, a feral
+	# calms back into the reserve instead). Cowering humans are EXCLUDED here
+	# (§3.4/§4.4): a silent, still cowerer is found only by ferals that can
 	# locally see it (the scan above), not drawn at from across the map via the pool.
 	for h in gm.pursued_humans():
-		if _is_candidate(h) and not h.is_cowering() and not seen.has(h):
+		if _is_candidate(h) and not h.is_cowering() and not seen.has(h) \
+				and _owner.global_position.distance_to(h.global_position) <= GameConfig.hunt_pool_radius:
 			seen[h] = true
 			candidates.append(h)
 	for h in gm.fleeing_humans():
-		if _is_candidate(h) and not h.is_cowering() and not seen.has(h):
+		if _is_candidate(h) and not h.is_cowering() and not seen.has(h) \
+				and _owner.global_position.distance_to(h.global_position) <= GameConfig.hunt_pool_radius:
 			seen[h] = true
 			candidates.append(h)
 
@@ -545,12 +564,13 @@ func _retarget(allow_mark_building: bool = true) -> bool:
 	# Pick the best PATH target — keeps momentum up our heading after a kill instead of
 	# whipping around. path_score prefers humans ahead; ones behind carry a large but
 	# finite penalty, so a feral hemmed in with only prey behind it still engages (last
-	# resort) rather than calming.
+	# resort) rather than calming. Threat-weighted: after each kill the retarget
+	# leans toward whoever is shooting rather than the nearest runner.
 	var heading := _heading()
 	var best: Human = null
 	var best_score := INF
 	for h in candidates:
-		var s := FeralTargeting.path_score(_owner.global_position, heading, h.global_position)
+		var s := FeralTargeting.threat_score(_owner.global_position, heading, h)
 		if s < best_score:
 			best_score = s
 			best = h

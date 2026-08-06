@@ -84,12 +84,24 @@ func tick(delta: float) -> void:
 	# never tick fear at all (the last stand, §7.2).
 	var count := 0
 	var pool: Array
-	if _owner.is_sheltered() and not _owner.is_safely_sheltered():
+	# Breached-interior fear (sight-gated, uncapped) applies in a COMPROMISED
+	# building too (specials spec §3.5): a revealed zombie inside an intact
+	# shelter must panic the room by sight — without this, the fear suspension
+	# that protects occupants from exterior pounding had them placidly ignoring
+	# a zombie eating their neighbour. The shell stays intact; only the
+	# occupants' nerves change.
+	var interior_threat: bool = _owner.is_sheltered() and (not _owner.is_safely_sheltered() \
+			or _shelter_compromised())
+	if interior_threat:
 		pool = gm.living_zombies()
 	else:
 		# Unsorted: this is a count — order can't matter.
 		pool = gm.neighbours_within(_owner.global_position, GameConfig.fear_radius, &"zombies", null, false)
 	for u in pool:
+		# COSTUMED specials feed no dread at any range (specials spec §3.2) —
+		# checked before the LOS ray so the disguise also saves the physics query.
+		if u.is_perception_hidden():
+			continue
 		if _has_los(u):
 			count += 1
 	if count > _threshold():
@@ -101,6 +113,11 @@ func tick(delta: float) -> void:
 
 func _threshold() -> int:
 	return GameConfig.fear_threshold[_owner.defender_class]
+
+
+## True if the owner's shelter has a revealed zombie inside (specials §3.5).
+func _shelter_compromised() -> bool:
+	return _owner.shelter_is_compromised()
 
 
 ## True if no building or intact door blocks the line from this human to `zombie`

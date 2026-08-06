@@ -150,9 +150,11 @@ func _input(event: InputEvent) -> void:
 			Engine.time_scale = 1.0
 			Engine.physics_ticks_per_second = BASE_PHYSICS_TICKS
 
-	# R = RESTART (spec §5.1 input sheet; Tier-4). Same path as the debug
+	# U = RESTART (spec §5.1 input sheet; Tier-4). Same path as the debug
 	# overlay's Reset button; _ready normalizes the fast-forward state after.
-	elif event is InputEventKey and event.pressed and event.keycode == KEY_R and not event.echo:
+	# Moved off R (Ben, 2026-08-06): R sat next to the E roundup key and a
+	# fat-finger wiped the whole run.
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_U and not event.echo:
 		get_tree().reload_current_scene()
 
 	# Q / E — reserve roundup (Ben's ruling 2026-07-26): Q selects every calm
@@ -476,12 +478,34 @@ func handle_command(_screen_pos: Vector2) -> void:
 	if gm != null:
 		for c in corpses:
 			gm.set_rise_route(c, world_pos)
+	# ORDERED KILL (specials spec §3.4, mixed-selection soft default §9.1):
+	# costumed specials pick their prey with safely-SHELTERED humans INCLUDED
+	# (Ben's playtest find 2026-08-06) — the scalpel reaches through intact
+	# walls, because the Trojan payoff IS a kill inside the shelter (§3.5),
+	# while releases keep targeting the building. One click, one target,
+	# everyone attacks per their nature; cancelable up to the lunge. The
+	# special stays SELECTED throughout.
+	var killers: Array[Zombie] = []
+	for u in selected_units:
+		if is_instance_valid(u) and u is Zombie and (u as Zombie).can_receive_command() \
+				and u.has_method("order_kill") and (u as Zombie).is_perception_hidden():
+			killers.append(u)
+	var kill_target: Human = clicked_human
+	if kill_target == null and not killers.is_empty():
+		kill_target = _human_at(world_pos, gm, true)   # sheltered occupants are valid scalpel prey
+	if kill_target != null:
+		for k in killers:
+			k.order_kill(kill_target)
+
 	if clicked_human != null:
 		# Immediate release now (attack, forget the route). Pin-and-aim (magnetism #1).
 		# Finishers store the attack — it fires when they calm, or drops if they retarget.
 		for f in finishers:
 			(f as Zombie).queue_finish_attack(clicked_human)
 		_release(clicked_human.global_position, gm)
+		for k in killers:
+			if is_instance_valid(k):
+				add_unit_to_selection(k)
 		return
 	# RELEASE-AT-THE-BUILDING (buildings spec §5.1 + the footprint amendment): RMB
 	# anywhere on an OCCUPIED intact building = a release variant — each selected
@@ -492,7 +516,7 @@ func handle_command(_screen_pos: Vector2) -> void:
 	if clicked_building != null and not calm_zombies.is_empty():
 		for f in finishers:
 			(f as Zombie).queue_finish_move(world_pos)
-		_release_at_building(clicked_building, calm_zombies)
+		_release_at_building(clicked_building, calm_zombies, world_pos, kill_target != null)
 		return
 	# ORDERED CALM BREACH (Ben's ruling 2026-07-30, supersedes release-on-door):
 	# RMB on any INTACT door — a gate in a wall, an empty building's door — sends
@@ -577,14 +601,16 @@ func _release(click_pos: Vector2, gm: Node) -> void:
 ## release pinned to the nearest one; a direct click is just the degenerate case.
 ## SAFELY sheltered humans never pin (buildings spec §6.1) — the occupied BUILDING
 ## is the release target instead; breached-building occupants pin like anyone.
-func _human_at(pos: Vector2, gm: Node) -> Human:
+## `include_sheltered` is the COSTUME's pick (specials §3.4/§3.5): the ordered
+## kill reaches through intact walls — an occupant is valid scalpel prey.
+func _human_at(pos: Vector2, gm: Node, include_sheltered: bool = false) -> Human:
 	if gm == null:
 		return null
 	var humans: Array[Unit] = gm.neighbours_within(pos, GameConfig.release_aim_radius, &"humans")
 	var best: Human = null
 	var best_dist := INF
 	for h in humans:
-		if (h as Human).is_safely_sheltered():
+		if not include_sheltered and (h as Human).is_safely_sheltered():
 			continue
 		var d := pos.distance_to(h.global_position)
 		if d < best_dist:
@@ -596,19 +622,41 @@ func _human_at(pos: Vector2, gm: Node) -> Human:
 ## RELEASE-AT-THE-BUILDING (step 3): ignite the given calm zombies onto an
 ## occupied building — each besieges its own nearest door. Uncancelable;
 ## released zombies leave the selection. Deterministic: unit_uid order.
-func _release_at_building(building: Node2D, calm_zombies: Array[Unit]) -> void:
+##
+## COSTUMED specials INFILTRATE instead (specials spec §3.3 — Ben's playtest
+## find 2026-08-06: this click is the ONLY way to point inside an occupied
+## footprint, and the release filter left the costume with no order at all).
+## They get a plain calm move to the click point — the door transit carries
+## them in through the front door — and STAY SELECTED, mirroring the
+## mixed-selection kill grammar: one click, everyone attacks per their nature.
+func _release_at_building(building: Node2D, calm_zombies: Array[Unit], click_pos: Vector2,
+		killers_already_ordered: bool = false) -> void:
 	var ferals: Array[Zombie] = []
+	var infiltrators: Array[Zombie] = []
 	for u in calm_zombies:
-		if is_instance_valid(u) and u is Zombie and (u as Zombie).can_receive_command() \
-				and not (u as Zombie).is_special:
+		if not is_instance_valid(u) or not (u is Zombie) or not (u as Zombie).can_receive_command():
+			continue
+		if (u as Zombie).is_perception_hidden():
+			infiltrators.append(u)
+		elif not (u as Zombie).is_special:
 			ferals.append(u)
 	ferals.sort_custom(func(a: Zombie, b: Zombie) -> bool: return a.unit_uid < b.unit_uid)
 	for z in ferals:
 		z.ignite_feral_at_building(building)
-	if not ferals.is_empty():
-		if GameConfig.debug_logs:
-			print("🔥 RELEASE: %d zombies onto building %s" % [ferals.size(), building.name])
+	# When the click also pinned a KILL TARGET inside (an occupant — the caller
+	# ordered the kill already), the infiltrators' pursuit routes them in by
+	# itself; a move order here would CANCEL that kill. Otherwise: walk in.
+	if not killers_already_ordered:
+		for z in infiltrators:
+			z.set_move_target(click_pos)
+	if not ferals.is_empty() and GameConfig.debug_logs:
+		print("🔥 RELEASE: %d zombies onto building %s" % [ferals.size(), building.name])
+	if not infiltrators.is_empty() and GameConfig.debug_logs:
+		print("🎭 INFILTRATE: %d costume(s) walking into %s" % [infiltrators.size(), building.name])
 	clear_selection()
+	for z in infiltrators:
+		if is_instance_valid(z):
+			add_unit_to_selection(z)
 
 
 ## ORDERED CALM BREACH: send the calm zombies to break one specific door. A
@@ -638,9 +686,14 @@ func _order_breach_at_door(door: Node2D, calm_zombies: Array[Unit]) -> void:
 func _order_press_at_fence(fence: Node2D, calm_zombies: Array[Unit]) -> void:
 	var crew: Array[Zombie] = []
 	for u in calm_zombies:
-		if is_instance_valid(u) and u is Zombie and (u as Zombie).can_receive_command() \
-				and not (u as Zombie).is_special:
-			crew.append(u)
+		if not is_instance_valid(u) or not (u is Zombie) or not (u as Zombie).can_receive_command():
+			continue
+		# COSTUMED specials join the press (Ben's ruling 2026-08-06: pressing
+		# is physical mass, not perception) — it's a plain move order, so
+		# nothing about the disguise is at stake. Other specials stay excluded.
+		if (u as Zombie).is_special and not (u as Zombie).is_perception_hidden():
+			continue
+		crew.append(u)
 	crew.sort_custom(func(a: Zombie, b: Zombie) -> bool: return a.unit_uid < b.unit_uid)
 	if crew.is_empty():
 		return
@@ -715,17 +768,33 @@ func _update_release_hover() -> void:
 	var target_building: Node2D = null
 	var target_door: Node2D = null
 	var target_fence: Node2D = null
-	if _selection_has_releasable():
+	# The HUMAN ring telegraphs both verbs — release AND the costume's ordered
+	# kill (specials §3.4: same pin-and-aim feel). Building/door/fence outlines
+	# telegraph release/breach/press and need a genuine RELEASABLE: a lone
+	# costume infiltrates via a plain move, so those must stay dark for it
+	# (Ben, 2026-08-06).
+	var has_releasable := _selection_has_releasable()
+	var has_costumed := _selection_has_costumed()
+	if has_releasable or has_costumed:
 		var gm := _game_manager()
 		if gm != null:
 			var mouse := get_global_mouse_position()
 			target = _human_at(mouse, gm)
-			if target == null:
-				target_building = _shelter_building_at(mouse)
-			if target == null and target_building == null:
-				target_door = _door_at(mouse)   # gates + empty buildings' doors (§5.1 telegraph)
-			if target == null and target_building == null and target_door == null:
-				target_fence = _fence_at(mouse)   # the ordered-press telegraph (fences §A7)
+			var ring_is_sheltered := false
+			if target == null and has_costumed:
+				# The scalpel's ring reaches sheltered occupants too (§3.5).
+				target = _human_at(mouse, gm, true)
+				ring_is_sheltered = target != null
+			if has_releasable:
+				# A sheltered ring doesn't suppress the building outline: in a
+				# mixed selection that click means BOTH (costume kills the
+				# occupant, normals besiege the shell) — telegraph both.
+				if target == null or ring_is_sheltered:
+					target_building = _shelter_building_at(mouse)
+				if target == null and target_building == null:
+					target_door = _door_at(mouse)   # gates + empty buildings' doors (§5.1 telegraph)
+				if target == null and target_building == null and target_door == null:
+					target_fence = _fence_at(mouse)   # the ordered-press telegraph (fences §A7)
 	if target != _hovered_human:
 		if _hovered_human != null and is_instance_valid(_hovered_human):
 			_hovered_human.set_hover_highlighted(false)
@@ -758,10 +827,24 @@ var _hovered_door: Node2D = null
 var _hovered_fence: Node2D = null
 
 
-## True if any selected unit is a calm zombie (so a release is possible).
+## True if any selected unit is a calm zombie that can actually IGNITE — the
+## release/siege/breach/press telegraph gate. Specials are excluded: they never
+## release, so lighting release targets for a lone costume was a lie (Ben,
+## 2026-08-06).
 func _selection_has_releasable() -> bool:
 	for u in selected_units:
-		if is_instance_valid(u) and u is Zombie and (u as Zombie).can_receive_command():
+		if is_instance_valid(u) and u is Zombie and (u as Zombie).can_receive_command() \
+				and not (u as Zombie).is_special:
+			return true
+	return false
+
+
+## True if any selected unit is a costumed special — the ordered-kill verb's
+## own telegraph gate (the human ring only).
+func _selection_has_costumed() -> bool:
+	for u in selected_units:
+		if is_instance_valid(u) and u is Zombie and (u as Zombie).can_receive_command() \
+				and (u as Zombie).is_perception_hidden():
 			return true
 	return false
 
@@ -810,6 +893,12 @@ func _select_all_calm(on_screen_only: bool) -> void:
 	for z in gm.living_zombies():
 		if not (z as Zombie).is_selectable():
 			continue
+		# The COSTUMED special is excluded from the Q/E roundup (specials spec
+		# §9.2 soft default): a riser sweep must not yank the infiltrator out
+		# of the shelter it took two minutes to walk into. Click, box, and
+		# control groups still reach it.
+		if (z as Zombie).is_perception_hidden():
+			continue
 		if on_screen_only and not view.has_point(z.global_position):
 			continue
 		add_unit_to_selection(z)
@@ -856,6 +945,10 @@ func apply_rise_order(zombie: Zombie, entry: Dictionary, was_selected: bool) -> 
 		var last: Vector2 = route[route.size() - 1]
 		var human := _human_at(last, gm)
 		var move_count := route.size()
+		# SPECIALS (specials spec §2.3): a special riser can't release — the
+		# prey-click re-resolves to an ORDERED KILL on rise instead (fires
+		# after the earlier move waypoints via the queued_attack remap in
+		# Zombie._tick_calm, which routes specials to order_kill).
 		if human != null:
 			move_count -= 1
 			zombie.queued_attack = human

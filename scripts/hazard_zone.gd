@@ -24,15 +24,19 @@ class_name HazardZone
 ##    no art required). Carved from the CAREFUL mesh only (nav_carve_layers →
 ##    2): the calm reserve routes around it; ferals and humans charge in.
 ##
-## THE DIRECTIONAL RULE (ruling 6 + Ben's amendment 2026-08-03): the points aim
-## along this node's local -Y (rotate the node to aim them — the drawn arrow is
-## the authoring tell). A zombie dies when its velocity component AGAINST the
-## points exceeds impale_min_speed:
-##       velocity.dot(points_direction()) < -impale_min_speed
-## Amended from the spec's "speed > min AND any against-component": BOID
-## separation jitter could bend a safe with-the-points crossing a few degrees
-## backward for one sample and phantom-kill it. The component form is immune —
-## you die by how fast you drive onto the points. Stateless, deterministic.
+## THE DIRECTIONAL RULE (ruling 6 + Ben's amendments 2026-08-03 / 2026-08-06):
+## the points aim along this node's local -Y (rotate the node to aim them — the
+## drawn arrow is the authoring tell). A zombie dies when its velocity component
+## AGAINST the points exceeds impale_min_speed AND its heading is predominantly
+## INTO the points (against-component > impale_kill_dot × its speed):
+##       against > impale_min_speed  and  against > kill_dot × |velocity|
+## First amendment (03): component form, not "speed > min AND any against-
+## component" — BOID jitter could bend a safe crossing a few degrees backward
+## for one sample and phantom-kill it. Second (06): the angle gate — component-
+## only made ~half of all headings lethal inside the bed (anything ~8° past
+## perpendicular at walk speed), so a zombie that entered safely couldn't move
+## without dying. Now only genuinely charging the points kills. Stateless,
+## deterministic.
 ## Falls out free: a stationary zombie in the bed is safe; shamblers (7px/s)
 ## can never die; crossing WITH the points is free — a one-way valve for the
 ## frenzy (commitment geometry, the ledge drop's best property without art).
@@ -45,11 +49,21 @@ class_name HazardZone
 
 enum TollMode { SLOW, IMPALE }
 
+## Mode-default palette (Ben, 2026-08-06) — traffic-light readability: amber =
+## slows everyone (caution), red = kills zombies (lethal to YOUR units). A zone
+## whose hazard_color is still one of these defaults follows its mode (flipping
+## toll_mode re-colours it live); any custom colour a level set is respected.
+## The old shared brown is recognised as "never customised" too.
+const DEFAULT_LEGACY := Color(0.55, 0.35, 0.15, 1.0)
+const DEFAULT_WIRE := Color(0.85, 0.62, 0.15, 1.0)
+const DEFAULT_STAKES := Color(0.78, 0.18, 0.14, 1.0)
+
 ## SLOW = barbed wire (slows, kills nothing). IMPALE = stakes (directional
 ## zombie kills, humans weave). Determines the careful-mesh carve at boot.
 @export var toll_mode: TollMode = TollMode.SLOW:
 	set(value):
 		toll_mode = value
+		_apply_mode_default_color()
 		_sync()
 
 ## Zombie speed multiplier inside a SLOW zone (1.0 = unaffected). Ignored by
@@ -71,6 +85,14 @@ enum TollMode { SLOW, IMPALE }
 ## contact is a brush, not a charge. 20 keeps every idle jostle safe.
 @export var impale_min_speed: float = 20.0
 
+## IMPALE only — the ANGLE gate (Ben, 2026-08-06): kill only when the heading is
+## predominantly INTO the points — against-component > this fraction of the
+## zombie's own speed. 0.7 ≈ within ~45° of dead-into. Before this gate the safe
+## cone was ~8° past perpendicular (any heading with >20px/s backward component
+## died at full walk speed), so a zombie inside the bed could barely move without
+## dying. 0 restores the old component-only rule.
+@export_range(0.0, 1.0, 0.05) var impale_kill_dot: float = 0.7
+
 ## The future power/objective hook (generator, §B13). An unarmed zone neither
 ## kills nor slows; it draws dimmed.
 @export var armed: bool = true:
@@ -78,8 +100,9 @@ enum TollMode { SLOW, IMPALE }
 		armed = value
 		_sync()
 
-## Programmer-art fill colour.
-@export var hazard_color: Color = Color(0.55, 0.35, 0.15, 1.0):
+## Programmer-art fill colour. Left untouched it follows the mode default
+## (amber wire / red stakes); set it explicitly to override per zone.
+@export var hazard_color: Color = DEFAULT_WIRE:
 	set(value):
 		hazard_color = value
 		_sync()
@@ -97,6 +120,7 @@ func _ready() -> void:
 			Vector2(-80, -60), Vector2(80, -60),
 			Vector2(80, 60), Vector2(-80, 60),
 		])
+	_apply_mode_default_color()
 	_sync()
 	if Engine.is_editor_hint():
 		return
@@ -110,8 +134,21 @@ func _process(_delta: float) -> void:
 		_sync()
 
 
+## A hazard_color that is still one of the three defaults counts as "never
+## customised" and snaps to the current mode's colour. A designer's explicit
+## colour never matches a default exactly (unless they deliberately pick one, in
+## which case following the mode is exactly what that colour means).
+func _apply_mode_default_color() -> void:
+	if hazard_color == DEFAULT_LEGACY or hazard_color == DEFAULT_WIRE \
+			or hazard_color == DEFAULT_STAKES:
+		hazard_color = DEFAULT_STAKES if toll_mode == TollMode.IMPALE else DEFAULT_WIRE
+
+
 func _sync() -> void:
-	var fill := hazard_color
+	# Contrast swap (Ben, 2026-08-06): the FILL takes the dark ink shade the
+	# pattern used to be drawn in, and the pattern is drawn near-white on top —
+	# light-on-dark reads far better than dark-on-light-of-the-same-hue.
+	var fill := hazard_color.darkened(0.35)
 	fill.a = 0.30 if toll_mode == TollMode.SLOW else 0.38
 	if not armed:
 		fill.a *= 0.4
@@ -174,31 +211,95 @@ func get_nav_footprint() -> Dictionary:
 
 # === VISUALS (interim programmer graphics — Phase 5 moves these to vision_renderer) ===
 
+## Glyph-tile spacing (local px). Chosen so the pattern reads at gameplay zoom
+## without carpeting a big zone in thousands of draws.
+const TILE_X := 26.0
+const TILE_Y := 22.0
+
+## Pattern colour: light grey, not the zone hue — the hue lives in the fill
+## now; the glyphs' job is contrast without glare.
+const PATTERN_INK := Color(0.78, 0.78, 0.75)
+
 func _draw() -> void:
-	var ink := hazard_color.darkened(0.35)
+	var ink := PATTERN_INK
 	ink.a = 1.0 if armed else 0.4
+	if polygon.size() < 3:
+		return
+	# Crisp boundary — the polygon edge is the gameplay line, so draw it exactly
+	# rather than leaving it to the soft alpha fill.
+	var outline := polygon.duplicate()
+	outline.append(polygon[0])
+	draw_polyline(outline, ink, 2.0)
+	# Symbols TILE THE WHOLE ZONE (Ben, 2026-08-06 — the old centroid doodle
+	# vanished on any decently sized polygon): a local-space grid over the
+	# bounding box, drawing each glyph whose centre lies inside the polygon.
+	# Local space, so stake chevrons rotate with the node and always agree with
+	# the facing arrow (both are "local -Y is the kill direction").
+	var bounds := _polygon_bounds()
 	if toll_mode == TollMode.IMPALE:
-		# The facing arrow — REQUIRED (§B6.2: without it the zone is
-		# unauthorable). Local -Y is where the points aim.
-		var tip := _bound_centre + Vector2(0, -36)
-		draw_line(_bound_centre + Vector2(0, 24), tip, ink, 3.0)
-		draw_line(tip, tip + Vector2(-9, 12), ink, 3.0)
-		draw_line(tip, tip + Vector2(9, 12), ink, 3.0)
-		# Chevron ranks echoing the points across the bed.
-		for row in [-1, 1]:
-			var base := _bound_centre + Vector2(28.0 * row, 8.0)
-			for i in 3:
-				var o := base + Vector2(-12.0 + 12.0 * i, 0)
-				draw_line(o + Vector2(-5, 6), o, ink, 2.0)
-				draw_line(o, o + Vector2(5, 6), ink, 2.0)
+		_draw_stake_glyphs(bounds, ink)
+		_draw_facing_arrow(ink)
 	else:
-		# Barbed wire: two sagging strands with barb ticks, centroid-anchored.
-		for row in 2:
-			var y := -8.0 + 16.0 * row
-			var a := _bound_centre + Vector2(-30, y)
-			var b := _bound_centre + Vector2(30, y)
-			draw_line(a, b, ink, 2.0)
-			for i in 4:
-				var x := a.lerp(b, 0.125 + 0.25 * i)
-				draw_line(x + Vector2(-3, -3), x + Vector2(3, 3), ink, 1.5)
-				draw_line(x + Vector2(-3, 3), x + Vector2(3, -3), ink, 1.5)
+		_draw_wire_glyphs(bounds, ink)
+
+
+## Stakes: quincunx ranks of chevrons pointing the kill direction (local -Y).
+func _draw_stake_glyphs(bounds: Rect2, ink: Color) -> void:
+	var row := 0
+	var y := bounds.position.y + TILE_Y * 0.5
+	while y < bounds.end.y:
+		var x := bounds.position.x + TILE_X * 0.5 + (TILE_X * 0.5 if row % 2 == 1 else 0.0)
+		while x < bounds.end.x:
+			var o := Vector2(x, y)
+			if Geometry2D.is_point_in_polygon(o, polygon):
+				_draw_clipped_line(o + Vector2(-6, 5), o + Vector2(0, -5), ink, 2.0)
+				_draw_clipped_line(o + Vector2(0, -5), o + Vector2(6, 5), ink, 2.0)
+			x += TILE_X
+		y += TILE_Y
+		row += 1
+
+
+## Barbed wire: horizontal strand segments with an X barb at each tile centre —
+## adjacent inside tiles connect into continuous strands across the zone.
+func _draw_wire_glyphs(bounds: Rect2, ink: Color) -> void:
+	var y := bounds.position.y + TILE_Y * 0.5
+	while y < bounds.end.y:
+		var x := bounds.position.x + TILE_X * 0.5
+		while x < bounds.end.x:
+			var o := Vector2(x, y)
+			if Geometry2D.is_point_in_polygon(o, polygon):
+				_draw_clipped_line(o + Vector2(-TILE_X * 0.5, 0), o + Vector2(TILE_X * 0.5, 0), ink, 1.5)
+				_draw_clipped_line(o + Vector2(-4, -4), o + Vector2(4, 4), ink, 2.0)
+				_draw_clipped_line(o + Vector2(-4, 4), o + Vector2(4, -4), ink, 2.0)
+			x += TILE_X
+		y += TILE_Y
+
+
+## Draws the a→b stroke TRIMMED to the polygon (Ben, 2026-08-06 — a glyph whose
+## centre is inside can still poke its ends over the boundary). Interior strokes
+## come back as a single unchanged piece; edge strokes are cut exactly at the
+## outline. Redraw-time only, so the clip cost never touches the sim tick.
+func _draw_clipped_line(a: Vector2, b: Vector2, ink: Color, width: float) -> void:
+	var pieces := Geometry2D.intersect_polyline_with_polygon(
+		PackedVector2Array([a, b]), polygon)
+	for piece in pieces:
+		if piece.size() >= 2:
+			draw_polyline(piece, ink, width)
+
+
+## The facing arrow — REQUIRED (§B6.2: without it the zone is unauthorable).
+## Local -Y is where the points aim. Bolder than the glyphs so it stays the
+## authoring tell on top of the tiled pattern.
+func _draw_facing_arrow(ink: Color) -> void:
+	var tip := _bound_centre + Vector2(0, -44)
+	draw_line(_bound_centre + Vector2(0, 32), tip, ink, 4.0)
+	draw_line(tip, tip + Vector2(-12, 15), ink, 4.0)
+	draw_line(tip, tip + Vector2(12, 15), ink, 4.0)
+
+
+## Axis-aligned local-space bounding box of the polygon.
+func _polygon_bounds() -> Rect2:
+	var r := Rect2(polygon[0], Vector2.ZERO)
+	for p in polygon:
+		r = r.expand(p)
+	return r

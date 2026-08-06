@@ -51,4 +51,8 @@ func _breakdown() -> String:
 	var t: float = game_manager.game_time
 	var minutes := int(t / 60.0)
 	var seconds := int(t) % 60
-	return "\nTime: %d:%02d\nEscaped: %d  (+0)" % [minutes, seconds, game_manager.escaped_humans]
+	var escaped_line := "Escaped: %d  (+0)" % game_manager.escaped_humans
+	# A lost special stings by name (specials spec §2.4 — the denial callout).
+	if not game_manager.lost_specials.is_empty():
+		escaped_line += "  — including the %s" % ", ".join(game_manager.lost_specials)
+	return "\nTime: %d:%02d\n%s" % [minutes, seconds, escaped_line]

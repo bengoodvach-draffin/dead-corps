@@ -187,7 +187,11 @@ func _tick_calm(delta: float) -> void:
 	# CALM BREACH: a door that blocks this route, or one the player clicked
 	# directly, gets broken down without leaving calm control. It drives movement
 	# on the frames it pounds, and hands control back the frame the door falls.
-	if _breach.tick(has_target, target_position, delta):
+	# COSTUMED specials never breach (specials spec §3.3): doors are not
+	# obstacles to them (the transit exception carries them through), so the
+	# wedge must never convert to pounding — e.g. while jammed on a FENCE with
+	# a door coincidentally in arc.
+	if not is_perception_hidden() and _breach.tick(has_target, target_position, delta):
 		_was_moving = true
 		return
 
@@ -207,7 +211,13 @@ func _tick_calm(delta: float) -> void:
 			var h := queued_attack
 			queued_attack = null
 			if is_instance_valid(h) and h.is_alive:
-				ignite_feral(h)
+				# A COSTUMED special's deferred attack is an ORDERED KILL, not a
+				# release (specials spec §2.3/§3.4) — covers shift-RMB attack
+				# terminals and corpse-command rise orders in one place.
+				if is_perception_hidden() and has_method("order_kill"):
+					call("order_kill", h)
+				else:
+					ignite_feral(h)
 			return
 		if _was_moving:
 			_shamble.set_anchor(global_position)
@@ -239,6 +249,14 @@ func _tick_feral(delta: float) -> void:
 ## so FeralBrain._retarget() grabs the nearest reachable prey on the first feral tick
 ## (and calms instantly if there's none — set_target(null) is a safe no-op).
 func ignite_feral(target: Human = null) -> void:
+	# SPECIALS NEVER GO FERAL (direction spec §3.7 / specials spec §3.1). The
+	# release collectors and contagion already skip specials at their call
+	# sites; this closes the remaining paths in one place — queued attacks,
+	# rise-order re-resolution, and any future caller. A costumed special's
+	# only violence is the ordered kill (specials slice 4), which does not
+	# route through here.
+	if is_special:
+		return
 	current_state = State.FERAL
 	# Drop any pending commanded move — released is released. Otherwise, when this
 	# zombie kills out and returns to CALM, _tick_calm would resume the stale move
@@ -259,6 +277,8 @@ func ignite_feral(target: Human = null) -> void:
 ## besieges its OWN nearest door (nearest-door-per-feral, no coordination).
 ## Same verb weight as release-on-human: released is released, no recall.
 func ignite_feral_at_building(building: Node2D) -> void:
+	if is_special:
+		return   # specials never go feral — see ignite_feral
 	current_state = State.FERAL
 	has_target = false
 	_was_moving = false
@@ -282,6 +302,12 @@ func ignite_feral_at_building(building: Node2D) -> void:
 ## loss of control.
 func order_breach(door: Node2D) -> void:
 	if not can_receive_command():
+		return
+	# A COSTUMED special ignores the door click entirely (Ben's ruling
+	# 2026-08-06): "break that door" has no costume meaning — no violence while
+	# costumed, and doors aren't obstacles to it anyway. It stands; the normals
+	# in the same selection breach as ordered.
+	if is_perception_hidden():
 		return
 	# A plain command replaces any route, exactly like a move order does.
 	has_target = false
