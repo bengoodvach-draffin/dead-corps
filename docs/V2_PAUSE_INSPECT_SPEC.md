@@ -2,7 +2,7 @@
 
 **Version:** 1.0 (2026-08-07 — design session, Ben/Claude)
 **Status:** **DESIGN — core decisions ruled, NOTHING BUILT.** This branch carries the spec only, by Ben's instruction. Rule 1 (propose-before-implementing) applies per slice when it is built: propose the slice, get the go-ahead, then write code.
-**Relationship to other docs:** extends `V2_DIRECTION_SPEC.md` (no core-loop rules change); consumes the readability scaffold from PERF_REVIEW F4 (the `vision_renderer` single-canvas-item pattern); shares its info-provider seam with **M2's LMB fill-line inspect** (build plan Phase 7). It changes **zero** sim rules. The only touches to existing sim-adjacent code are two one-argument timer fixes (§A3) and `process_mode` assignments (§A2).
+**Relationship to other docs:** extends `V2_DIRECTION_SPEC.md` (no core-loop rules change); consumes the readability scaffold from PERF_REVIEW F4 (the `vision_renderer` single-canvas-item pattern); shares its info-provider seam with **M2's LMB fill-line inspect** (build plan Phase 7). **Companion: `V2_READABILITY_SPEC.md`** (Phase 5 proper, same design session) — built in the same window; the two share the `rise_remaining` accessor, the z-order stack, and a recommended build order (readability slice R1 → pause/menu → inspect layer, its §6). It changes **zero** sim rules. The only touches to existing sim-adjacent code are two one-argument timer fixes (§A3) and `process_mode` assignments (§A2).
 
 ---
 
