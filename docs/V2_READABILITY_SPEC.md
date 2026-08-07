@@ -150,9 +150,9 @@ No new input, no new config knobs (decay lengths and glyph sizes are renderer co
 - §10 determinism spot-check unchanged: traces observe, never write — auto-frenzy boot-twice diff stays byte-identical.
 - Perf: standard load test (44z/447h), sampler before/after — presentation delta must be within noise at the mass-frenzy census.
 
-## 11. OPEN QUESTIONS FOR BEN (at R1 proposal time)
+## 11. RULINGS (Ben, 2026-08-07 — asked and answered at spec time; do not re-open at R1)
 
-1. **Palette sign-off** (§2 law 2) — the five families as listed, before anything draws.
-2. **Min-zoom target** — must the state language read at 0.5× (full map) or is 1.0× the readability contract, with 0.5× being strategic-blob-scale on purpose? (Recommendation: 1.0× contract; at 0.5× only *traces and rings* need to read.)
-3. **Fleeing heading tick** — cheap but adds per-human glyphs at rout scale; cut first if the board busies.
-4. **Cower scream** — hook lands silent; when audio comes, is the scream per-cower or once per cower-cluster? (Parked with the audio system.)
+1. **Palette approved as specced** (§2 law 2) — the five families are law.
+2. **The readability contract is 1.0×.** The full state language must read at 1.0× zoom and closer; at 0.5× only the loud layer — event traces, hunted rings, tints — needs to read, and the overview being strategic-blob-scale is intentional.
+3. **The fleeing heading tick is IN for R1** — and is the designated *first cut* if the Q2 drill shows a busy board. No other item gets cut before it.
+4. **The cower scream is once per cower-cluster**, not per cowerer — a punctuation mark, not a chorus. Write the hook that way now (fires on the first cower in a cluster within a short window; dedupe by proximity), so the audio pass inherits the right shape.
